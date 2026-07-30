@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "bank_account_links_connection_provider_idx" ON "bank_account_links" USING btree ("connection_id","provider_account_id");

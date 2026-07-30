@@ -6,21 +6,38 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "db:generate": "node --env-file=.env.local node_modules/.bin/drizzle-kit generate",
+    "db:migrate": "node --env-file=.env.local node_modules/.bin/drizzle-kit migrate",
+    "db:studio": "node --env-file=.env.local node_modules/.bin/drizzle-kit studio"
   },
   "dependencies": {
+    "@upstash/qstash": "^2.11.3",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "@vercel/functions": "^3.7.6",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.4",
     "next": "16.2.12",
+    "pg": "^8.22.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "playwright": "^1.62.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

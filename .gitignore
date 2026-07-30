@@ -36,6 +36,15 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Claude Code / agent tooling artifacts (not part of the app)
+.claude/
+.agents/
+.claude-flow/
+.swarm/
+.mcp.json
+ruvector.db
+skills-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Палітри — вибір напрямку</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:#0A0A0C;
+    min-height:100vh;
+    padding:48px 24px;
+    font-family:'Inter',sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    color:#EDEDF0; font-size:22px; font-weight:600; margin-bottom:6px;
+  }
+  .lead{ color:#8A8A93; font-size:14px; margin-bottom:36px; }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, 260px);
+    gap:22px;
+  }
+  .card{
+    width:260px; border-radius:24px; padding:20px 18px 18px;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .card-title{
+    font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin-bottom:4px;
+  }
+  .card-tag{ font-size:11.5px; margin-bottom:16px; opacity:0.65; }
+  .swatches{ display:flex; gap:6px; margin-bottom:16px; }
+  .sw{ width:32px; height:32px; border-radius:9px; flex:1; }
+  .mini{
+    border-radius:16px; padding:14px; margin-bottom:8px;
+  }
+  .mini-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; opacity:0.75; font-weight:600; }
+  .mini-text{ font-size:13px; line-height:1.4; font-weight:500; }
+  .stat-row{ display:flex; gap:8px; }
+  .stat-mini{ flex:1; border-radius:12px; padding:10px 12px; }
+  .stat-mini .v{ font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; }
+  .stat-mini .l{ font-size:10px; opacity:0.6; margin-top:2px; }
+</style>
+</head>
+<body>
+
+<h1>Чотири напрямки палітри</h1>
+<div class="lead">Обери один — і розгорну в повний макет застосунку</div>
+
+<div class="grid">
+
+  <!-- A: Obsidian Violet (current) -->
+  <div class="card" style="background:#0D0D10;">
+    <div class="card-title" style="color:#EDEDF0;">A · Obsidian Violet</div>
+    <div class="card-tag" style="color:#8B7CFF;">поточний варіант · нейтральний, технологічний</div>
+    <div class="swatches">
+      <div class="sw" style="background:#0D0D10; border:1px solid #28282F;"></div>
+      <div class="sw" style="background:#8B7CFF;"></div>
+      <div class="sw" style="background:#FF8A65;"></div>
+      <div class="sw" style="background:#5FD9B0;"></div>
+      <div class="sw" style="background:#F2C572;"></div>
+    </div>
+    <div class="mini" style="background:#17171C; border:1px solid #28282F;">
+      <div class="mini-label" style="color:#8B7CFF;">Асистент</div>
+      <div class="mini-text" style="color:#EDEDF0;">Сон 5.5г — нижче норми</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-mini" style="background:#17171C; border:1px solid #28282F;"><div class="v" style="color:#FF8A65;">-320₴</div><div class="l" style="color:#96969F;">Фінанси</div></div>
+      <div class="stat-mini" style="background:#17171C; border:1px solid #28282F;"><div class="v" style="color:#5FD9B0;">6 днів</div><div class="l" style="color:#96969F;">Дисципліна</div></div>
+    </div>
+  </div>
+
+  <!-- B: Deep Forest / Moss -->
+  <div class="card" style="background:#0E1210;">
+    <div class="card-title" style="color:#E8ECE9;">B · Deep Forest</div>
+    <div class="card-tag" style="color:#8FBF9F;">спокійний, wellness-орієнтований</div>
+    <div class="swatches">
+      <div class="sw" style="background:#0E1210; border:1px solid #232B27;"></div>
+      <div class="sw" style="background:#8FBF9F;"></div>
+      <div class="sw" style="background:#D9A867;"></div>
+      <div class="sw" style="background:#6FA5C2;"></div>
+      <div class="sw" style="background:#C98D7A;"></div>
+    </div>
+    <div class="mini" style="background:#161C19; border:1px solid #232B27;">
+      <div class="mini-label" style="color:#8FBF9F;">Асистент</div>
+      <div class="mini-text" style="color:#E8ECE9;">Сон 5.5г — нижче норми</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-mini" style="background:#161C19; border:1px solid #232B27;"><div class="v" style="color:#C98D7A;">-320₴</div><div class="l" style="color:#8A9690;">Фінанси</div></div>
+      <div class="stat-mini" style="background:#161C19; border:1px solid #232B27;"><div class="v" style="color:#8FBF9F;">6 днів</div><div class="l" style="color:#8A9690;">Дисципліна</div></div>
+    </div>
+  </div>
+
+  <!-- C: Midnight Ice -->
+  <div class="card" style="background:#0A0E14;">
+    <div class="card-title" style="color:#E7ECF2;">C · Midnight Ice</div>
+    <div class="card-tag" style="color:#6FC6E0;">холодний, чіткий, мінімалізм</div>
+    <div class="swatches">
+      <div class="sw" style="background:#0A0E14; border:1px solid #1E2733;"></div>
+      <div class="sw" style="background:#6FC6E0;"></div>
+      <div class="sw" style="background:#E0A96F;"></div>
+      <div class="sw" style="background:#8C9BB5;"></div>
+      <div class="sw" style="background:#E06F8C;"></div>
+    </div>
+    <div class="mini" style="background:#121824; border:1px solid #1E2733;">
+      <div class="mini-label" style="color:#6FC6E0;">Асистент</div>
+      <div class="mini-text" style="color:#E7ECF2;">Сон 5.5г — нижче норми</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-mini" style="background:#121824; border:1px solid #1E2733;"><div class="v" style="color:#E06F8C;">-320₴</div><div class="l" style="color:#7C8AA0;">Фінанси</div></div>
+      <div class="stat-mini" style="background:#121824; border:1px solid #1E2733;"><div class="v" style="color:#6FC6E0;">6 днів</div><div class="l" style="color:#7C8AA0;">Дисципліна</div></div>
+    </div>
+  </div>
+
+  <!-- D: Charcoal Amber -->
+  <div class="card" style="background:#111110;">
+    <div class="card-title" style="color:#EDEBE6;">D · Charcoal Amber</div>
+    <div class="card-tag" style="color:#E0A959;">теплий, фокусований, преміальний</div>
+    <div class="swatches">
+      <div class="sw" style="background:#111110; border:1px solid #2A2925;"></div>
+      <div class="sw" style="background:#E0A959;"></div>
+      <div class="sw" style="background:#B5654F;"></div>
+      <div class="sw" style="background:#7A9E8E;"></div>
+      <div class="sw" style="background:#8C8478;"></div>
+    </div>
+    <div class="mini" style="background:#1A1917; border:1px solid #2A2925;">
+      <div class="mini-label" style="color:#E0A959;">Асистент</div>
+      <div class="mini-text" style="color:#EDEBE6;">Сон 5.5г — нижче норми</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-mini" style="background:#1A1917; border:1px solid #2A2925;"><div class="v" style="color:#B5654F;">-320₴</div><div class="l" style="color:#8C8478;">Фінанси</div></div>
+      <div class="stat-mini" style="background:#1A1917; border:1px solid #2A2925;"><div class="v" style="color:#7A9E8E;">6 днів</div><div class="l" style="color:#8C8478;">Дисципліна</div></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>0.0 / Life OS — Фінальний мокап</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1210; --surface:#161C19; --surface-2:#1D2420; --border:#232B27;
+    --text:#E8ECE9; --text-dim:#8FA096; --text-faint:#5A6660;
+    --sage:#8FBF9F; --clay:#C98D7A; --gold:#D9A867; --sky:#6FA5C2; --rose:#D98FA3;
+  }
+  html{ background:#050706; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:#050706; min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
+    gap:26px; padding:40px 20px; font-family:'Inter',sans-serif; flex-wrap:wrap;
+  }
+  .page-title{
+    width:100%; text-align:center; margin-bottom:6px;
+    font-family:'Space Grotesk',sans-serif; color:var(--text); font-size:24px; font-weight:600;
+  }
+  .page-sub{ width:100%; text-align:center; color:var(--text-faint); font-size:13px; margin-bottom:20px; }
+
+  .phone{
+    width:352px; height:764px; background:var(--bg); border-radius:46px; border:9px solid #000;
+    box-shadow:0 40px 100px rgba(0,0,0,0.6), inset 0 0 0 1px #1a1a1a;
+    position:relative; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .notch{ position:absolute; top:9px; left:50%; transform:translateX(-50%); width:106px; height:24px; background:#000; border-radius:16px; z-index:50; }
+  .statusbar{ padding:15px 24px 6px; display:flex; justify-content:space-between; align-items:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600; color:var(--text); flex-shrink:0; }
+  .content{ flex:1; overflow-y:auto; padding:6px 15px 10px; }
+  .content::-webkit-scrollbar{display:none;}
+  .col{ display:flex; flex-direction:column; align-items:center; }
+  .caption{ text-align:center; color:#8A8A92; font-size:12px; margin-top:12px; font-weight:600; max-width:352px; line-height:1.5; }
+  .num{ display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--sage); color:#0E1210; font-size:10px; font-weight:700; align-items:center; justify-content:center; margin-right:6px; }
+
+  .header{ padding:8px 2px 14px; display:flex; justify-content:space-between; align-items:center;}
+  .greet{ font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; color:var(--text); }
+  .date{ font-size:11.5px; color:var(--text-faint); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+  .profile-chip{ background:var(--surface-2); border:1px solid var(--border); border-radius:100px; padding:6px 10px; font-size:10px; color:var(--text-dim); display:flex; align-items:center; gap:5px; }
+  .dot-sm{ width:5px; height:5px; border-radius:50%; background:var(--sage); }
+  .icon-btn{ width:30px; height:30px; border-radius:9px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:14px; }
+
+  /* onboarding: profession picker */
+  .pick-title{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; color:var(--text); padding-top:10px; }
+  .pick-sub{ font-size:12.5px; color:var(--text-dim); margin-top:6px; line-height:1.5; }
+  .prof-grid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:20px; }
+  .prof-card{ background:var(--surface); border:1px solid var(--border); border-radius:17px; padding:16px 13px; display:flex; flex-direction:column; gap:9px; position:relative; }
+  .prof-card.selected{ border:1.5px solid var(--sage); background:var(--surface-2); }
+  .prof-icon{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .prof-name{ font-size:13.5px; font-weight:600; color:var(--text); }
+  .prof-desc{ font-size:10.5px; color:var(--text-faint); line-height:1.4; }
+  .check{ position:absolute; top:13px; right:13px; width:17px; height:17px; border-radius:50%; background:var(--sage); display:flex; align-items:center; justify-content:center; font-size:10px; color:#0E1210; font-weight:700; }
+  .cta{ margin-top:22px; background:var(--sage); color:#0E1210; text-align:center; padding:14px; border-radius:15px; font-weight:600; font-size:13.5px; font-family:'Space Grotesk',sans-serif; }
+
+  .ai-card{ background:var(--surface); border:1px solid var(--border); border-radius:17px; padding:13px 13px 11px; margin-bottom:12px; position:relative; overflow:hidden; }
+  .ai-card::before{ content:''; position:absolute; top:-40px; right:-40px; width:130px; height:130px; background:radial-gradient(circle, rgba(143,191,159,0.16), transparent 70%); }
+  .ai-top{ display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .pulse{ width:7px; height:7px; border-radius:50%; background:var(--sage); animation:pulse 2s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(143,191,159,0.5);} 70%{box-shadow:0 0 0 7px rgba(143,191,159,0);} 100%{box-shadow:0 0 0 0 rgba(143,191,159,0);} }
+  .ai-label{ font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--sage); font-weight:600; }
+  .ai-text{ font-size:13.5px; line-height:1.5; color:var(--text); font-weight:500; }
+  .ai-text b{ color:#fff; }
+  .ai-sub{ margin-top:6px; font-size:11.5px; color:var(--text-dim); }
+
+  .section-title{ font-size:11.5px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin:15px 2px 8px; display:flex; justify-content:space-between; align-items:center; }
+  .section-title span.link{ color:var(--text-faint); text-transform:none; font-weight:500; }
+
+  .cal-item{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:10px 12px; margin-bottom:7px; }
+  .cal-time{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text); width:40px; flex-shrink:0; }
+  .cal-bar{ width:3px; height:24px; border-radius:2px; flex-shrink:0; }
+  .cal-info{ flex:1; min-width:0; }
+  .cal-title{ font-size:13px; color:var(--text); font-weight:500; }
+  .cal-tag{ font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+  .badge{ font-size:9.5px; font-weight:600; padding:3px 7px; border-radius:100px; flex-shrink:0; background:rgba(201,141,122,0.15); color:var(--clay); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:12px; }
+  .stat-head{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-dim); font-weight:500; margin-bottom:6px; }
+  .stat-val{ font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:var(--text); }
+  .stat-foot{ font-size:10px; color:var(--text-faint); margin-top:3px; }
+
+  .module-card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:12px; display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+  .module-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .module-title{ font-size:13px; font-weight:600; color:var(--text); }
+  .module-sub{ font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+  .module-arrow{ color:var(--text-faint); font-size:13px; }
+
+  .segmented{ display:flex; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:13px; }
+  .seg{ flex:1; text-align:center; padding:8px; border-radius:8px; font-size:12px; font-weight:600; color:var(--text-faint); }
+  .seg.active{ background:var(--surface-2); color:var(--text); }
+
+  /* calendar month grid */
+  .month-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .month-label{ font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; color:var(--text); }
+  .weekdays{ display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:5px; }
+  .weekdays div{ text-align:center; font-size:10px; color:var(--text-faint); font-weight:600; }
+  .daygrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:8px; }
+  .day{ aspect-ratio:1; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11.5px; color:var(--text-dim); gap:2px; position:relative; }
+  .day.muted{ color:var(--text-faint); opacity:0.4; }
+  .day.today{ background:var(--sage); color:#0E1210; font-weight:700; }
+  .day.selected{ border:1.5px solid var(--sage); color:var(--text); font-weight:600; }
+  .day.holiday{ color:var(--gold); font-weight:600; }
+  .day-dots{ display:flex; gap:2px; }
+  .day-dots span{ width:4px; height:4px; border-radius:50%; }
+  .holiday-star{ position:absolute; top:2px; right:4px; font-size:7px; }
+  .legend-strip{ display:flex; gap:9px; margin-bottom:11px; flex-wrap:wrap; }
+  .legend-strip .li{ display:flex; align-items:center; gap:5px; font-size:9.5px; color:var(--text-faint); }
+  .legend-strip .li span{ width:7px; height:7px; border-radius:50%; }
+  .note-block{ background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:11px 12px; margin-bottom:12px; }
+  .note-head{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--gold); font-weight:600; margin-bottom:5px; }
+  .note-text{ font-size:11px; color:var(--text-dim); line-height:1.5; }
+  .note-reminder{ display:flex; align-items:center; gap:5px; margin-top:7px; font-size:9.5px; color:var(--text-faint); }
+  .agenda-date{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; color:var(--text); margin:2px 2px 9px; }
+  .agenda-item{ display:flex; gap:9px; margin-bottom:2px; }
+  .agenda-time{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-faint); width:38px; flex-shrink:0; padding-top:11px; text-align:right; }
+  .agenda-line{ width:2px; background:var(--border); flex-shrink:0; position:relative; }
+  .agenda-line::before{ content:''; position:absolute; top:11px; left:50%; transform:translateX(-50%); width:7px; height:7px; border-radius:50%; background:var(--sage); }
+  .agenda-body{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:10px 12px; margin-bottom:10px; }
+  .agenda-title{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .agenda-sub{ font-size:10px; color:var(--text-faint); margin-top:2px; }
+  .reminder-row{ display:flex; gap:5px; margin-top:7px; flex-wrap:wrap; }
+  .reminder-chip{ display:flex; align-items:center; gap:4px; font-size:9px; color:var(--sage); background:rgba(143,191,159,0.12); border:1px solid rgba(143,191,159,0.25); padding:3px 7px; border-radius:100px; }
+
+  /* health */
+  .rings-card{ display:flex; align-items:center; gap:14px; }
+  .ring-lg{ width:78px; height:78px; flex-shrink:0; }
+  .legend{ display:flex; flex-direction:column; gap:6px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-dim); }
+  .legend-dot{ width:7px; height:7px; border-radius:50%; }
+  .legend-item b{ color:var(--text); font-family:'JetBrains Mono',monospace; }
+  .card-block{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:15px; margin-bottom:10px; }
+  .mood-row{ display:flex; gap:6px; }
+  .mood-chip{ flex:1; text-align:center; padding:9px 3px; border-radius:10px; background:var(--surface-2); border:1px solid var(--border); font-size:16px; }
+  .mood-chip.selected{ border-color:var(--sage); background:rgba(143,191,159,0.1); }
+  .workout-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+  .workout-item:last-child{ border-bottom:none; }
+  .workout-icon{ width:32px; height:32px; border-radius:9px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+
+  /* finance */
+  .goal-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .goal-card{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:13px; display:flex; gap:10px; align-items:center; }
+  .ring{ width:46px; height:46px; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center; }
+  .ring-val{ position:absolute; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--text); }
+  .goal-name{ font-size:12px; font-weight:600; color:var(--text); }
+  .goal-sub{ font-size:9.5px; color:var(--text-faint); margin-top:2px; }
+  .budget-row{ margin-bottom:12px; }
+  .budget-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .budget-name{ font-size:12.5px; color:var(--text); font-weight:500; display:flex; align-items:center; gap:7px; }
+  .budget-dot{ width:7px; height:7px; border-radius:50%; }
+  .budget-nums{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); }
+  .budget-nums b{ color:var(--text); }
+  .budget-track{ height:6px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
+  .budget-fill{ height:100%; border-radius:4px; }
+  .over-badge{ font-size:8.5px; font-weight:700; color:var(--rose); background:rgba(217,143,163,0.15); padding:2px 6px; border-radius:100px; margin-left:5px; }
+  .txn-item{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .txn-item:last-child{ border-bottom:none; }
+  .txn-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; background:var(--surface-2); }
+  .txn-title{ font-size:12.5px; color:var(--text); font-weight:500; }
+  .txn-sub{ font-size:10px; color:var(--text-faint); margin-top:2px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .txn-cat-tag{ background:var(--surface-2); border:1px solid var(--border); border-radius:100px; padding:2px 7px; font-size:9px; color:var(--text-dim); }
+  .txn-cat-tag.uncategorized{ border-color:var(--gold); color:var(--gold); }
+  .txn-amt{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; margin-left:auto; }
+
+  /* chat */
+  .chat-msg{ display:flex; margin-bottom:12px; }
+  .chat-msg.user{ justify-content:flex-end; }
+  .bubble{ max-width:80%; padding:10px 13px; border-radius:15px; font-size:13px; line-height:1.5; }
+  .bubble.assistant{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:4px; }
+  .bubble.user{ background:var(--sage); color:#0E1210; font-weight:500; border-bottom-right-radius:4px; }
+  .chip-row{ display:flex; gap:7px; flex-wrap:wrap; margin:6px 0 16px; }
+  .chip{ background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:7px 12px; font-size:11px; color:var(--text-dim); }
+  .input-bar{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:11px 7px 11px 14px; margin-top:auto; }
+  .input-bar input{ flex:1; background:none; border:none; outline:none; color:var(--text); font-size:13px; font-family:'Inter',sans-serif; }
+  .input-bar input::placeholder{ color:var(--text-faint); }
+  .send-btn{ width:30px; height:30px; border-radius:50%; background:var(--sage); display:flex; align-items:center; justify-content:center; color:#0E1210; font-size:13px; flex-shrink:0; }
+
+  /* profile */
+  .profile-head{ display:flex; align-items:center; gap:12px; padding:6px 2px 18px; }
+  .avatar-lg{ width:50px; height:50px; border-radius:14px; background:linear-gradient(135deg,var(--sage),var(--sky)); flex-shrink:0; }
+  .pname{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; color:var(--text); }
+  .prole{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+  .theme-row{ display:flex; gap:9px; margin-bottom:8px; }
+  .theme-swatch{ flex:1; border-radius:13px; padding:9px; border:1.5px solid var(--border); position:relative; }
+  .theme-swatch.selected{ border-color:var(--sage); }
+  .theme-dots{ display:flex; gap:4px; margin-bottom:7px; }
+  .theme-dots span{ width:13px; height:13px; border-radius:4px; }
+  .theme-name{ font-size:10px; color:var(--text-dim); font-weight:600; }
+  .theme-check{ position:absolute; top:7px; right:7px; width:13px; height:13px; border-radius:50%; background:var(--sage); color:#0E1210; font-size:8px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .settings-item{ display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:13px; margin-bottom:8px; font-size:12.5px; color:var(--text); }
+  .settings-item span.sub{ color:var(--text-faint); font-size:11px; }
+
+  .navbar{ flex-shrink:0; display:flex; justify-content:space-around; align-items:center; padding:9px 6px 22px; background:rgba(14,18,16,0.92); backdrop-filter:blur(20px); border-top:1px solid var(--border); }
+  .navitem{ display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-faint); font-size:9.5px; font-weight:500; }
+  .navitem.active{ color:var(--sage); }
+  .navicon{ width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+  .navicon svg{ width:18px; height:18px; }
+</style>
+</head>
+<body>
+
+<div class="page-title">0.0 / Life OS — фінальний дизайн</div>
+<div class="page-sub">Deep Forest · 5 вкладок · профіль "Трейдер" · все доопрацювання включено</div>
+
+<!-- 0. ONBOARDING -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="pick-title">Обери свій профіль</div>
+    <div class="pick-sub">Застосунок підлаштує вкладку "Робота" та інсайти асистента під твою професію.</div>
+    <div class="prof-grid">
+      <div class="prof-card selected"><div class="check">✓</div><div class="prof-icon" style="background:rgba(143,191,159,0.15); color:var(--sage);">📈</div><div class="prof-name">Трейдер</div><div class="prof-desc">Журнал угод, prop-акаунти</div></div>
+      <div class="prof-card"><div class="prof-icon" style="background:rgba(201,141,122,0.15); color:var(--clay);">🎨</div><div class="prof-name">Дизайнер</div><div class="prof-desc">Проєкти, клієнти</div></div>
+      <div class="prof-card"><div class="prof-icon" style="background:rgba(111,165,194,0.15); color:var(--sky);">💻</div><div class="prof-name">IT / Розробник</div><div class="prof-desc">Спринти, фокус-час</div></div>
+      <div class="prof-card"><div class="prof-icon" style="background:rgba(217,168,103,0.15); color:var(--gold);">🩺</div><div class="prof-name">Лікар</div><div class="prof-desc">Прийоми, чергування</div></div>
+      <div class="prof-card"><div class="prof-icon" style="background:rgba(217,143,163,0.15); color:var(--rose);">📚</div><div class="prof-name">Студент</div><div class="prof-desc">Пари, сесія</div></div>
+      <div class="prof-card"><div class="prof-icon" style="background:rgba(143,191,159,0.15); color:var(--sage);">🧑‍💼</div><div class="prof-name">Підприємець</div><div class="prof-desc">Команда, продажі</div></div>
+    </div>
+    <div class="cta">Продовжити з профілем "Трейдер"</div>
+  </div>
+  <div class="navbar" style="opacity:0.3;">
+    <div class="navitem"><div class="navicon">•</div>Головна</div><div class="navitem"><div class="navicon">•</div>Календар</div><div class="navitem"><div class="navicon">•</div>Баланс</div><div class="navitem"><div class="navicon">•</div>Асистент</div><div class="navitem"><div class="navicon">•</div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">0</span>Онбординг — вибір професії</div>
+</div>
+
+<!-- 1. HOME -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Доброго ранку 👋</div><div class="date">Вівторок, 21 липня</div></div><div class="profile-chip"><div class="dot-sm"></div>Трейдер</div></div>
+    <div class="ai-card">
+      <div class="ai-top"><div class="pulse"></div><div class="ai-label">Асистент</div></div>
+      <div class="ai-text">Вчора <b>4.2 год</b> у телефоні, сон лише <b>5.5 год</b>.</div>
+      <div class="ai-sub">Сьогодні о 14:30 — NFP. Дивись у розділі "Робота".</div>
+    </div>
+    <div class="section-title">Сьогодні (особисте) <span class="link">календар →</span></div>
+    <div class="cal-item"><div class="cal-time">09:00</div><div class="cal-bar" style="background:var(--sky);"></div><div class="cal-info"><div class="cal-title">Ранкова зустріч</div><div class="cal-tag">Особисте</div></div></div>
+    <div class="cal-item"><div class="cal-time">19:00</div><div class="cal-bar" style="background:var(--gold);"></div><div class="cal-info"><div class="cal-title">Вечеря з друзями</div><div class="cal-tag">Особисте</div></div></div>
+    <div class="section-title">Баланс тижня <span class="link">все →</span></div>
+    <div class="grid2">
+      <div class="stat-card"><div class="stat-head">💰 Фінанси</div><div class="stat-val" style="color:var(--clay);">-320 ₴</div><div class="stat-foot">Витрати за тиждень</div></div>
+      <div class="stat-card"><div class="stat-head">❤️ Сон</div><div class="stat-val">5.5 <span style="font-size:10.5px;color:var(--text-faint);">год</span></div><div class="stat-foot">Нижче норми</div></div>
+    </div>
+    <div class="section-title">Робота (Трейдер) <span class="link">все →</span></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(143,191,159,0.15); color:var(--sage);">📓</div><div class="module-info"><div class="module-title">Журнал угод</div><div class="module-sub">3 нові угоди сьогодні</div></div><div class="module-arrow">›</div></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(201,141,122,0.15); color:var(--clay);">📰</div><div class="module-info"><div class="module-title">Економічний календар</div><div class="module-sub">NFP о 14:30 · high impact</div></div><div class="module-arrow">›</div></div>
+  </div>
+  <div class="navbar">
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">1</span>Головна</div>
+</div>
+
+<!-- 2. CALENDAR -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Календар</div><div class="date">Особисте · свята</div></div><div class="icon-btn">+</div></div>
+    <div class="month-nav"><div class="month-label">Липень 2026</div><div style="display:flex; gap:5px;"><div class="icon-btn" style="width:26px;height:26px;">‹</div><div class="icon-btn" style="width:26px;height:26px;">›</div></div></div>
+    <div class="weekdays"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Нд</div></div>
+    <div class="daygrid">
+      <div class="day muted">29</div><div class="day muted">30</div><div class="day">1</div><div class="day">2</div><div class="day">3<div class="day-dots"><span style="background:var(--sky);"></span></div></div><div class="day">4</div><div class="day">5</div>
+      <div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day">9</div><div class="day">10</div><div class="day">11</div><div class="day">12</div>
+      <div class="day">13</div><div class="day">14<div class="day-dots"><span style="background:var(--gold);"></span></div></div><div class="day">15</div><div class="day">16</div><div class="day">17</div><div class="day">18</div><div class="day">19</div>
+      <div class="day">20</div><div class="day today">21</div><div class="day selected">22<div class="day-dots"><span style="background:var(--sky);"></span><span style="background:var(--gold);"></span></div></div><div class="day">23</div><div class="day holiday">24<div class="holiday-star">★</div></div><div class="day">25</div><div class="day">26</div>
+      <div class="day">27</div><div class="day">28</div><div class="day">29</div><div class="day">30</div><div class="day">31</div><div class="day muted">1</div><div class="day muted">2</div>
+    </div>
+    <div class="legend-strip">
+      <div class="li"><span style="background:var(--sky);"></span>Особисте</div>
+      <div class="li"><span style="background:var(--gold);"></span>Робота</div>
+      <div class="li"><span style="color:var(--gold);">★</span>Свято</div>
+    </div>
+    <div class="note-block">
+      <div class="note-head">📌 Нотатка · 24 липня</div>
+      <div class="note-text">День Незалежності — вихідний, банки закриті. Без трейдингу.</div>
+      <div class="note-reminder">🔔 Нагадати за день до</div>
+    </div>
+    <div class="agenda-date">Середа, 22 липня</div>
+    <div class="agenda-item"><div class="agenda-time">09:00</div><div class="agenda-line"></div><div class="agenda-body"><div class="agenda-title">Ранкова зустріч</div><div class="agenda-sub">Особисте · 30 хв</div><div class="reminder-row"><div class="reminder-chip">🔔 30хв</div></div></div></div>
+    <div class="agenda-item"><div class="agenda-time">13:00</div><div class="agenda-line"></div><div class="agenda-body"><div class="agenda-title">Спортзал</div><div class="agenda-sub">Особисте · 1 год</div><div class="reminder-row"><div class="reminder-chip">🔔 30хв</div><div class="reminder-chip">🔔 5хв</div></div></div></div>
+    <div class="agenda-item"><div class="agenda-time">19:00</div><div class="agenda-line"></div><div class="agenda-body"><div class="agenda-title">Вечеря з друзями</div><div class="agenda-sub">Кафе "Стан"</div><div class="reminder-row"><div class="reminder-chip">🔔 30хв</div><div class="reminder-chip">🔔 5хв</div></div></div></div>
+  </div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">2</span>Календар — особисте, свята, нотатки, подвійні нагадування</div>
+</div>
+
+<!-- 3. BALANCE — Health -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Баланс</div><div class="date">здоров'я та фінанси</div></div><div class="icon-btn">+</div></div>
+    <div class="segmented"><div class="seg active">❤️ Здоров'я</div><div class="seg">💰 Фінанси</div></div>
+    <div class="card-block rings-card">
+      <svg class="ring-lg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" stroke="var(--surface-2)" stroke-width="9" fill="none"/><circle cx="50" cy="50" r="42" stroke="var(--clay)" stroke-width="9" fill="none" stroke-dasharray="264" stroke-dashoffset="40" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <circle cx="50" cy="50" r="31" stroke="var(--surface-2)" stroke-width="9" fill="none"/><circle cx="50" cy="50" r="31" stroke="var(--sage)" stroke-width="9" fill="none" stroke-dasharray="195" stroke-dashoffset="60" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <circle cx="50" cy="50" r="20" stroke="var(--surface-2)" stroke-width="9" fill="none"/><circle cx="50" cy="50" r="20" stroke="var(--sky)" stroke-width="9" fill="none" stroke-dasharray="126" stroke-dashoffset="20" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+      </svg>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--clay);"></span>Рух: <b>420</b>/520</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--sage);"></span>Трен.: <b>18</b>/30хв</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--sky);"></span>Стояння: <b>8</b>/12г</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="stat-card"><div class="stat-head">🛌 Сон</div><div class="stat-val">5.5 <span style="font-size:10px;color:var(--text-faint);">год</span></div><div class="stat-foot">Нижче норми</div></div>
+      <div class="stat-card"><div class="stat-head">❤️ Пульс</div><div class="stat-val">58 <span style="font-size:10px;color:var(--text-faint);">уд/хв</span></div><div class="stat-foot">В нормі</div></div>
+      <div class="stat-card"><div class="stat-head">👣 Кроки</div><div class="stat-val">6 200</div><div class="stat-foot">Ціль 8 000</div></div>
+      <div class="stat-card"><div class="stat-head">📱 Screen</div><div class="stat-val">4.2 <span style="font-size:10px;color:var(--text-faint);">год</span></div><div class="stat-foot">+35%</div></div>
+    </div>
+    <div class="section-title">Вага — тренд місяця</div>
+    <div class="card-block">
+      <svg width="100%" height="46" viewBox="0 0 300 46" preserveAspectRatio="none"><polyline points="0,24 40,22 80,26 120,20 160,17 200,15 240,13 300,10" fill="none" stroke="var(--sky)" stroke-width="2.5"/></svg>
+      <div style="display:flex; justify-content:space-between; margin-top:6px;"><span class="stat-foot">78.4 → 76.9 кг</span><span class="stat-foot" style="color:var(--sage);">-1.5 кг</span></div>
+    </div>
+    <div class="section-title">Настрій сьогодні</div>
+    <div class="card-block"><div class="mood-row"><div class="mood-chip">😔</div><div class="mood-chip">😐</div><div class="mood-chip selected">🙂</div><div class="mood-chip">😊</div><div class="mood-chip">🤩</div></div></div>
+    <div class="section-title">Тренування</div>
+    <div class="card-block">
+      <div class="workout-item"><div class="workout-icon">🏃</div><div><div class="txn-title">Біг — 5.2 км</div><div class="txn-sub">Вчора · 28 хв</div></div></div>
+      <div class="workout-item"><div class="workout-icon">🏋️</div><div><div class="txn-title">Силове</div><div class="txn-sub">Позавчора · 45 хв</div></div></div>
+    </div>
+  </div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">3</span>Баланс — Здоров'я</div>
+</div>
+
+<!-- 4. BALANCE — Finance -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Баланс</div><div class="date">здоров'я та фінанси</div></div><div class="icon-btn">+</div></div>
+    <div class="segmented"><div class="seg">❤️ Здоров'я</div><div class="seg active">💰 Фінанси</div></div>
+    <div class="section-title">Цілі <span class="link">+ нова</span></div>
+    <div class="goal-row">
+      <div class="goal-card"><div class="ring"><svg width="46" height="46"><circle cx="23" cy="23" r="19" stroke="var(--surface-2)" stroke-width="5" fill="none"/><circle cx="23" cy="23" r="19" stroke="var(--sage)" stroke-width="5" fill="none" stroke-dasharray="119" stroke-dashoffset="58" stroke-linecap="round" transform="rotate(-90 23 23)"/></svg><div class="ring-val">51%</div></div><div><div class="goal-name">Відпустка</div><div class="goal-sub">15.2К/30К ₴</div></div></div>
+      <div class="goal-card"><div class="ring"><svg width="46" height="46"><circle cx="23" cy="23" r="19" stroke="var(--surface-2)" stroke-width="5" fill="none"/><circle cx="23" cy="23" r="19" stroke="var(--sky)" stroke-width="5" fill="none" stroke-dasharray="119" stroke-dashoffset="56" stroke-linecap="round" transform="rotate(-90 23 23)"/></svg><div class="ring-val">53%</div></div><div><div class="goal-name">Подушка</div><div class="goal-sub">8К/15К ₴</div></div></div>
+    </div>
+    <div class="section-title">Бюджет за категоріями</div>
+    <div class="card-block">
+      <div class="budget-row"><div class="budget-top"><div class="budget-name"><span class="budget-dot" style="background:var(--clay);"></span>Їжа</div><div class="budget-nums"><b>980</b>/1200₴</div></div><div class="budget-track"><div class="budget-fill" style="width:82%; background:var(--clay);"></div></div></div>
+      <div class="budget-row"><div class="budget-top"><div class="budget-name"><span class="budget-dot" style="background:var(--sky);"></span>Транспорт</div><div class="budget-nums"><b>420</b>/600₴</div></div><div class="budget-track"><div class="budget-fill" style="width:70%; background:var(--sky);"></div></div></div>
+      <div class="budget-row"><div class="budget-top"><div class="budget-name"><span class="budget-dot" style="background:var(--rose);"></span>Розваги<span class="over-badge">Перевищено</span></div><div class="budget-nums"><b>650</b>/500₴</div></div><div class="budget-track"><div class="budget-fill" style="width:100%; background:var(--rose);"></div></div></div>
+      <div class="budget-row" style="margin-bottom:0;"><div class="budget-top"><div class="budget-name"><span class="budget-dot" style="background:var(--gold);"></span>Підписки</div><div class="budget-nums"><b>280</b>/400₴</div></div><div class="budget-track"><div class="budget-fill" style="width:70%; background:var(--gold);"></div></div></div>
+    </div>
+    <div class="section-title">Транзакції <span class="link">всі →</span></div>
+    <div class="card-block">
+      <div class="txn-item"><div class="txn-icon">☕</div><div style="flex:1;"><div class="txn-title">Кава біля офісу</div><div class="txn-sub"><span class="txn-cat-tag">Їжа ✎</span></div></div><div class="txn-amt" style="color:var(--clay);">-95₴</div></div>
+      <div class="txn-item"><div class="txn-icon">🛍️</div><div style="flex:1;"><div class="txn-title">Невідомий мерчант</div><div class="txn-sub"><span class="txn-cat-tag uncategorized">Некатегоризовано ✎</span></div></div><div class="txn-amt" style="color:var(--clay);">-340₴</div></div>
+      <div class="txn-item"><div class="txn-icon">🏦</div><div style="flex:1;"><div class="txn-title">Payout FundingPips</div><div class="txn-sub"><span class="txn-cat-tag">Трейдинг ✎</span></div></div><div class="txn-amt" style="color:var(--sage);">+6400₴</div></div>
+    </div>
+  </div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">4</span>Баланс — Фінанси</div>
+</div>
+
+<!-- 5. ASSISTANT -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Асистент</div><div class="date">на зв'язку 24/7</div></div></div>
+    <div class="chat-msg"><div class="bubble assistant">Доброго ранку! Сон вчора був короткий за звичне — 5.5 год замість 7-8. Показати, як це вплинуло на результати за тиждень?</div></div>
+    <div class="chat-msg user"><div class="bubble user">Так, покажи кореляцію зі сном за місяць</div></div>
+    <div class="chat-msg"><div class="bubble assistant">За останні 30 днів: у дні зі сном &lt;6 год середній результат був на 18% нижчий, ніж у дні з 7+ год сну.</div></div>
+    <div class="chip-row"><div class="chip">Резюме тижня</div><div class="chip">Порівняй з минулим місяцем</div><div class="chip">Постав нагадування</div></div>
+  </div>
+  <div style="padding:0 15px 12px;"><div class="input-bar"><input placeholder="Напиши щось..."/><div class="send-btn">↑</div></div></div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">5</span>Асистент</div>
+</div>
+
+<!-- 6. PROFILE -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="profile-head"><div class="avatar-lg"></div><div><div class="pname">Профіль</div><div class="prole">Трейдер · учасник челенджу FundingPips</div></div></div>
+    <div class="section-title">Тема оформлення</div>
+    <div class="theme-row">
+      <div class="theme-swatch selected"><div class="theme-check">✓</div><div class="theme-dots"><span style="background:#0E1210;border:1px solid #333;"></span><span style="background:#8FBF9F;"></span><span style="background:#D9A867;"></span></div><div class="theme-name">Deep Forest</div></div>
+      <div class="theme-swatch"><div class="theme-dots"><span style="background:#0D0D10;border:1px solid #333;"></span><span style="background:#8B7CFF;"></span><span style="background:#FF8A65;"></span></div><div class="theme-name">Obsidian Violet</div></div>
+    </div>
+    <div class="theme-row">
+      <div class="theme-swatch"><div class="theme-dots"><span style="background:#0A0E14;border:1px solid #333;"></span><span style="background:#6FC6E0;"></span><span style="background:#E0A96F;"></span></div><div class="theme-name">Midnight Ice</div></div>
+      <div class="theme-swatch"><div class="theme-dots"><span style="background:#111110;border:1px solid #333;"></span><span style="background:#E0A959;"></span><span style="background:#B5654F;"></span></div><div class="theme-name">Charcoal Amber</div></div>
+    </div>
+    <div class="section-title">Налаштування</div>
+    <div class="settings-item">Змінити професію <span class="sub">Трейдер ›</span></div>
+    <div class="settings-item">Apple Health <span class="sub">Підключено ›</span></div>
+    <div class="settings-item">Screen Time <span class="sub">Підключено ›</span></div>
+    <div class="settings-item">Сповіщення асистента <span class="sub">Увімкнено ›</span></div>
+  </div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption"><span class="num">6</span>Профіль — теми та налаштування</div>
+</div>
+
+</body>
+</html>

@@ -34,3 +34,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Deployment notes
+
+- **Function region must be Europe.** Bybit's CloudFront distribution blocks API access from the US, and Vercel's default function region is US-based. Set the project's region in the Vercel dashboard under **Settings → Functions** (not in code — `preferredRegion` only affects the Edge runtime, and the Bybit integration's routes run on Node). Without this, Bybit requests fail with a misleading `HTTP 403` that looks like a bad API key.

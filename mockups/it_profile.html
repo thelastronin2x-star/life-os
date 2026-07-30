@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>0.0 / Life OS — Профіль IT / Розробник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1210; --surface:#161C19; --surface-2:#1D2420; --border:#232B27;
+    --text:#E8ECE9; --text-dim:#8FA096; --text-faint:#5A6660;
+    --sage:#8FBF9F; --clay:#C98D7A; --gold:#D9A867; --sky:#6FA5C2; --rose:#D98FA3;
+  }
+  html{ background:#050706; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:#050706; min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
+    gap:26px; padding:40px 20px; font-family:'Inter',sans-serif; flex-wrap:wrap;
+  }
+  .page-title{ width:100%; text-align:center; margin-bottom:6px; font-family:'Space Grotesk',sans-serif; color:var(--text); font-size:22px; font-weight:600; }
+  .page-sub{ width:100%; text-align:center; color:var(--text-faint); font-size:13px; margin-bottom:20px; }
+  .phone{
+    width:352px; height:764px; background:var(--bg); border-radius:46px; border:9px solid #000;
+    box-shadow:0 40px 100px rgba(0,0,0,0.6), inset 0 0 0 1px #1a1a1a;
+    position:relative; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .notch{ position:absolute; top:9px; left:50%; transform:translateX(-50%); width:106px; height:24px; background:#000; border-radius:16px; z-index:50; }
+  .statusbar{ padding:15px 24px 6px; display:flex; justify-content:space-between; align-items:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600; color:var(--text); flex-shrink:0; }
+  .content{ flex:1; overflow-y:auto; padding:6px 15px 10px; }
+  .content::-webkit-scrollbar{display:none;}
+  .col{ display:flex; flex-direction:column; align-items:center; }
+  .caption{ text-align:center; color:#8A8A92; font-size:12px; margin-top:12px; font-weight:600; max-width:352px; line-height:1.5; }
+
+  .header{ padding:8px 2px 14px; display:flex; justify-content:space-between; align-items:center;}
+  .greet{ font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; color:var(--text); }
+  .date{ font-size:11.5px; color:var(--text-faint); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+  .profile-chip{ background:var(--surface-2); border:1px solid var(--border); border-radius:100px; padding:6px 10px; font-size:10px; color:var(--text-dim); display:flex; align-items:center; gap:5px; }
+  .dot-sm{ width:5px; height:5px; border-radius:50%; background:var(--sky); }
+  .icon-btn{ width:30px; height:30px; border-radius:9px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:14px; }
+
+  .ai-card{ background:var(--surface); border:1px solid var(--border); border-radius:17px; padding:13px 13px 11px; margin-bottom:12px; position:relative; overflow:hidden; }
+  .ai-card::before{ content:''; position:absolute; top:-40px; right:-40px; width:130px; height:130px; background:radial-gradient(circle, rgba(111,165,194,0.16), transparent 70%); }
+  .ai-top{ display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .pulse{ width:7px; height:7px; border-radius:50%; background:var(--sky); animation:pulse 2s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(111,165,194,0.5);} 70%{box-shadow:0 0 0 7px rgba(111,165,194,0);} 100%{box-shadow:0 0 0 0 rgba(111,165,194,0);} }
+  .ai-label{ font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--sky); font-weight:600; }
+  .ai-text{ font-size:13.5px; line-height:1.5; color:var(--text); font-weight:500; }
+  .ai-text b{ color:#fff; }
+  .ai-sub{ margin-top:6px; font-size:11.5px; color:var(--text-dim); }
+
+  .section-title{ font-size:11.5px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin:15px 2px 8px; display:flex; justify-content:space-between; align-items:center; }
+  .section-title span.link{ color:var(--text-faint); text-transform:none; font-weight:500; }
+
+  .cal-item{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:10px 12px; margin-bottom:7px; }
+  .cal-time{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text); width:40px; flex-shrink:0; }
+  .cal-bar{ width:3px; height:24px; border-radius:2px; flex-shrink:0; }
+  .cal-info{ flex:1; min-width:0; }
+  .cal-title{ font-size:13px; color:var(--text); font-weight:500; }
+  .cal-tag{ font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:12px; }
+  .stat-head{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-dim); font-weight:500; margin-bottom:6px; }
+  .stat-val{ font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:var(--text); }
+  .stat-foot{ font-size:10px; color:var(--text-faint); margin-top:3px; }
+
+  .module-card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:12px; display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+  .module-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .module-title{ font-size:13px; font-weight:600; color:var(--text); }
+  .module-sub{ font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+  .module-arrow{ color:var(--text-faint); font-size:13px; }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--sage); flex-shrink:0; }
+  .live-dot.fail{ background:var(--rose); }
+
+  .card-block{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:15px; margin-bottom:10px; }
+
+  /* sprint progress */
+  .sprint-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .sprint-name{ font-size:13px; font-weight:600; color:var(--text); }
+  .sprint-days{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
+  .sprint-track{ height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden; margin-bottom:8px; }
+  .sprint-fill{ height:100%; background:var(--sky); border-radius:5px; }
+  .sprint-foot{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-faint); }
+
+  /* kanban board */
+  .kanban{ display:flex; gap:9px; overflow-x:auto; padding-bottom:6px; }
+  .kcol{ min-width:150px; flex-shrink:0; }
+  .kcol-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:0 2px; }
+  .kcol-title{ font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  .kcol-count{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-faint); background:var(--surface-2); padding:1px 6px; border-radius:100px; }
+  .kcard{ background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:10px; margin-bottom:8px; }
+  .kcard-title{ font-size:11.5px; color:var(--text); font-weight:500; line-height:1.4; margin-bottom:7px; }
+  .kcard-tags{ display:flex; gap:5px; flex-wrap:wrap; }
+  .ktag{ font-size:8.5px; font-weight:600; padding:2px 6px; border-radius:100px; }
+  .ktag.bug{ background:rgba(217,143,163,0.15); color:var(--rose); }
+  .ktag.feature{ background:rgba(143,191,159,0.15); color:var(--sage); }
+  .ktag.p1{ background:rgba(217,168,103,0.15); color:var(--gold); }
+
+  /* focus timer */
+  .focus-ring-wrap{ display:flex; align-items:center; gap:16px; }
+  .focus-ring{ width:70px; height:70px; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center; }
+  .focus-val{ position:absolute; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text); }
+  .pomodoro-dots{ display:flex; gap:5px; margin-top:8px; }
+  .pomodoro-dots span{ width:9px; height:9px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); }
+  .pomodoro-dots span.done{ background:var(--sky); border-color:var(--sky); }
+
+  /* commits mini bars */
+  .bars7{ display:flex; align-items:flex-end; gap:5px; height:40px; margin-top:8px; }
+  .bars7 div{ flex:1; background:var(--sky); border-radius:2px; opacity:0.7; }
+
+  .navbar{ flex-shrink:0; display:flex; justify-content:space-around; align-items:center; padding:9px 6px 22px; background:rgba(14,18,16,0.92); backdrop-filter:blur(20px); border-top:1px solid var(--border); }
+  .navitem{ display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-faint); font-size:9.5px; font-weight:500; }
+  .navitem.active{ color:var(--sky); }
+  .navicon{ width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+  .navicon svg{ width:18px; height:18px; }
+</style>
+</head>
+<body>
+
+<div class="page-title">Профіль "IT / Розробник"</div>
+<div class="page-sub">Та сама структура застосунку, інший набір модулів у "Робота"</div>
+
+<!-- 1. HOME — IT variant -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Доброго ранку 👋</div><div class="date">Вівторок, 21 липня</div></div><div class="profile-chip"><div class="dot-sm"></div>IT / Розробник</div></div>
+    <div class="ai-card">
+      <div class="ai-top"><div class="pulse"></div><div class="ai-label">Асистент</div></div>
+      <div class="ai-text">Вчора <b>3 з 5</b> заявлених задач не закрито — спринт відстає на 2 дні.</div>
+      <div class="ai-sub">Сьогодні білд #482 у CI впав — гілка feature/auth-flow.</div>
+    </div>
+    <div class="section-title">Сьогодні (особисте) <span class="link">календар →</span></div>
+    <div class="cal-item"><div class="cal-time">10:00</div><div class="cal-bar" style="background:var(--sky);"></div><div class="cal-info"><div class="cal-title">Daily standup</div><div class="cal-tag">Робота</div></div></div>
+    <div class="cal-item"><div class="cal-time">19:00</div><div class="cal-bar" style="background:var(--gold);"></div><div class="cal-info"><div class="cal-title">Спортзал</div><div class="cal-tag">Особисте</div></div></div>
+    <div class="section-title">Баланс тижня <span class="link">все →</span></div>
+    <div class="grid2">
+      <div class="stat-card"><div class="stat-head">💰 Фінанси</div><div class="stat-val" style="color:var(--clay);">-320 ₴</div><div class="stat-foot">Витрати за тиждень</div></div>
+      <div class="stat-card"><div class="stat-head">❤️ Сон</div><div class="stat-val">6.8 <span style="font-size:10.5px;color:var(--text-faint);">год</span></div><div class="stat-foot">Майже норма</div></div>
+    </div>
+    <div class="section-title">Робота (IT / Розробник) <span class="link">все →</span></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(111,165,194,0.15); color:var(--sky);">📊</div><div class="module-info"><div class="module-title">Спринт 14</div><div class="module-sub">6/10 днів · 68% завдань</div></div><div class="module-arrow">›</div></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(201,141,122,0.15); color:var(--clay);">⏱️</div><div class="module-info"><div class="module-title">Фокус-час сьогодні</div><div class="module-sub">2 год 40 хв · 3 Pomodoro</div></div><div class="module-arrow">›</div></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(217,143,163,0.15); color:var(--rose);"><div class="live-dot fail"></div></div><div class="module-info"><div class="module-title">CI / Білд</div><div class="module-sub">Білд #482 впав · feature/auth-flow</div></div><div class="module-arrow">›</div></div>
+  </div>
+  <div class="navbar">
+    <div class="navitem active"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption">1 · Головна — профіль IT/Розробник (той самий layout, інший модуль "Робота")</div>
+</div>
+
+<!-- 2. WORK detail — Kanban, sprint, focus, CI/git -->
+<div class="col">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span style="letter-spacing:2px;">▮▮▮▮ 5G 🔋</span></div>
+  <div class="content">
+    <div class="header"><div><div class="greet">Робота</div><div class="date">IT / Розробник</div></div><div class="icon-btn">+</div></div>
+
+    <div class="card-block">
+      <div class="sprint-top"><div class="sprint-name">Спринт 14</div><div class="sprint-days">6/10 днів</div></div>
+      <div class="sprint-track"><div class="sprint-fill" style="width:68%;"></div></div>
+      <div class="sprint-foot"><span>17 з 25 задач</span><span>Ризик відставання: середній</span></div>
+    </div>
+
+    <div class="section-title">Дошка задач <span class="link">відкрити →</span></div>
+    <div class="kanban">
+      <div class="kcol">
+        <div class="kcol-head"><div class="kcol-title">To Do</div><div class="kcol-count">4</div></div>
+        <div class="kcard"><div class="kcard-title">Налаштувати rate limiting на API</div><div class="kcard-tags"><span class="ktag feature">Feature</span></div></div>
+        <div class="kcard"><div class="kcard-title">Оновити залежності (npm audit)</div><div class="kcard-tags"><span class="ktag p1">P2</span></div></div>
+      </div>
+      <div class="kcol">
+        <div class="kcol-head"><div class="kcol-title">In Progress</div><div class="kcol-count">3</div></div>
+        <div class="kcard"><div class="kcard-title">Auth flow — рефакторинг токенів</div><div class="kcard-tags"><span class="ktag feature">Feature</span><span class="ktag p1">P1</span></div></div>
+        <div class="kcard"><div class="kcard-title">Фікс memory leak у воркері</div><div class="kcard-tags"><span class="ktag bug">Bug</span></div></div>
+      </div>
+      <div class="kcol">
+        <div class="kcol-head"><div class="kcol-title">Review</div><div class="kcol-count">2</div></div>
+        <div class="kcard"><div class="kcard-title">PR #214 — оновлення пагінації</div><div class="kcard-tags"><span class="ktag feature">Feature</span></div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Фокус-час сьогодні</div>
+    <div class="card-block" style="display:flex; align-items:center; gap:16px;">
+      <div class="focus-ring">
+        <svg width="70" height="70"><circle cx="35" cy="35" r="29" stroke="var(--surface-2)" stroke-width="6" fill="none"/><circle cx="35" cy="35" r="29" stroke="var(--sky)" stroke-width="6" fill="none" stroke-dasharray="182" stroke-dashoffset="60" stroke-linecap="round" transform="rotate(-90 35 35)"/></svg>
+        <div class="focus-val">2:40</div>
+      </div>
+      <div>
+        <div class="stat-foot" style="margin-bottom:2px;">Ціль: 4 год глибокої роботи</div>
+        <div class="pomodoro-dots"><span class="done"></span><span class="done"></span><span class="done"></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Git активність — 7 днів</div>
+    <div class="card-block">
+      <div class="bars7">
+        <div style="height:40%"></div><div style="height:70%"></div><div style="height:30%"></div><div style="height:90%"></div><div style="height:55%"></div><div style="height:20%"></div><div style="height:65%"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:8px;"><span class="stat-foot">23 комміти</span><span class="stat-foot">4 відкритих PR</span></div>
+    </div>
+
+    <div class="section-title">CI / Білди</div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(217,143,163,0.15);"><div class="live-dot fail"></div></div><div class="module-info"><div class="module-title">#482 · feature/auth-flow</div><div class="module-sub">Провалено · 12 хв тому</div></div><div class="module-arrow">›</div></div>
+    <div class="module-card"><div class="module-icon" style="background:rgba(143,191,159,0.15);"><div class="live-dot"></div></div><div class="module-info"><div class="module-title">#481 · main</div><div class="module-sub">Успішно · 3 год тому</div></div><div class="module-arrow">›</div></div>
+  </div>
+  <div class="navbar">
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg></div>Головна</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>Календар</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5-4 8-7.5 8-12a8 8 0 10-16 0c0 4.5 3 8 8 12z"/></svg></div>Баланс</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-8.9 8.5 8.7 8.7 0 01-3.6-.8L3 21l1.9-5a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 018.5-8.4c4.7 0 8.5 3.7 8.5 8.5z"/></svg></div>Асистент</div>
+    <div class="navitem"><div class="navicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Профіль</div>
+  </div>
+</div>
+<div class="caption">2 · Робота — детальний екран: спринт, Kanban-дошка, фокус-час (Pomodoro), git-активність, CI/білди</div>
+</div>
+
+</body>
+</html>

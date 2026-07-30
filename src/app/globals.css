@@ -1,26 +1,318 @@
 @import "tailwindcss";
 
+/* Deep Forest — default theme */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0e1210;
+  --surface: #161c19;
+  --surface-2: #1d2420;
+  --border: #232b27;
+  --text: #e8ece9;
+  --text-dim: #8fa096;
+  --text-faint: #5a6660;
+
+  --sage: #8fbf9f;
+  --clay: #c98d7a;
+  --gold: #d9a867;
+  --sky: #6fa5c2;
+  --rose: #d98fa3;
+
+  --accent: var(--sage);
+
+  /* Border style "C · Soft / pill" — shared radius/shadow tokens.
+     Shadow is theme-reactive: dark themes get a strong shadow, light
+     themes override it to a much lighter one (see [data-theme="cloud"] etc). */
+  --shadow-card-value: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="obsidian-violet"] {
+  --bg: #0d0d10;
+  --surface: #17171c;
+  --surface-2: #1d1d24;
+  --border: #28282f;
+  --text: #ededf0;
+  --text-dim: #96969f;
+  --text-faint: #5c5c66;
+
+  --sage: #8b7cff;
+  --clay: #ff8a65;
+  --gold: #f2c572;
+  --sky: #5fd9b0;
+  --rose: #ff6f91;
+}
+
+[data-theme="midnight-ice"] {
+  --bg: #0a0e14;
+  --surface: #121824;
+  --surface-2: #161d2b;
+  --border: #1e2733;
+  --text: #e7ecf2;
+  --text-dim: #7c8aa0;
+  --text-faint: #4a5568;
+
+  --sage: #6fc6e0;
+  --clay: #e0a96f;
+  --gold: #8c9bb5;
+  --sky: #6fc6e0;
+  --rose: #e06f8c;
+}
+
+[data-theme="charcoal-amber"] {
+  --bg: #111110;
+  --surface: #1a1917;
+  --surface-2: #201f1c;
+  --border: #2a2925;
+  --text: #edebe6;
+  --text-dim: #8c8478;
+  --text-faint: #5c5850;
+
+  --sage: #7a9e8e;
+  --clay: #b5654f;
+  --gold: #e0a959;
+  --sky: #7c8fa6;
+  --rose: #c9605a;
+}
+
+[data-theme="slate-rose"] {
+  --bg: #111318;
+  --surface: #181b21;
+  --surface-2: #1e212b;
+  --border: #262a33;
+  --text: #eaeaf0;
+  --text-dim: #8b8f99;
+  --text-faint: #5a5e68;
+
+  --sage: #d98fa3;
+  --clay: #b9a288;
+  --gold: #8fbfa0;
+  --sky: #7fa8c9;
+  --rose: #c1546a;
+}
+
+[data-theme="ink-indigo"] {
+  --bg: #0b0d16;
+  --surface: #141729;
+  --surface-2: #191d33;
+  --border: #232640;
+  --text: #e6e7f2;
+  --text-dim: #7c80a0;
+  --text-faint: #4a4e66;
+
+  --sage: #8b93e8;
+  --clay: #d488ae;
+  --gold: #e8a96f;
+  --sky: #6fcbc4;
+  --rose: #e2607a;
+}
+
+[data-theme="stone-rust"] {
+  --bg: #15130f;
+  --surface: #1d1a14;
+  --surface-2: #221f18;
+  --border: #2e2a22;
+  --text: #efe9df;
+  --text-dim: #948b7a;
+  --text-faint: #5c564a;
+
+  --sage: #9caf88;
+  --clay: #c97b4a;
+  --gold: #c4a35a;
+  --sky: #8c9aa6;
+  --rose: #b5544f;
+}
+
+[data-theme="plum-noir"] {
+  --bg: #160e14;
+  --surface: #1e1420;
+  --surface-2: #241a28;
+  --border: #2e2029;
+  --text: #f0e6ec;
+  --text-dim: #9a8895;
+  --text-faint: #5c4f58;
+
+  --sage: #c9a0d9;
+  --clay: #d97f8e;
+  --gold: #e0b15c;
+  --sky: #7fb8a6;
+  --rose: #c9566b;
+}
+
+[data-theme="cloud"] {
+  color-scheme: light;
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f2f2ee;
+  --border: #e4e4df;
+  --text: #1b1f1c;
+  --text-dim: #6b7570;
+  --text-faint: #9ba39c;
+
+  --sage: #3e7a5c;
+  --clay: #b5694a;
+  --gold: #b08a3e;
+  --sky: #4e86a3;
+  --rose: #b5687d;
+
+  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="cloud-rose"] {
+  color-scheme: light;
+  --bg: #fbf8f9;
+  --surface: #ffffff;
+  --surface-2: #f5eef0;
+  --border: #ebdee2;
+  --text: #231a1d;
+  --text-dim: #7a6b70;
+  --text-faint: #ac999e;
+
+  --sage: #b85c79;
+  --clay: #c08662;
+  --gold: #b08a3e;
+  --sky: #4e7a97;
+  --rose: #a34f68;
+
+  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="cloud-sky"] {
+  color-scheme: light;
+  --bg: #f8fafb;
+  --surface: #ffffff;
+  --surface-2: #eff3f5;
+  --border: #dee7eb;
+  --text: #161c21;
+  --text-dim: #6b7a80;
+  --text-faint: #9aabb1;
+
+  --sage: #3c7a96;
+  --clay: #c77b4a;
+  --gold: #c9a25e;
+  --sky: #5f8f6e;
+  --rose: #b5687d;
+
+  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Per-profession accent — layered on top of whichever theme is active */
+[data-profile="trader"] {
+  --accent: var(--sage);
+}
+
+[data-profile="it"] {
+  --accent: var(--sky);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-faint: var(--text-faint);
+
+  --color-sage: var(--sage);
+  --color-clay: var(--clay);
+  --color-gold: var(--gold);
+  --color-sky: var(--sky);
+  --color-rose: var(--rose);
+  --color-accent: var(--accent);
+
+  --font-heading: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Border style "C · Soft / pill" tokens — change once here, not per-component. */
+  --radius-card: 26px;
+  --radius-card-sm: 15px;
+  --radius-btn: 100px;
+  --radius-input: 15px;
+  --shadow-card: var(--shadow-card-value);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--bg);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Tap feedback — a quick, subtle press-down on any interactive element,
+   so navigating tabs and tapping icons/buttons feels responsive rather
+   than instant/flat. */
+button,
+a,
+[role="button"] {
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease,
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+button:active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.96);
+}
+
+/* Smooth default crossfade for route changes (React ViewTransition,
+   enabled via next.config.ts experimental.viewTransition). */
+::view-transition-old(root) {
+  animation: viewFadeOut 90ms ease-out both;
+}
+::view-transition-new(root) {
+  animation: viewFadeIn 120ms ease-in both;
+}
+
+@keyframes viewFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a,
+  [role="button"] {
+    transition: none !important;
+  }
+  button:active,
+  a:active,
+  [role="button"]:active {
+    transform: none !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+@keyframes launchSimpleIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes launchMotifIn {
+  0%,
+  60% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
