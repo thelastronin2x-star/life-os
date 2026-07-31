@@ -11,7 +11,6 @@ import {
   type FinanceGoal,
 } from "@/lib/finance-store";
 import { GoalRing } from "./GoalRing";
-import { CategoryRing } from "./CategoryRing";
 import { TransactionForm } from "./TransactionForm";
 import { GoalForm } from "./GoalForm";
 import { AccountForm } from "./AccountForm";
@@ -248,6 +247,12 @@ export function FinanceOverview() {
   const needsConversion = accounts.some((a) => currencyIdForSymbol(a.currencySymbol) !== displayCurrency);
   const ratesUnavailable = ratesStatus === "error" && needsConversion;
 
+  // A specific card is selected and it holds nothing at all — not "nothing
+  // this period", nothing ever. Checked against the whole transaction list
+  // rather than the period-filtered one, so an account that simply had a
+  // quiet month still shows its normal (empty-looking but real) rings.
+  const scopeIsEmpty = selectedAccount !== null && !transactions.some((t) => scope.includesTxn(t));
+
   return (
     <div>
       {ratesUnavailable && (
@@ -300,12 +305,26 @@ export function FinanceOverview() {
         >
           Ще немає бюджетних категорій — додай першу
         </button>
+      ) : scopeIsEmpty ? (
+        // An account with no transactions renders every category at zero,
+        // which is indistinguishable from "categorization is broken" — and
+        // since the selected card persists between sessions, it's easy to end
+        // up parked on an empty one and conclude the app lost your data. Say
+        // it plainly instead, and offer the way back.
+        <button
+          onClick={() => setSelectedAccountId(null)}
+          className="mb-4 block w-full rounded-card-sm bg-surface shadow-card py-6 text-center text-[11.5px] leading-relaxed text-text-faint"
+        >
+          На рахунку «{selectedAccount?.name}» ще немає транзакцій
+          <br />
+          <span className="text-accent">показати всі рахунки</span>
+        </button>
       ) : (
-        <div className="mb-4 flex gap-4 overflow-x-auto pb-1.5">
+        <div className="mb-4 grid grid-cols-3 gap-2">
           {categorySpends.map(({ cat, spent }) => {
             const limit = scope.categoryLimit(cat);
-            // Null (not 0) when there's no limit for this scope — a 0%-filled
-            // ring reads as "nothing spent", which is wrong when money WAS
+            // Null (not 0) when there's no limit for this scope — a filled
+            // bar reads as "nothing spent", which is wrong when money WAS
             // spent and there's simply nothing to measure it against.
             const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : null;
             const CatIcon = getCategoryIcon(cat.icon);
@@ -323,21 +342,31 @@ export function FinanceOverview() {
                 onPointerUp={categoryLongPress.cancel}
                 onPointerLeave={categoryLongPress.cancel}
                 onPointerCancel={categoryLongPress.cancel}
-                className="flex flex-shrink-0 flex-col items-center gap-1.5"
+                className="rounded-card-sm p-3 text-left"
+                style={{
+                  background: `color-mix(in srgb, var(--${cat.color}) 15%, transparent)`,
+                  color: `var(--${cat.color})`,
+                }}
               >
-                <CategoryRing percent={pct} color={cat.color}>
-                  <CatIcon className="h-4 w-4 text-text" />
-                </CategoryRing>
-                <div className="font-mono text-[11px] font-semibold text-text">{formatCurrency(spent, scope.symbol)}</div>
-                <div className="text-[11px] text-text-faint">{cat.name}</div>
+                <CatIcon className="h-4.5 w-4.5" />
+                <div className="mt-2 font-mono text-[14px] font-extrabold tracking-tight">
+                  {formatCurrency(spent, scope.symbol)}
+                </div>
+                <div className="mt-0.5 truncate text-[11px] font-semibold opacity-70">{cat.name}</div>
+                {pct !== null && (
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/10">
+                    <div className="h-full rounded-full opacity-85" style={{ width: `${pct}%`, background: "currentColor" }} />
+                  </div>
+                )}
               </button>
             );
           })}
-          <button onClick={openAddCategory} className="flex flex-shrink-0 flex-col items-center gap-1.5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-[1.5px] border-dashed border-border text-text-faint">
-              <PlusIcon className="h-4.5 w-4.5" />
-            </div>
-            <div className="text-[11px] text-text-faint">Своя</div>
+          <button
+            onClick={openAddCategory}
+            className="flex flex-col items-center justify-center gap-1 rounded-card-sm border-[1.5px] border-dashed border-border py-4 text-text-faint"
+          >
+            <PlusIcon className="h-4.5 w-4.5" />
+            <span className="text-[11px] font-semibold">Своя</span>
           </button>
         </div>
       )}

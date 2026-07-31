@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Напрям B — Термінал</title>
+<style>
+  :root{
+    --bg:#0b0d0c; --surface:#121614; --surface-2:#1a201d; --line:#232b27;
+    --text:#e4ece7; --dim:#8b998f; --faint:#5b665f;
+    --acc:#4ade80; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#050706;font-family:var(--mono);color:var(--text);padding:34px 20px 70px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto}
+  h2.title{font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+  p.sub{font-size:12.5px;color:var(--dim);line-height:1.65;max-width:780px;margin-bottom:26px}
+  .grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+  .col{width:372px}
+  .cap{font-size:11px;color:var(--faint);margin:0 0 8px 2px;text-transform:uppercase;letter-spacing:.1em}
+  .phone{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;height:768px;display:flex;flex-direction:column}
+  .screen{padding:14px 14px 6px;flex:1;overflow:hidden}
+
+  .hd{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .hd h1{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+  .hd span{font-size:10.5px;color:var(--faint)}
+
+  .lbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+  .sec{margin-top:18px}
+
+  .big{font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .big small{font-size:15px;color:var(--dim);font-weight:400}
+  .up{color:var(--acc)} .dn{color:var(--red)}
+
+  /* dense data rows */
+  .r{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);font-size:11.5px}
+  .r:last-child{border-bottom:0}
+  .r .k{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .r .m{color:var(--faint);font-size:10px}
+  .r .v{text-align:right;font-weight:600}
+  .tag{font-size:9px;padding:1px 5px;border:1px solid var(--line);color:var(--dim);letter-spacing:.06em}
+  .tag.g{border-color:#1e5c37;color:var(--acc)} .tag.r{border-color:#6b2222;color:var(--red)}
+
+  /* meter */
+  .meter{height:2px;background:var(--surface-2);position:relative}
+  .meter i{position:absolute;left:0;top:0;height:100%}
+
+  /* kv grid */
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:12px}
+  .kv div{background:var(--bg);padding:8px 9px}
+  .kv .k{font-size:9px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase}
+  .kv .v{font-size:15px;font-weight:600;margin-top:3px}
+
+  /* spark */
+  .spark{height:44px;display:flex;align-items:flex-end;gap:1px;margin-top:8px}
+  .spark i{flex:1;background:var(--acc);opacity:.7}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .cal div{background:var(--bg);aspect-ratio:1;display:grid;place-items:center;font-size:11px;color:var(--dim);position:relative}
+  .cal .h{font-size:8.5px;color:var(--faint);aspect-ratio:auto;padding:5px 0;letter-spacing:.08em}
+  .cal .cur{background:var(--acc);color:#07120b;font-weight:700}
+  .cal .has::after{content:"";position:absolute;bottom:4px;width:3px;height:3px;background:var(--blue)}
+  .cal .out{color:#2a332e}
+
+  /* chat */
+  .msg{font-size:11.5px;line-height:1.6;padding:8px 10px;margin-bottom:7px;border-left:2px solid}
+  .me{border-color:var(--blue);background:var(--surface);color:var(--dim)}
+  .ai{border-color:var(--acc);background:var(--surface)}
+  .prompt{display:flex;gap:7px;align-items:center;border:1px solid var(--line);padding:8px 10px;margin-top:10px;font-size:11.5px;color:var(--faint)}
+  .prompt b{color:var(--acc);font-weight:400}
+
+  .nav{display:flex;border-top:1px solid var(--line)}
+  .nav div{flex:1;text-align:center;padding:9px 0 16px;font-size:8.5px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .nav div b{display:block;font-size:13px;margin-bottom:3px;font-weight:400}
+  .nav .on{color:var(--acc)}
+
+  .note{max-width:1320px;margin:32px auto 0;font-size:12px;line-height:1.75;color:var(--dim)}
+  .note b{color:var(--text)}
+  .note p{margin-bottom:10px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h2 class="title">Напрям B — «Термінал»</h2>
+<p class="sub">Щільність замість повітря. Усе моноширинним, рядки вузькі, кольору мало й він лише сигнальний. Розрахований на людину, яка дивиться на цифри щодня і хоче бачити більше на одному екрані. Найсильніший на «Роботі» й «Аналітиці», найризикованіший на «Головній».</p>
+
+<div class="grid">
+
+<!-- ГОЛОВНА -->
+<div class="col"><div class="cap">Головна</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Life OS</h1><span>ПН 28.07 · 09:14</span></div>
+
+  <div class="lbl">Стан</div>
+  <div class="r"><span class="k">Баланс усіх рахунків</span><span class="v">142 380,45 ₴</span></div>
+  <div class="r"><span class="k">Витрати · тиждень</span><span class="v dn">−7 240 ₴</span></div>
+  <div class="r"><span class="k">P&amp;L · липень</span><span class="v up">+4 280 $</span></div>
+  <div class="r"><span class="k">Вінрейт · 64 угоди</span><span class="v">58%</span></div>
+
+  <div class="sec">
+    <div class="lbl">Увага</div>
+    <div class="r"><span class="tag r">LIMIT</span><span class="k">Транспорт 4 810 / 4 000 ₴</span></div>
+    <div class="r"><span class="tag r">SYNC</span><span class="k">MT5 не підключено</span></div>
+    <div class="r"><span class="tag">CAL</span><span class="k">CPI США · СР 15:30</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Сьогодні</div>
+    <div class="r"><span class="m">09:00</span><span class="k">Аналіз ринку</span><span class="tag">WORK</span></div>
+    <div class="r"><span class="m">19:30</span><span class="k">Зал</span><span class="tag">LIFE</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Крива капіталу · 12 тижнів</div>
+    <div class="spark">
+      <i style="height:20%"></i><i style="height:29%"></i><i style="height:24%"></i><i style="height:42%"></i>
+      <i style="height:37%"></i><i style="height:56%"></i><i style="height:50%"></i><i style="height:69%"></i>
+      <i style="height:64%"></i><i style="height:86%"></i><i style="height:77%"></i><i style="height:100%"></i>
+    </div>
+  </div>
+</div>
+<div class="nav"><div class="on"><b>◼</b>Home</div><div><b>▤</b>Cal</div><div><b>◈</b>Bal</div><div><b>✦</b>AI</div><div><b>◹</b>Work</div></div>
+</div></div>
+
+<!-- КАЛЕНДАР -->
+<div class="col"><div class="cap">Календар</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Календар</h1><span>ЛИП 2026</span></div>
+  <div class="cal">
+    <div class="h">ПН</div><div class="h">ВТ</div><div class="h">СР</div><div class="h">ЧТ</div><div class="h">ПТ</div><div class="h">СБ</div><div class="h">НД</div>
+    <div class="out">30</div><div>1</div><div class="has">2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+    <div>7</div><div class="has">8</div><div>9</div><div>10</div><div class="has">11</div><div>12</div><div>13</div>
+    <div>14</div><div>15</div><div class="has">16</div><div>17</div><div>18</div><div>19</div><div>20</div>
+    <div>21</div><div class="has">22</div><div>23</div><div>24</div><div>25</div><div>26</div><div>27</div>
+    <div class="cur">28</div><div>29</div><div class="has">30</div><div>31</div><div class="out">1</div><div class="out">2</div><div class="out">3</div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">ПН 28.07</div>
+    <div class="r"><span class="m">09:00</span><span class="k">Аналіз ринку</span><span class="tag">WORK</span></div>
+    <div class="r"><span class="m">19:30</span><span class="k">Зал</span><span class="tag">LIFE</span></div>
+    <div class="r"><span class="m">—</span><span class="k">Оплатити інтернет</span><span class="tag">REC</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Економічний календар</div>
+    <div class="r"><span class="m">СР 15:30</span><span class="k">CPI США</span><span class="tag r">HIGH</span></div>
+    <div class="r"><span class="m">ЧТ 14:15</span><span class="k">ECB Rate</span><span class="tag r">HIGH</span></div>
+    <div class="r"><span class="m">ПТ 15:30</span><span class="k">NFP</span><span class="tag r">HIGH</span></div>
+    <div class="r"><span class="m">ПТ 17:00</span><span class="k">UoM Sentiment</span><span class="tag">MED</span></div>
+  </div>
+</div>
+<div class="nav"><div><b>◼</b>Home</div><div class="on"><b>▤</b>Cal</div><div><b>◈</b>Bal</div><div><b>✦</b>AI</div><div><b>◹</b>Work</div></div>
+</div></div>
+
+<!-- БАЛАНС -->
+<div class="col"><div class="cap">Баланс</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Баланс</h1><span>₴ · USD · EUR</span></div>
+
+  <div class="lbl">Усі рахунки</div>
+  <div class="big">142 380<small>,45 ₴</small></div>
+  <div style="font-size:10px;color:var(--faint);margin-top:6px">1 USD = 41,80 · НБУ 28.07</div>
+
+  <div class="kv">
+    <div><div class="k">Дохід</div><div class="v up">+48,2K</div></div>
+    <div><div class="k">Витрати</div><div class="v dn">−31,9K</div></div>
+    <div><div class="k">Норма</div><div class="v">34%</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Рахунки</div>
+    <div class="r"><span class="tag g">ACT</span><span class="k">Чорна Картка</span><span class="v">38 410 ₴</span></div>
+    <div class="r"><span class="tag">—</span><span class="k">Біла Картка</span><span class="v" style="color:var(--faint)">0 ₴</span></div>
+    <div class="r"><span class="tag">USD</span><span class="k">•• 7943</span><span class="v">2 480 $</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Категорії · липень</div>
+    <div class="r"><span class="k">Їжа</span><span class="v">9 240 / 12 500</span></div>
+    <div class="meter"><i style="width:74%;background:var(--acc)"></i></div>
+    <div class="r" style="margin-top:6px"><span class="k">Транспорт</span><span class="v dn">4 810 / 4 000</span></div>
+    <div class="meter"><i style="width:100%;background:var(--red)"></i></div>
+    <div class="r" style="margin-top:6px"><span class="k">Покупки</span><span class="v">6 120 / 15 000</span></div>
+    <div class="meter"><i style="width:41%;background:var(--blue)"></i></div>
+    <div class="r" style="margin-top:6px"><span class="k">Підписки</span><span class="v" style="color:var(--dim)">1 340 · —</span></div>
+    <div class="meter"></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Останні</div>
+    <div class="r"><span class="m">14:22</span><span class="k">Сільпо</span><span class="v dn">−842</span></div>
+    <div class="r"><span class="m">11:05</span><span class="k">→ •• 7943</span><span class="v" style="color:var(--faint)">5 000</span></div>
+    <div class="r"><span class="m">09:30</span><span class="k">Зарплата</span><span class="v up">+48 200</span></div>
+  </div>
+</div>
+<div class="nav"><div><b>◼</b>Home</div><div><b>▤</b>Cal</div><div class="on"><b>◈</b>Bal</div><div><b>✦</b>AI</div><div><b>◹</b>Work</div></div>
+</div></div>
+
+<!-- АСИСТЕНТ -->
+<div class="col"><div class="cap">Асистент</div><div class="phone">
+<div class="screen" style="display:flex;flex-direction:column">
+  <div class="hd"><h1>Асистент</h1><span>context: all</span></div>
+  <div style="flex:1;overflow:hidden">
+    <div class="msg me">&gt; скільки я витратив на таксі цього місяця</div>
+    <div class="msg ai">
+      ТРАНСПОРТ · ЛИПЕНЬ<br>
+      всього    4 810 ₴<br>
+      таксі     3 240 ₴ · 18 поїздок<br>
+      ліміт     4 000 ₴ · <span class="dn">перевищено 810</span><br>
+      vs червень <span class="dn">+34%</span>
+    </div>
+    <div class="msg me">&gt; покажи найдорожчі</div>
+    <div class="msg ai">
+      480 ₴ · СБ 02:15<br>
+      410 ₴ · НД 01:40<br>
+      390 ₴ · СБ 03:05<br><br>
+      Усі три — ночі вихідних. Саме вони дають перевитрату.
+    </div>
+    <div class="msg me">&gt; а що по угодах за тиждень</div>
+    <div class="msg ai">
+      12 угод · 7W / 5L · вінрейт 58%<br>
+      нетто <span class="up">+1 205 $</span> · найкраща BTC/USD +610
+    </div>
+  </div>
+  <div class="prompt"><b>&gt;</b><span>запит до своїх даних…</span></div>
+</div>
+<div class="nav"><div><b>◼</b>Home</div><div><b>▤</b>Cal</div><div><b>◈</b>Bal</div><div class="on"><b>✦</b>AI</div><div><b>◹</b>Work</div></div>
+</div></div>
+
+<!-- РОБОТА -->
+<div class="col"><div class="cap">Робота · журнал</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Журнал</h1><span>FTMO P1 · 100K</span></div>
+
+  <div class="lbl">Результат</div>
+  <div class="big up">+4 280 <small>$</small></div>
+
+  <div class="sec">
+    <div class="r"><span class="k">Ціль</span><span class="v">4 280 / 8 000</span></div>
+    <div class="meter"><i style="width:53%;background:var(--acc)"></i></div>
+    <div class="r" style="margin-top:6px"><span class="k">Просадка</span><span class="v">1 240 / 5 000</span></div>
+    <div class="meter"><i style="width:25%;background:var(--amber)"></i></div>
+  </div>
+
+  <div class="kv">
+    <div><div class="k">Win</div><div class="v">58%</div></div>
+    <div><div class="k">PF</div><div class="v">1,74</div></div>
+    <div><div class="k">Trades</div><div class="v">64</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Угоди</div>
+    <div class="r"><span class="tag g">L</span><span class="k">EURUSD <span class="m">1,0842→1,0901</span></span><span class="v up">+295</span></div>
+    <div class="r"><span class="tag r">S</span><span class="k">XAUUSD <span class="m">2412→2428</span></span><span class="v dn">−320</span></div>
+    <div class="r"><span class="tag g">L</span><span class="k">BTCUSD <span class="m">bybit · 0,15</span></span><span class="v up">+610</span></div>
+    <div class="r"><span class="tag g">L</span><span class="k">GBPUSD <span class="m">1,2710→1,2744</span></span><span class="v up">+170</span></div>
+    <div class="r"><span class="tag r">S</span><span class="k">US100 <span class="m">18420→18510</span></span><span class="v dn">−180</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Крива</div>
+    <div class="spark">
+      <i style="height:20%"></i><i style="height:29%"></i><i style="height:24%"></i><i style="height:42%"></i>
+      <i style="height:37%"></i><i style="height:56%"></i><i style="height:50%"></i><i style="height:69%"></i>
+      <i style="height:64%"></i><i style="height:86%"></i><i style="height:77%"></i><i style="height:100%"></i>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>◼</b>Home</div><div><b>▤</b>Cal</div><div><b>◈</b>Bal</div><div><b>✦</b>AI</div><div class="on"><b>◹</b>Work</div></div>
+</div></div>
+
+<!-- ПРОФІЛЬ -->
+<div class="col"><div class="cap">Профіль · підключення</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Система</h1><span>a3f91c2</span></div>
+
+  <div class="lbl">Джерела даних</div>
+  <div class="r"><span class="tag g">OK</span><span class="k">Monobank <span class="m">3 картки</span></span><span class="v m">2 хв</span></div>
+  <div class="r"><span class="tag g">OK</span><span class="k">Bybit <span class="m">64 угоди</span></span><span class="v m">14 хв</span></div>
+  <div class="r"><span class="tag r">OFF</span><span class="k">MetaTrader 5</span><span class="v m">—</span></div>
+  <div class="r"><span class="tag g">OK</span><span class="k">Google Calendar</span><span class="v m">1 год</span></div>
+  <div class="r"><span class="tag g">OK</span><span class="k">Курси НБУ</span><span class="v m">сьогодні</span></div>
+
+  <div class="sec">
+    <div class="lbl">Дані</div>
+    <div class="r"><span class="k">Транзакції</span><span class="v">429</span></div>
+    <div class="r"><span class="k">Угоди</span><span class="v">64</span></div>
+    <div class="r"><span class="k">Категорії</span><span class="v">9</span></div>
+    <div class="r"><span class="k">Без категорії</span><span class="v">3</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Налаштування</div>
+    <div class="r"><span class="k">Тема</span><span class="v m">terminal ›</span></div>
+    <div class="r"><span class="k">Валюта</span><span class="v m">UAH ›</span></div>
+    <div class="r"><span class="k">Профіль</span><span class="v m">Робота ›</span></div>
+    <div class="r"><span class="k">Експорт даних</span><span class="v m">›</span></div>
+    <div class="r"><span class="k" style="color:var(--red)">Видалити все</span><span class="v m">›</span></div>
+  </div>
+</div>
+<div class="nav"><div><b>◼</b>Home</div><div><b>▤</b>Cal</div><div><b>◈</b>Bal</div><div><b>✦</b>AI</div><div><b>◹</b>Work</div></div>
+</div></div>
+
+</div>
+
+<div class="note">
+  <p><b>Ідея.</b> Застосунок як приладова панель. Нічого декоративного: моноширинний шрифт скрізь, рядки по 7 пікселів відступу, кольори лише сигнальні — зелений, червоний, бурштиновий. На одному екрані вміщається вдвічі більше, ніж у світлому напрямі.</p>
+  <p><b>Де сильний.</b> «Робота» й «Аналітика» — саме такий вигляд мають торгові журнали. Профіль перетворюється на панель стану джерел: одразу видно, що відвалилось, і коли востаннє синхронізувалось.</p>
+  <p><b>Де ризик.</b> «Головна» стає списком чисел замість людського привітання. Асистент у стилі командного рядка виглядає ефектно, але звужує аудиторію до тих, кому це рідне. Якщо застосунок піде на споживача — цей напрям відсіє більшість.</p>
+</div>
+
+</div></body></html>

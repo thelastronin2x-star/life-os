@@ -193,6 +193,31 @@
   --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
+/* М'які блоки — default theme. Warm, rounded, high-contrast category
+   tiles — closest to Monobank's own visual language. --sage/--clay/--gold/
+   --sky/--rose are just five accent slots shared by every theme (not fixed
+   hues), so this maps them to keep existing semantic usage intact: --clay
+   is already used app-wide for expenses/negative amounts, and here it's the
+   mockup's red — same meaning, no component code needed to change. */
+[data-theme="soft-blocks"] {
+  color-scheme: light;
+  --bg: #f4f2ee;
+  --surface: #ffffff;
+  --surface-2: #ece7dd;
+  --border: #e6e2da;
+  --text: #171512;
+  --text-dim: #77716a;
+  --text-faint: #a8a29a;
+
+  --sage: #2e7d5b;
+  --clay: #c2553c;
+  --gold: #b8862f;
+  --sky: #3c6ea5;
+  --rose: #7a5aa8;
+
+  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
 /* Per-profession accent — layered on top of whichever theme is active */
 [data-profile="trader"] {
   --accent: var(--sage);
@@ -218,15 +243,22 @@
   --color-rose: var(--rose);
   --color-accent: var(--accent);
 
-  --font-heading: var(--font-space-grotesk);
-  --font-sans: var(--font-inter);
+  /* "М'які блоки" — a single rounded body/heading face everywhere (see
+     claude_code_prompt_soft_blocks_redesign.md). Numbers keep JetBrains Mono
+     for genuine tabular alignment — safer than restyling every font-mono
+     amount/price display in the app to rely on tabular-nums alone, and the
+     mockup's own .num rule only adds tabular-nums on top of the same
+     typeface, it doesn't require a non-monospace font for numbers. */
+  --font-heading: var(--font-nunito);
+  --font-sans: var(--font-nunito);
   --font-mono: var(--font-jetbrains-mono);
 
-  /* Border style "C · Soft / pill" tokens — change once here, not per-component. */
-  --radius-card: 26px;
-  --radius-card-sm: 15px;
-  --radius-btn: 100px;
-  --radius-input: 15px;
+  /* "М'які блоки" tokens — change once here, not per-component. */
+  --radius-card: 22px;
+  --radius-card-sm: 18px;
+  --radius-btn: 99px;
+  --radius-input: 16px;
+  --radius-icon: 13px;
   --shadow-card: var(--shadow-card-value);
 }
 

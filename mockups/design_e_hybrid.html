@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Напрям E — гібрид C + D</title>
+<style>
+  /* ---- warm dark (основна) ---- */
+  .t-dark{
+    --bg:#14120f; --panel:#1e1b17; --panel-2:#262119; --line:#322c24;
+    --ink:#f5f1ea; --dim:#a49a8c; --faint:#6f675b;
+    --acc:#d2f062; --acc-ink:#17170d;
+    --grn:#7bc99a; --grn-s:#1e2a22;
+    --red:#f0907a; --red-s:#2c1f1b;
+    --gld:#e8b44a; --gld-s:#2a2318;
+    --blu:#82b2e8; --blu-s:#1b2430;
+    --pur:#b294e0; --pur-s:#241d2e;
+  }
+  /* ---- warm light ---- */
+  .t-light{
+    --bg:#f6f3ed; --panel:#ffffff; --panel-2:#efeae1; --line:#e6dfd3;
+    --ink:#1a1713; --dim:#6e675d; --faint:#a09788;
+    --acc:#2f6f4f; --acc-ink:#ffffff;
+    --grn:#2f7d55; --grn-s:#e2f0e7;
+    --red:#bd5537; --red-s:#fae7e0;
+    --gld:#a87c22; --gld-s:#f7eeda;
+    --blu:#38689e; --blu-s:#e5edf7;
+    --pur:#6f52a0; --pur-s:#eee7f8;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0c0b09;font-family:"Inter",ui-sans-serif,-apple-system,system-ui,sans-serif;color:#e9e4da;padding:34px 20px 70px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto}
+  h2.title{font-size:22px;font-weight:750;letter-spacing:-.03em;margin-bottom:6px}
+  p.sub{font-size:13px;color:#a49a8c;line-height:1.65;max-width:800px;margin-bottom:14px}
+  h3.band{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#6f675b;font-weight:650;margin:32px 0 14px}
+
+  .grid{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+  .col{width:378px}
+  .cap{font-size:11px;font-weight:650;color:#6f675b;margin:0 0 9px 4px;letter-spacing:.08em;text-transform:uppercase}
+
+  .phone{background:var(--bg);border-radius:30px;overflow:hidden;height:776px;display:flex;flex-direction:column;color:var(--ink)}
+  .screen{padding:20px 18px 8px;flex:1;overflow:hidden}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-.035em}
+
+  /* ---------- D: editorial voice ---------- */
+  .kicker{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:9px}
+  .disp{font-size:42px;font-weight:780;letter-spacing:-.045em;line-height:.98}
+  .disp small{font-size:18px;font-weight:550;color:var(--dim);letter-spacing:-.01em}
+  .lead{font-size:14px;line-height:1.5;font-weight:450;color:var(--dim);margin-top:12px}
+  .lead b{color:var(--ink);font-weight:700}
+
+  .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .hd h1{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .ib{width:34px;height:34px;border-radius:13px;background:var(--panel);display:grid;place-items:center;font-size:14px;color:var(--dim)}
+
+  /* ---------- C: soft blocks ---------- */
+  .block{background:var(--panel);border-radius:22px;padding:15px;margin-top:14px}
+  .block.tight{padding:4px 15px}
+  .sec{margin-top:22px}
+
+  .pos{color:var(--grn)} .neg{color:var(--red)} .acc{color:var(--acc)}
+
+  .pair{display:flex;gap:9px;margin-top:12px}
+  .pair .cell{flex:1;background:var(--panel);border-radius:18px;padding:12px 13px}
+  .pair .k{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  .pair .v{font-size:20px;font-weight:750;margin-top:5px}
+
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0}
+  .row+.row{border-top:1px solid var(--line)}
+  .ico{width:36px;height:36px;border-radius:13px;display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+  .mid{flex:1;min-width:0}
+  .nm{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+  .sb{font-size:11.5px;color:var(--faint);margin-top:2px;font-weight:500}
+  .amt{font-size:14.5px;font-weight:750;letter-spacing:-.025em;text-align:right}
+
+  .pill{display:inline-block;font-size:10px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px}
+
+  /* category tiles: C's colour, D's typography */
+  .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:12px}
+  .cat{border-radius:18px;padding:13px}
+  .cat .e{font-size:17px}
+  .cat .v{font-size:19px;font-weight:780;letter-spacing:-.035em;margin-top:8px}
+  .cat .n{font-size:11.5px;font-weight:650;opacity:.72;margin-top:1px}
+  .cat .b{height:3px;border-radius:99px;background:currentColor;opacity:.22;margin-top:9px;overflow:hidden}
+  .cat .b i{display:block;height:100%;border-radius:99px;background:currentColor;opacity:1}
+
+  .bar{height:3px;background:var(--panel-2);border-radius:99px;margin-top:9px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+
+  .ccy{display:inline-flex;background:var(--panel);border-radius:99px;padding:4px;gap:2px;margin-top:14px}
+  .ccy span{font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;color:var(--dim)}
+  .ccy span.on{background:var(--acc);color:var(--acc-ink)}
+
+  .cta{display:block;width:100%;background:var(--acc);color:var(--acc-ink);border:0;border-radius:99px;padding:14px;font:inherit;font-size:14px;font-weight:750;letter-spacing:-.01em;margin-top:16px}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+  .cal .h{font-size:10px;color:var(--faint);text-align:center;font-weight:700;padding-bottom:4px}
+  .cal .d{aspect-ratio:1;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:650;color:var(--dim);background:var(--panel)}
+  .cal .d.cur{background:var(--acc);color:var(--acc-ink);font-weight:800}
+  .cal .d.has::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--blu);margin-top:3px}
+  .cal .d.out{background:transparent;color:var(--line)}
+
+  /* chat */
+  .msg{max-width:85%;padding:12px 15px;border-radius:20px;font-size:13.5px;line-height:1.55;margin-bottom:9px;font-weight:450}
+  .me{background:var(--acc);color:var(--acc-ink);margin-left:auto;border-bottom-right-radius:7px;font-weight:600}
+  .ai{background:var(--panel);border-bottom-left-radius:7px}
+  .ai b{font-weight:750}
+  .composer{display:flex;gap:9px;align-items:center;background:var(--panel);border-radius:99px;padding:9px 9px 9px 17px;margin-top:12px}
+  .composer span{flex:1;font-size:13.5px;color:var(--faint)}
+  .composer b{width:32px;height:32px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font-size:14px;font-weight:400}
+
+  .spark{height:52px;display:flex;align-items:flex-end;gap:2px;margin-top:12px}
+  .spark i{flex:1;background:var(--acc);opacity:.45;border-radius:2px}
+  .spark i:last-child{opacity:1}
+
+  .nav{display:flex;justify-content:space-around;background:var(--panel);padding:10px 0 21px}
+  .nav div{font-size:9.5px;color:var(--faint);text-align:center;font-weight:650}
+  .nav div b{display:block;font-size:16px;margin-bottom:3px;font-weight:400}
+  .nav .on{color:var(--acc)}
+
+  .note{max-width:1320px;margin:34px auto 0;font-size:12.5px;line-height:1.75;color:#a49a8c}
+  .note b{color:#f5f1ea}
+  .note p{margin-bottom:11px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h2 class="title">Напрям E — гібрид «М'яких блоків» і «Видання»</h2>
+<p class="sub">Від D — редакційний голос: рубрика дрібним капсом, головне число великим кеглем, під ним речення живою мовою. Від C — м'які заокруглені блоки й кольорове кодування категорій. Тепле темне тло тримає обидва характери; та сама мова показана нижче у світлій темі.</p>
+
+<h3 class="band">Тепла темна</h3>
+<div class="grid">
+
+<!-- ГОЛОВНА -->
+<div class="col t-dark"><div class="cap">Головна</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Понеділок, 28 липня</h1><div class="ib">🐺</div></div>
+
+  <div class="kicker">Доброго ранку</div>
+  <div class="disp">Богдане</div>
+  <div class="lead">Цього тижня витрачено <b>7 240 ₴</b> — на чверть менше за минулий. Але <b>транспорт</b> уже перевищив місячний ліміт на 810 ₴.</div>
+
+  <div class="pair">
+    <div class="cell"><div class="k">Баланс</div><div class="v num">142 380 ₴</div></div>
+    <div class="cell"><div class="k">P&amp;L липень</div><div class="v num pos">+4 280 $</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Сьогодні</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--gld-s);color:var(--gld)">▸</div><div class="mid"><div class="nm">Аналіз ринку</div><div class="sb">09:00 · Робота</div></div></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">▸</div><div class="mid"><div class="nm">Зал</div><div class="sb">19:30 · Особисте</div></div></div>
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">!</div><div class="mid"><div class="nm">CPI США</div><div class="sb">15:30 · Ринок</div></div><span class="pill" style="background:var(--red-s);color:var(--red)">High</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Крива капіталу · 12 тижнів</div>
+    <div class="spark">
+      <i style="height:20%"></i><i style="height:29%"></i><i style="height:24%"></i><i style="height:42%"></i>
+      <i style="height:37%"></i><i style="height:56%"></i><i style="height:50%"></i><i style="height:69%"></i>
+      <i style="height:64%"></i><i style="height:86%"></i><i style="height:77%"></i><i style="height:100%"></i>
+    </div>
+  </div>
+</div>
+<div class="nav"><div class="on"><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<!-- КАЛЕНДАР -->
+<div class="col t-dark"><div class="cap">Календар</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Календар</h1><div class="ib">+</div></div>
+  <div class="kicker">Липень</div>
+  <div class="disp" style="font-size:34px">2026</div>
+
+  <div class="cal">
+    <div class="h">Пн</div><div class="h">Вт</div><div class="h">Ср</div><div class="h">Чт</div><div class="h">Пт</div><div class="h">Сб</div><div class="h">Нд</div>
+    <div class="d out">30</div><div class="d">1</div><div class="d has">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div><div class="d">6</div>
+    <div class="d">7</div><div class="d has">8</div><div class="d">9</div><div class="d">10</div><div class="d has">11</div><div class="d">12</div><div class="d">13</div>
+    <div class="d">14</div><div class="d">15</div><div class="d has">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div><div class="d">20</div>
+    <div class="d">21</div><div class="d has">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div><div class="d">27</div>
+    <div class="d cur">28</div><div class="d">29</div><div class="d has">30</div><div class="d">31</div><div class="d out">1</div><div class="d out">2</div><div class="d out">3</div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Понеділок</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--gld-s);color:var(--gld)">▸</div><div class="mid"><div class="nm">Аналіз ринку</div><div class="sb">09:00 – 10:00</div></div><span class="pill" style="background:var(--gld-s);color:var(--gld)">Робота</span></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">▸</div><div class="mid"><div class="nm">Зал</div><div class="sb">19:30</div></div><span class="pill" style="background:var(--blu-s);color:var(--blu)">Життя</span></div>
+      <div class="row"><div class="ico" style="background:var(--pur-s);color:var(--pur)">◇</div><div class="mid"><div class="nm">Оплатити інтернет</div><div class="sb">Щомісяця</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Ринок цього тижня</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">!</div><div class="mid"><div class="nm">CPI США</div><div class="sb">Середа, 15:30</div></div><span class="pill" style="background:var(--red-s);color:var(--red)">High</span></div>
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">!</div><div class="mid"><div class="nm">NFP</div><div class="sb">П'ятниця, 15:30</div></div><span class="pill" style="background:var(--red-s);color:var(--red)">High</span></div>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div class="on"><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<!-- БАЛАНС -->
+<div class="col t-dark"><div class="cap">Баланс</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Усі рахунки</h1><div class="ib">⌄</div></div>
+
+  <div class="disp num">142 380<small>,45 ₴</small></div>
+  <div class="lead">За липень надійшло <b class="pos">48 200 ₴</b>, витрачено <b class="neg">31 940 ₴</b>. Відкладено 34%.</div>
+
+  <div class="ccy"><span class="on">₴</span><span>$</span><span>€</span></div>
+
+  <div class="sec">
+    <div class="kicker">Рахунки</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--panel-2)">◼</div><div class="mid"><div class="nm">Чорна Картка</div><div class="sb">Monobank · 2 хв тому</div></div><div class="amt num">38 410 ₴</div></div>
+      <div class="row"><div class="ico" style="background:var(--panel-2)">◻</div><div class="mid"><div class="nm" style="color:var(--faint)">Біла Картка</div><div class="sb">Порожня</div></div><div class="amt num" style="color:var(--faint)">0 ₴</div></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">$</div><div class="mid"><div class="nm">•• 7943</div><div class="sb">2 480 $ · 103 664 ₴</div></div><div class="amt num">2 480 $</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Витрати · липень</div>
+    <div class="cats">
+      <div class="cat" style="background:var(--grn-s);color:var(--grn)">
+        <div class="e">🍜</div><div class="v num">9 240 ₴</div><div class="n">Їжа · 74% ліміту</div>
+        <div class="b"><i style="width:74%"></i></div>
+      </div>
+      <div class="cat" style="background:var(--red-s);color:var(--red)">
+        <div class="e">🚕</div><div class="v num">4 810 ₴</div><div class="n">Транспорт · +810</div>
+        <div class="b"><i style="width:100%"></i></div>
+      </div>
+      <div class="cat" style="background:var(--blu-s);color:var(--blu)">
+        <div class="e">🛍️</div><div class="v num">6 120 ₴</div><div class="n">Покупки · 41%</div>
+        <div class="b"><i style="width:41%"></i></div>
+      </div>
+      <div class="cat" style="background:var(--gld-s);color:var(--gld)">
+        <div class="e">📱</div><div class="v num">1 340 ₴</div><div class="n">Підписки · без ліміту</div>
+        <div class="b" style="opacity:.12"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div class="on"><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<!-- АСИСТЕНТ -->
+<div class="col t-dark"><div class="cap">Асистент</div><div class="phone">
+<div class="screen" style="display:flex;flex-direction:column">
+  <div class="hd"><h1>Асистент</h1><div class="ib">⟳</div></div>
+  <div style="flex:1;overflow:hidden">
+    <div class="msg me">Скільки я витратив на таксі цього місяця?</div>
+    <div class="msg ai"><b>3 240 ₴</b> за 18 поїздок. Разом із рештою транспорту — 4 810 ₴, ліміт перевищено на 810.<br><br>Проти червня це <b>+34%</b>.</div>
+    <div class="msg me">Покажи найдорожчі</div>
+    <div class="msg ai">480 ₴ · субота 02:15<br>410 ₴ · неділя 01:40<br>390 ₴ · субота 03:05<br><br>Усі три — ночі вихідних. Саме вони й дають перевитрату.</div>
+    <div class="msg me">А що по угодах?</div>
+    <div class="msg ai">12 угод за тиждень, 7 у плюс. Вінрейт 58%, нетто <b class="pos">+1 205 $</b>.</div>
+  </div>
+  <div class="composer"><span>Запитати про свої дані…</span><b>↑</b></div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div class="on"><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<!-- РОБОТА -->
+<div class="col t-dark"><div class="cap">Робота · журнал</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>FTMO Phase 1 · 100K</h1><div class="ib">+</div></div>
+
+  <div class="kicker">Результат</div>
+  <div class="disp num pos">+4 280<small> $</small></div>
+  <div class="lead">До цілі лишилось <b>3 720 $</b>. Просадка <b>1 240 із 5 000</b> — запас є.</div>
+
+  <div class="bar"><i style="width:53%;background:var(--acc)"></i></div>
+  <div class="bar"><i style="width:25%;background:var(--gld)"></i></div>
+
+  <div class="pair">
+    <div class="cell"><div class="k">Вінрейт</div><div class="v num">58%</div></div>
+    <div class="cell"><div class="k">PF</div><div class="v num">1,74</div></div>
+    <div class="cell"><div class="k">Угод</div><div class="v num">64</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Останні угоди</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">▲</div><div class="mid"><div class="nm">EUR/USD</div><div class="sb">28.07 · 0,5 лот · LONG</div></div><div class="amt num pos">+295 $</div></div>
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">▼</div><div class="mid"><div class="nm">XAU/USD</div><div class="sb">27.07 · 0,2 лот · SHORT</div></div><div class="amt num neg">−320 $</div></div>
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">▲</div><div class="mid"><div class="nm">BTC/USD</div><div class="sb">27.07 · Bybit · LONG</div></div><div class="amt num pos">+610 $</div></div>
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">▲</div><div class="mid"><div class="nm">GBP/USD</div><div class="sb">26.07 · 0,3 лот · LONG</div></div><div class="amt num pos">+170 $</div></div>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div class="on"><b>◹</b>Робота</div></div>
+</div></div>
+
+<!-- ПРОФІЛЬ -->
+<div class="col t-dark"><div class="cap">Профіль</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Профіль</h1><div class="ib">✕</div></div>
+
+  <div class="kicker">Богдан</div>
+  <div class="disp" style="font-size:26px">Профіль «Робота»</div>
+  <div class="lead">Три джерела працюють, одне не підключено.</div>
+
+  <div class="sec">
+    <div class="kicker">Джерела даних</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">◈</div><div class="mid"><div class="nm">Monobank</div><div class="sb">3 картки · 2 хв тому</div></div><span class="pill" style="background:var(--grn-s);color:var(--grn)">OK</span></div>
+      <div class="row"><div class="ico" style="background:var(--gld-s);color:var(--gld)">◈</div><div class="mid"><div class="nm">Bybit</div><div class="sb">64 угоди · 14 хв тому</div></div><span class="pill" style="background:var(--grn-s);color:var(--grn)">OK</span></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">◈</div><div class="mid"><div class="nm">Google Calendar</div><div class="sb">1 год тому</div></div><span class="pill" style="background:var(--grn-s);color:var(--grn)">OK</span></div>
+      <div class="row"><div class="ico" style="background:var(--panel-2);color:var(--faint)">◈</div><div class="mid"><div class="nm" style="color:var(--faint)">MetaTrader 5</div><div class="sb">Не підключено</div></div><span class="pill" style="background:var(--red-s);color:var(--red)">Off</span></div>
+    </div>
+  </div>
+
+  <button class="cta">Підключити MetaTrader 5</button>
+
+  <div class="sec">
+    <div class="kicker">Застосунок</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--pur-s);color:var(--pur)">◑</div><div class="mid"><div class="nm">Тема</div></div><div class="sb">Тепла темна ›</div></div>
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">↓</div><div class="mid"><div class="nm">Експорт даних</div></div><div class="sb">›</div></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:14px" class="sb num">a3f91c2 · 28.07 14:20</div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+</div>
+
+<h3 class="band">Та сама мова у світлій темі</h3>
+<div class="grid">
+
+<div class="col t-light"><div class="cap">Головна</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Понеділок, 28 липня</h1><div class="ib">🐺</div></div>
+  <div class="kicker">Доброго ранку</div>
+  <div class="disp">Богдане</div>
+  <div class="lead">Цього тижня витрачено <b>7 240 ₴</b> — на чверть менше за минулий. Але <b>транспорт</b> уже перевищив місячний ліміт на 810 ₴.</div>
+
+  <div class="pair">
+    <div class="cell"><div class="k">Баланс</div><div class="v num">142 380 ₴</div></div>
+    <div class="cell"><div class="k">P&amp;L липень</div><div class="v num pos">+4 280 $</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Сьогодні</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--gld-s);color:var(--gld)">▸</div><div class="mid"><div class="nm">Аналіз ринку</div><div class="sb">09:00 · Робота</div></div></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">▸</div><div class="mid"><div class="nm">Зал</div><div class="sb">19:30 · Особисте</div></div></div>
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">!</div><div class="mid"><div class="nm">CPI США</div><div class="sb">15:30 · Ринок</div></div><span class="pill" style="background:var(--red-s);color:var(--red)">High</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Крива капіталу</div>
+    <div class="spark">
+      <i style="height:20%"></i><i style="height:29%"></i><i style="height:24%"></i><i style="height:42%"></i>
+      <i style="height:37%"></i><i style="height:56%"></i><i style="height:50%"></i><i style="height:69%"></i>
+      <i style="height:64%"></i><i style="height:86%"></i><i style="height:77%"></i><i style="height:100%"></i>
+    </div>
+  </div>
+</div>
+<div class="nav"><div class="on"><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<div class="col t-light"><div class="cap">Баланс</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Усі рахунки</h1><div class="ib">⌄</div></div>
+  <div class="disp num">142 380<small>,45 ₴</small></div>
+  <div class="lead">За липень надійшло <b class="pos">48 200 ₴</b>, витрачено <b class="neg">31 940 ₴</b>. Відкладено 34%.</div>
+  <div class="ccy"><span class="on">₴</span><span>$</span><span>€</span></div>
+
+  <div class="sec">
+    <div class="kicker">Рахунки</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--panel-2)">◼</div><div class="mid"><div class="nm">Чорна Картка</div><div class="sb">Monobank · 2 хв тому</div></div><div class="amt num">38 410 ₴</div></div>
+      <div class="row"><div class="ico" style="background:var(--panel-2)">◻</div><div class="mid"><div class="nm" style="color:var(--faint)">Біла Картка</div><div class="sb">Порожня</div></div><div class="amt num" style="color:var(--faint)">0 ₴</div></div>
+      <div class="row"><div class="ico" style="background:var(--blu-s);color:var(--blu)">$</div><div class="mid"><div class="nm">•• 7943</div><div class="sb">2 480 $ · 103 664 ₴</div></div><div class="amt num">2 480 $</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Витрати · липень</div>
+    <div class="cats">
+      <div class="cat" style="background:var(--grn-s);color:var(--grn)"><div class="e">🍜</div><div class="v num">9 240 ₴</div><div class="n">Їжа · 74% ліміту</div><div class="b"><i style="width:74%"></i></div></div>
+      <div class="cat" style="background:var(--red-s);color:var(--red)"><div class="e">🚕</div><div class="v num">4 810 ₴</div><div class="n">Транспорт · +810</div><div class="b"><i style="width:100%"></i></div></div>
+      <div class="cat" style="background:var(--blu-s);color:var(--blu)"><div class="e">🛍️</div><div class="v num">6 120 ₴</div><div class="n">Покупки · 41%</div><div class="b"><i style="width:41%"></i></div></div>
+      <div class="cat" style="background:var(--gld-s);color:var(--gld)"><div class="e">📱</div><div class="v num">1 340 ₴</div><div class="n">Підписки · без ліміту</div><div class="b" style="opacity:.12"></div></div>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div class="on"><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div></div>
+</div></div>
+
+<div class="col t-light"><div class="cap">Робота · журнал</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>FTMO Phase 1 · 100K</h1><div class="ib">+</div></div>
+  <div class="kicker">Результат</div>
+  <div class="disp num pos">+4 280<small> $</small></div>
+  <div class="lead">До цілі лишилось <b>3 720 $</b>. Просадка <b>1 240 із 5 000</b> — запас є.</div>
+
+  <div class="bar"><i style="width:53%;background:var(--acc)"></i></div>
+  <div class="bar"><i style="width:25%;background:var(--gld)"></i></div>
+
+  <div class="pair">
+    <div class="cell"><div class="k">Вінрейт</div><div class="v num">58%</div></div>
+    <div class="cell"><div class="k">PF</div><div class="v num">1,74</div></div>
+    <div class="cell"><div class="k">Угод</div><div class="v num">64</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="kicker">Останні угоди</div>
+    <div class="block tight">
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">▲</div><div class="mid"><div class="nm">EUR/USD</div><div class="sb">28.07 · 0,5 лот · LONG</div></div><div class="amt num pos">+295 $</div></div>
+      <div class="row"><div class="ico" style="background:var(--red-s);color:var(--red)">▼</div><div class="mid"><div class="nm">XAU/USD</div><div class="sb">27.07 · 0,2 лот · SHORT</div></div><div class="amt num neg">−320 $</div></div>
+      <div class="row"><div class="ico" style="background:var(--grn-s);color:var(--grn)">▲</div><div class="mid"><div class="nm">BTC/USD</div><div class="sb">27.07 · Bybit · LONG</div></div><div class="amt num pos">+610 $</div></div>
+    </div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div><div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div class="on"><b>◹</b>Робота</div></div>
+</div></div>
+
+</div>
+
+<div class="note">
+  <p><b>Що взято з D.</b> Голос. Кожен екран починається з рубрики, головного числа й речення живою мовою — «до цілі лишилось 3 720 $, просадка 1 240 із 5 000, запас є». Замість набору віджетів застосунок щоразу проговорює висновок.</p>
+  <p><b>Що взято з C.</b> Форма. М'які блоки з радіусом 22, кольорові плитки категорій, іконки в заокруглених квадратах, великі зони натискання. Категорія показує суму, відсоток ліміту й стан «без ліміту» одразу.</p>
+  <p><b>Як розв'язано протиріччя.</b> C світлий і теплий, D темний і холодний. Тепле темне тло — вугільне з коричневим підтоном, а не зелено-чорне — тримає обидва характери: залишається преміальним, але не стерильним. Акцент лаймовий у темній темі й глибоко-зелений у світлій; решта кольорів семантична й приглушена, щоб не сперечатись із ним.</p>
+  <p><b>Категорії — плитки по дві в ряд, а не по три.</b> Так у кожну вміщається підпис «74% ліміту» або «без ліміту», і вони не перетворюються на кольорову мозаїку, як було в C по три.</p>
+  <p><b>Що лишилось вирішити.</b> Щільні екрани — стрічка транзакцій за місяць, журнал на 64 угоди, аналітика. Там великий кегль не працює, і потрібен окремий компактний режим тих самих рядків. Це найпростіше зробити одразу, ніж потім, і саме на цьому напрям D сам по собі й спотикався.</p>
+</div>
+
+</div></body></html>

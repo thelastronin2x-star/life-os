@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Фінанси — Monobank × Notion × Wise</title>
+<style>
+  /* Token names match src/app/globals.css so this translates straight to code.
+     Light theme values taken from the existing :root[data-theme="light"]. */
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --surface-2: #f2f2ee;
+    --text: #1a1a17;
+    --text-dim: #6b6b63;
+    --text-faint: #9a9a90;
+    --border: #e8e8e2;
+    --accent: #2f6f4f;
+    --accent-soft: #e7f0ea;
+    --clay: #b4573f;
+    --sage: #4e8f6b;
+    --gold: #a8802c;
+    --sky: #3f6fa8;
+    --rose: #a84a63;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #e9e9e4;
+    font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    width: 390px;
+    background: var(--bg);
+    border-radius: 34px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.16);
+  }
+
+  .screen { padding: 20px 20px 92px; }
+
+  /* NOTION: money is typographic, not decorative. Tabular figures so digits
+     never shift width as the number changes. */
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* ---------- header ---------- */
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .top h1 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: var(--surface-2); display: grid; place-items: center;
+    font-size: 13px; color: var(--text-dim);
+  }
+
+  /* ---------- WISE: the balance block ---------- */
+  .label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--text-faint); font-weight: 600;
+  }
+  .balance { font-size: 40px; font-weight: 650; letter-spacing: -.025em; margin: 8px 0 2px; }
+  .balance small { font-size: 22px; font-weight: 500; color: var(--text-dim); }
+  .rate-note { font-size: 11px; color: var(--text-faint); }
+
+  /* Currency as an explicit segmented control instead of a hidden tap on the
+     number — same feature, discoverable. */
+  .ccy { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; margin-top: 14px; }
+  .ccy button {
+    border: 0; background: none; font: inherit; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    padding: 5px 13px; border-radius: 999px;
+  }
+  .ccy button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* in/out as quiet rows, not boxes — Notion restraint */
+  .flow { display: flex; gap: 28px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .flow div span { display: block; font-size: 11px; color: var(--text-faint); margin-bottom: 3px; }
+  .flow div b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .in b { color: var(--sage); }
+  .out b { color: var(--clay); }
+
+  /* ---------- MONOBANK: card strip ---------- */
+  .strip { display: flex; gap: 8px; overflow-x: auto; margin: 26px -20px 0; padding: 0 20px 4px; scrollbar-width: none; }
+  .strip::-webkit-scrollbar { display: none; }
+  .card {
+    flex: 0 0 auto; min-width: 128px; padding: 12px 13px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 15px;
+    cursor: pointer; text-align: left;
+  }
+  .card.on { border-color: var(--text); }
+  .card .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+  .card .nm { font-size: 11.5px; color: var(--text-dim); font-weight: 500; }
+  .card .amt { font-size: 16px; font-weight: 620; letter-spacing: -.015em; margin-top: 5px; }
+  .card.add { display: grid; place-items: center; min-width: 52px; color: var(--text-faint); font-size: 19px; border-style: dashed; }
+
+  /* ---------- NOTION: section ---------- */
+  .sec { margin-top: 30px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .sec-head a { font-size: 11.5px; color: var(--accent); text-decoration: none; font-weight: 500; }
+
+  .chips { display: flex; gap: 6px; margin-bottom: 16px; }
+  .chip {
+    font-size: 11.5px; padding: 5px 11px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--text-dim); background: var(--surface);
+  }
+  .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 550; }
+
+  /* Categories as a LIST with inline bars — rings look great with 4 items and
+     fall apart at 12; a list stays readable, sortable and scannable. */
+  .cat { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .cat:last-child { border-bottom: 0; }
+  .cat .ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; flex: 0 0 auto; }
+  .cat .mid { flex: 1; min-width: 0; }
+  .cat .nm { font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+  .bar { height: 3px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; }
+  .cat .val { text-align: right; flex: 0 0 auto; }
+  .cat .val b { font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
+  .cat .val span { display: block; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+  .over b { color: var(--clay); }
+
+  /* transactions — hairline rows, no cards */
+  .txn { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .txn:last-child { border-bottom: 0; }
+  .txn .ico { width: 32px; height: 32px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; font-size: 14px; }
+  .txn .mid { flex: 1; min-width: 0; }
+  .txn .t { font-size: 13px; font-weight: 500; }
+  .txn .s { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+  .txn .a { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; }
+  .txn .a.pos { color: var(--sage); }
+
+  .day { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-faint); font-weight: 600; margin: 20px 0 4px; }
+
+  /* goals */
+  .goal { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .goal:last-child { border-bottom: 0; }
+  .goal .r { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .goal .n { font-size: 13px; font-weight: 500; }
+  .goal .p { font-size: 11.5px; color: var(--text-faint); }
+
+  /* nav */
+  .nav {
+    position: sticky; bottom: 0; display: flex; justify-content: space-around;
+    background: rgba(250,250,248,.92); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border); padding: 10px 0 22px; margin-top: -72px;
+  }
+  .nav div { font-size: 10px; color: var(--text-faint); text-align: center; }
+  .nav div b { display: block; font-size: 17px; margin-bottom: 2px; font-weight: 400; }
+  .nav .on { color: var(--text); font-weight: 600; }
+
+  .note { width: 390px; margin: 20px auto 0; font-size: 12px; line-height: 1.65; color: #55554e; }
+  .note b { color: #1a1a17; }
+</style>
+</head>
+<body>
+
+<div>
+<div class="phone">
+  <div class="screen">
+
+    <div class="top">
+      <h1>Баланс</h1>
+      <div class="icon-btn">⌄</div>
+    </div>
+
+    <div class="label">Усі рахунки</div>
+    <div class="balance num">142 380<small>,45 ₴</small></div>
+    <div class="rate-note">1 $ = 41,80 ₴ · НБУ, сьогодні</div>
+
+    <div class="ccy">
+      <button class="on">₴</button>
+      <button>$</button>
+      <button>€</button>
+    </div>
+
+    <div class="flow">
+      <div class="in"><span>Надійшло за липень</span><b class="num">+48 200 ₴</b></div>
+      <div class="out"><span>Витрачено</span><b class="num">−31 940 ₴</b></div>
+    </div>
+
+    <div class="strip">
+      <div class="card on">
+        <div class="nm"><i class="dot" style="background:var(--text)"></i>Усі рахунки</div>
+        <div class="amt num">142 380 ₴</div>
+      </div>
+      <div class="card">
+        <div class="nm"><i class="dot" style="background:#2b2b2b"></i>Чорна</div>
+        <div class="amt num">38 410 ₴</div>
+      </div>
+      <div class="card">
+        <div class="nm"><i class="dot" style="background:var(--gold)"></i>Біла</div>
+        <div class="amt num">0 ₴</div>
+      </div>
+      <div class="card">
+        <div class="nm"><i class="dot" style="background:var(--sky)"></i>•• 7943</div>
+        <div class="amt num">2 480 $</div>
+      </div>
+      <div class="card add">+</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="label">Витрати за категоріями</div>
+        <a href="#">аналітика →</a>
+      </div>
+      <div class="chips">
+        <div class="chip">Тиждень</div>
+        <div class="chip on">Місяць</div>
+        <div class="chip">Рік</div>
+      </div>
+
+      <div class="cat">
+        <div class="ico" style="background:#e7f0ea;color:var(--sage)">🍜</div>
+        <div class="mid">
+          <div class="nm">Їжа</div>
+          <div class="bar"><i style="width:74%;background:var(--sage)"></i></div>
+        </div>
+        <div class="val"><b class="num">9 240 ₴</b><span class="num">із 12 500</span></div>
+      </div>
+
+      <div class="cat over">
+        <div class="ico" style="background:#f6e7e3;color:var(--clay)">🚕</div>
+        <div class="mid">
+          <div class="nm">Транспорт</div>
+          <div class="bar"><i style="width:100%;background:var(--clay)"></i></div>
+        </div>
+        <div class="val"><b class="num">4 810 ₴</b><span class="num">із 4 000 · +810</span></div>
+      </div>
+
+      <div class="cat">
+        <div class="ico" style="background:#eef2f8;color:var(--sky)">🛍️</div>
+        <div class="mid">
+          <div class="nm">Покупки</div>
+          <div class="bar"><i style="width:41%;background:var(--sky)"></i></div>
+        </div>
+        <div class="val"><b class="num">6 120 ₴</b><span class="num">із 15 000</span></div>
+      </div>
+
+      <div class="cat">
+        <div class="ico" style="background:#f7f1e2;color:var(--gold)">📱</div>
+        <div class="mid">
+          <div class="nm">Підписки</div>
+          <div class="bar"><i style="width:0%"></i></div>
+        </div>
+        <div class="val"><b class="num">1 340 ₴</b><span>без ліміту</span></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="label">Останні операції</div>
+        <a href="#">всі →</a>
+      </div>
+
+      <div class="day">Сьогодні</div>
+      <div class="txn">
+        <div class="ico">🍜</div>
+        <div class="mid"><div class="t">Сільпо</div><div class="s">14:22 · Їжа · Чорна</div></div>
+        <div class="a num">−842 ₴</div>
+      </div>
+      <div class="txn">
+        <div class="ico">↔</div>
+        <div class="mid"><div class="t">На •• 7943</div><div class="s">11:05 · Переказ</div></div>
+        <div class="a num" style="color:var(--text-faint)">→ 5 000 ₴</div>
+      </div>
+
+      <div class="day">Учора</div>
+      <div class="txn">
+        <div class="ico">🏦</div>
+        <div class="mid"><div class="t">Зарплата</div><div class="s">09:30 · Дохід · Чорна</div></div>
+        <div class="a num pos">+48 200 ₴</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="label">Цілі</div>
+        <a href="#">+ нова</a>
+      </div>
+      <div class="goal">
+        <div class="r"><span class="n">Відпустка</span><span class="p num">62 000 / 100 000 ₴</span></div>
+        <div class="bar"><i style="width:62%;background:var(--sage)"></i></div>
+      </div>
+      <div class="goal">
+        <div class="r"><span class="n">Подушка</span><span class="p num">18 500 / 60 000 ₴</span></div>
+        <div class="bar"><i style="width:31%;background:var(--sky)"></i></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nav">
+    <div><b>⌂</b>Головна</div>
+    <div><b>▤</b>Календар</div>
+    <div class="on"><b>◈</b>Баланс</div>
+    <div><b>✦</b>Асистент</div>
+    <div><b>◹</b>Робота</div>
+  </div>
+</div>
+
+<div class="note">
+  <p><b>Notion</b> — полотно, а не картки. Тіні прибрані, секції розділені волосяними лініями, ієрархія тримається на розмірі й вазі шрифту. Дрібні заголовки капсом задають ритм.</p>
+  <p style="margin-top:10px"><b>Wise</b> — гроші як головний герой. Величезне число з моноширинними цифрами, валюта винесена в явний перемикач замість прихованого тапу, курс підписаний під сумою.</p>
+  <p style="margin-top:10px"><b>Monobank</b> — навігація від картки. Смужка рахунків із кольоровою міткою кожного, активний позначений рамкою, а не заливкою.</p>
+  <p style="margin-top:10px">Головна змістовна зміна: <b>категорії стали списком замість кілець</b>. Кільця гарні на чотирьох категоріях і розсипаються на дванадцяти — у тебе їх уже дев'ять. Список читається згори вниз, показує ліміт поруч із сумою, дає місце для «без ліміту» і не потребує горизонтального гортання.</p>
+</div>
+</div>
+
+</body>
+</html>

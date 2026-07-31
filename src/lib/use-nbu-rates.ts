@@ -52,11 +52,10 @@ export function useNbuRates(): RatesState {
       });
     }
 
-    if (cache) {
-      setState(cache);
-    } else {
-      attempt();
-    }
+    // If cache was already populated, useState's initializer above already
+    // picked it up synchronously — attempt() itself is a no-op in that case
+    // (it returns early on `cache`), so this never double-sets it.
+    attempt();
 
     // A failed first load leaves the whole screen showing zeros, so retry
     // whenever the app comes back to the foreground — the same pattern the

@@ -8,6 +8,7 @@ import { BriefcaseIcon, TrendingUpIcon } from "@/components/icons";
 
 export type Profile = "trader" | "it";
 export type Theme =
+  | "soft-blocks"
   | "deep-forest"
   | "obsidian-violet"
   | "midnight-ice"
@@ -36,6 +37,7 @@ export const PROFILES: {
 ];
 
 export const THEMES: { id: Theme; name: string; mode: ThemeMode; swatches: string[] }[] = [
+  { id: "soft-blocks", name: "М'які блоки", mode: "light", swatches: ["#F4F2EE", "#2E7D5B", "#C2553C"] },
   { id: "deep-forest", name: "Deep Forest", mode: "dark", swatches: ["#0E1210", "#8FBF9F", "#D9A867"] },
   { id: "obsidian-violet", name: "Obsidian Violet", mode: "dark", swatches: ["#0D0D10", "#8B7CFF", "#FF8A65"] },
   { id: "midnight-ice", name: "Midnight Ice", mode: "dark", swatches: ["#0A0E14", "#6FC6E0", "#E0A96F"] },
@@ -107,7 +109,7 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       onboarded: false,
       profile: "trader",
-      theme: "deep-forest",
+      theme: "soft-blocks",
       nickname: "",
       avatarId: "person",
       settings: {

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Напрям D — Видання</title>
+<style>
+  :root{
+    --bg:#0f1e17; --deep:#0a1610; --panel:#16291f; --line:#223a2c;
+    --ink:#f2f5f0; --dim:#9db3a5; --faint:#6b8375;
+    --lime:#c7f04a; --lime-d:#0f1e17;
+    --red:#ff8a6b; --amber:#ffd166; --sky:#8ec8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#07100b;font-family:"Inter",ui-sans-serif,-apple-system,system-ui,sans-serif;color:var(--ink);padding:34px 20px 70px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto}
+  h2.title{font-size:22px;font-weight:750;letter-spacing:-.03em;margin-bottom:6px}
+  p.sub{font-size:13px;color:var(--dim);line-height:1.65;max-width:780px;margin-bottom:26px}
+  .grid{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+  .col{width:378px}
+  .cap{font-size:11px;font-weight:600;color:var(--faint);margin:0 0 9px 4px;letter-spacing:.08em;text-transform:uppercase}
+  .phone{background:var(--bg);border-radius:28px;overflow:hidden;height:772px;display:flex;flex-direction:column}
+  .screen{padding:22px 20px 8px;flex:1;overflow:hidden}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-.035em}
+
+  .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  .hd h1{font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .ib{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--dim)}
+
+  /* editorial display */
+  .disp{font-size:52px;font-weight:750;letter-spacing:-.045em;line-height:.95}
+  .disp small{font-size:20px;font-weight:500;color:var(--dim);letter-spacing:-.01em}
+  .kicker{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .lead{font-size:15px;line-height:1.5;font-weight:450;color:var(--dim);margin-top:14px}
+  .lead b{color:var(--ink);font-weight:650}
+
+  .rule{height:1px;background:var(--line);margin:22px 0}
+
+  .lime{color:var(--lime)}
+  .pos{color:var(--lime)} .neg{color:var(--red)}
+
+  /* stat pair */
+  .pair{display:flex;gap:30px}
+  .pair div .k{font-size:11px;color:var(--faint);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .pair div .v{font-size:22px;font-weight:700;margin-top:4px}
+
+  /* rows, minimal */
+  .row{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .n{flex:1;font-size:14px;font-weight:550;letter-spacing:-.01em}
+  .row .m{font-size:11.5px;color:var(--faint);font-weight:500}
+  .row .v{font-size:15px;font-weight:650}
+
+  .bar{height:2px;background:var(--line);margin-top:9px}
+  .bar i{display:block;height:100%}
+
+  .chip{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line);border-radius:3px;color:var(--dim)}
+  .chip.on{background:var(--lime);border-color:var(--lime);color:var(--lime-d)}
+
+  .cta{display:block;width:100%;background:var(--lime);color:var(--lime-d);border:0;border-radius:99px;padding:13px;font:inherit;font-size:14px;font-weight:700;letter-spacing:-.01em;margin-top:18px}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal .h{font-size:10px;color:var(--faint);text-align:center;font-weight:600;padding-bottom:6px}
+  .cal .d{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:550;color:var(--dim)}
+  .cal .d.cur{background:var(--lime);color:var(--lime-d);border-radius:50%;font-weight:750}
+  .cal .d.has::after{content:"";width:3px;height:3px;border-radius:50%;background:var(--lime);margin-top:4px}
+  .cal .d.out{color:#2c463a}
+
+  /* chat */
+  .msg{font-size:14px;line-height:1.55;margin-bottom:16px}
+  .me{color:var(--faint);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  .ai{font-weight:450;color:var(--ink)}
+  .ai b{font-weight:700}
+  .composer{border-top:1px solid var(--line);padding-top:14px;display:flex;align-items:center;gap:10px;margin-top:6px}
+  .composer span{flex:1;font-size:14px;color:var(--faint)}
+  .composer b{width:32px;height:32px;border-radius:50%;background:var(--lime);color:var(--lime-d);display:grid;place-items:center;font-size:14px;font-weight:400}
+
+  .spark{height:56px;display:flex;align-items:flex-end;gap:2px;margin-top:14px}
+  .spark i{flex:1;background:var(--lime);opacity:.55;border-radius:1px}
+  .spark i:last-child{opacity:1}
+
+  .nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:12px 0 22px}
+  .nav div{font-size:9.5px;color:var(--faint);text-align:center;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  .nav div b{display:block;font-size:15px;margin-bottom:3px;font-weight:400}
+  .nav .on{color:var(--lime)}
+
+  .note{max-width:1320px;margin:34px auto 0;font-size:12.5px;line-height:1.75;color:var(--dim)}
+  .note b{color:var(--ink)}
+  .note p{margin-bottom:11px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h2 class="title">Напрям D — «Видання»</h2>
+<p class="sub">Найпреміальніший. Темне глибоке тло, один кислотний акцент, дуже великий кегль на головних числах і майже жодних рамок. Кожен екран будується як розворот журналу: заголовок, головне число, підпис. Найближче до Wise за відчуттям, найдалі від усіх — за характером.</p>
+
+<div class="grid">
+
+<!-- ГОЛОВНА -->
+<div class="col"><div class="cap">Головна</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Понеділок, 28 липня</h1><div class="ib">🐺</div></div>
+
+  <div class="kicker">Доброго ранку</div>
+  <div class="disp">Богдане</div>
+
+  <div class="lead">Цього тижня ти витратив <b>7 240 ₴</b>, це на чверть менше за минулий. Але <b>транспорт</b> уже перевищив місячний ліміт на 810 ₴.</div>
+
+  <div class="rule"></div>
+
+  <div class="pair">
+    <div><div class="k">Баланс</div><div class="v num">142 380 ₴</div></div>
+    <div><div class="k">P&amp;L липень</div><div class="v num pos">+4 280 $</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Сьогодні</div>
+  <div class="row"><span class="m">09:00</span><span class="n">Аналіз ринку</span></div>
+  <div class="row"><span class="m">19:30</span><span class="n">Зал</span></div>
+  <div class="row"><span class="m">15:30</span><span class="n">CPI США</span><span class="chip">High</span></div>
+
+  <div class="kicker" style="margin-top:20px">Крива капіталу</div>
+  <div class="spark">
+    <i style="height:20%"></i><i style="height:29%"></i><i style="height:24%"></i><i style="height:42%"></i>
+    <i style="height:37%"></i><i style="height:56%"></i><i style="height:50%"></i><i style="height:69%"></i>
+    <i style="height:64%"></i><i style="height:86%"></i><i style="height:77%"></i><i style="height:100%"></i>
+  </div>
+</div>
+<div class="nav"><div class="on"><b>⌂</b>Дім</div><div><b>▤</b>Час</div><div><b>◈</b>Гроші</div><div><b>✦</b>ШІ</div><div><b>◹</b>Ринок</div></div>
+</div></div>
+
+<!-- КАЛЕНДАР -->
+<div class="col"><div class="cap">Календар</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Календар</h1><div class="ib">+</div></div>
+
+  <div class="kicker">Липень</div>
+  <div class="disp" style="font-size:38px;margin-bottom:18px">2026</div>
+
+  <div class="cal">
+    <div class="h">Пн</div><div class="h">Вт</div><div class="h">Ср</div><div class="h">Чт</div><div class="h">Пт</div><div class="h">Сб</div><div class="h">Нд</div>
+    <div class="d out">30</div><div class="d">1</div><div class="d has">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div><div class="d">6</div>
+    <div class="d">7</div><div class="d has">8</div><div class="d">9</div><div class="d">10</div><div class="d has">11</div><div class="d">12</div><div class="d">13</div>
+    <div class="d">14</div><div class="d">15</div><div class="d has">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div><div class="d">20</div>
+    <div class="d">21</div><div class="d has">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div><div class="d">27</div>
+    <div class="d cur">28</div><div class="d">29</div><div class="d has">30</div><div class="d">31</div><div class="d out">1</div><div class="d out">2</div><div class="d out">3</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Понеділок</div>
+  <div class="row"><span class="m">09:00</span><span class="n">Аналіз ринку</span><span class="chip">Робота</span></div>
+  <div class="row"><span class="m">19:30</span><span class="n">Зал</span><span class="chip">Життя</span></div>
+  <div class="row"><span class="m">—</span><span class="n">Оплатити інтернет</span><span class="chip">Щомісяця</span></div>
+
+  <div class="kicker" style="margin-top:20px">Ринок</div>
+  <div class="row"><span class="m">СР 15:30</span><span class="n">CPI США</span><span class="chip" style="color:var(--red);border-color:var(--red)">High</span></div>
+  <div class="row"><span class="m">ПТ 15:30</span><span class="n">NFP</span><span class="chip" style="color:var(--red);border-color:var(--red)">High</span></div>
+</div>
+<div class="nav"><div><b>⌂</b>Дім</div><div class="on"><b>▤</b>Час</div><div><b>◈</b>Гроші</div><div><b>✦</b>ШІ</div><div><b>◹</b>Ринок</div></div>
+</div></div>
+
+<!-- БАЛАНС -->
+<div class="col"><div class="cap">Баланс</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Усі рахунки</h1><div class="ib">⌄</div></div>
+
+  <div class="disp num">142 380<small>,45 ₴</small></div>
+  <div style="margin-top:12px">
+    <span class="chip on">₴</span> <span class="chip">$</span> <span class="chip">€</span>
+    <span style="font-size:11px;color:var(--faint);margin-left:8px">1 $ = 41,80</span>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="pair">
+    <div><div class="k">Надійшло</div><div class="v num pos">+48 200</div></div>
+    <div><div class="k">Витрачено</div><div class="v num neg">−31 940</div></div>
+    <div><div class="k">Норма</div><div class="v num">34%</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Рахунки</div>
+  <div class="row"><span class="n">Чорна Картка</span><span class="v num">38 410 ₴</span></div>
+  <div class="row"><span class="n" style="color:var(--faint)">Біла Картка</span><span class="v num" style="color:var(--faint)">0 ₴</span></div>
+  <div class="row"><span class="n">•• 7943</span><span class="v num">2 480 $</span></div>
+
+  <div class="kicker" style="margin-top:20px">Витрати · липень</div>
+  <div>
+    <div class="row" style="border:0;padding-bottom:0"><span class="n">Їжа</span><span class="v num">9 240 <span class="m">/ 12 500</span></span></div>
+    <div class="bar"><i style="width:74%;background:var(--lime)"></i></div>
+    <div class="row" style="border:0;padding-bottom:0"><span class="n">Транспорт</span><span class="v num neg">4 810 <span class="m">/ 4 000</span></span></div>
+    <div class="bar"><i style="width:100%;background:var(--red)"></i></div>
+    <div class="row" style="border:0;padding-bottom:0"><span class="n">Покупки</span><span class="v num">6 120 <span class="m">/ 15 000</span></span></div>
+    <div class="bar"><i style="width:41%;background:var(--sky)"></i></div>
+  </div>
+</div>
+<div class="nav"><div><b>⌂</b>Дім</div><div><b>▤</b>Час</div><div class="on"><b>◈</b>Гроші</div><div><b>✦</b>ШІ</div><div><b>◹</b>Ринок</div></div>
+</div></div>
+
+<!-- АСИСТЕНТ -->
+<div class="col"><div class="cap">Асистент</div><div class="phone">
+<div class="screen" style="display:flex;flex-direction:column">
+  <div class="hd"><h1>Асистент</h1><div class="ib">⟳</div></div>
+  <div style="flex:1;overflow:hidden">
+    <div class="msg me">Скільки на таксі цього місяця</div>
+    <div class="msg ai"><b>3 240 ₴</b> за 18 поїздок. Разом із рештою транспорту — 4 810 ₴, ліміт перевищено на 810.<br><br>Проти червня це <b>+34%</b>.</div>
+    <div class="rule"></div>
+    <div class="msg me">Найдорожчі</div>
+    <div class="msg ai">480 ₴ · субота 02:15<br>410 ₴ · неділя 01:40<br>390 ₴ · субота 03:05<br><br>Усі три — ночі вихідних. Саме вони й дають перевитрату.</div>
+  </div>
+  <div class="composer"><span>Запитати…</span><b>↑</b></div>
+</div>
+<div class="nav"><div><b>⌂</b>Дім</div><div><b>▤</b>Час</div><div><b>◈</b>Гроші</div><div class="on"><b>✦</b>ШІ</div><div><b>◹</b>Ринок</div></div>
+</div></div>
+
+<!-- РОБОТА -->
+<div class="col"><div class="cap">Робота · журнал</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>FTMO Phase 1</h1><div class="ib">+</div></div>
+
+  <div class="kicker">Результат</div>
+  <div class="disp num pos">+4 280<small> $</small></div>
+  <div class="lead">До цілі лишилось <b>3 720 $</b>. Просадка <b>1 240 із 5 000</b> — запас є.</div>
+
+  <div class="bar" style="margin-top:18px"><i style="width:53%;background:var(--lime)"></i></div>
+  <div class="bar" style="margin-top:7px"><i style="width:25%;background:var(--amber)"></i></div>
+
+  <div class="rule"></div>
+
+  <div class="pair">
+    <div><div class="k">Вінрейт</div><div class="v num">58%</div></div>
+    <div><div class="k">Профіт-фактор</div><div class="v num">1,74</div></div>
+    <div><div class="k">Угод</div><div class="v num">64</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Останні угоди</div>
+  <div class="row"><span class="n">EUR/USD <span class="m">long</span></span><span class="v num pos">+295 $</span></div>
+  <div class="row"><span class="n">XAU/USD <span class="m">short</span></span><span class="v num neg">−320 $</span></div>
+  <div class="row"><span class="n">BTC/USD <span class="m">long · bybit</span></span><span class="v num pos">+610 $</span></div>
+  <div class="row"><span class="n">GBP/USD <span class="m">long</span></span><span class="v num pos">+170 $</span></div>
+</div>
+<div class="nav"><div><b>⌂</b>Дім</div><div><b>▤</b>Час</div><div><b>◈</b>Гроші</div><div><b>✦</b>ШІ</div><div class="on"><b>◹</b>Ринок</div></div>
+</div></div>
+
+<!-- ПРОФІЛЬ -->
+<div class="col"><div class="cap">Профіль</div><div class="phone">
+<div class="screen">
+  <div class="hd"><h1>Профіль</h1><div class="ib">✕</div></div>
+
+  <div class="kicker">Богдан</div>
+  <div class="disp" style="font-size:30px">Профіль «Робота»</div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Джерела даних</div>
+  <div class="row"><span class="n">Monobank</span><span class="m">3 картки · 2 хв</span><span class="chip on">OK</span></div>
+  <div class="row"><span class="n">Bybit</span><span class="m">64 угоди · 14 хв</span><span class="chip on">OK</span></div>
+  <div class="row"><span class="n" style="color:var(--faint)">MetaTrader 5</span><span class="m">—</span><span class="chip" style="color:var(--red);border-color:var(--red)">Off</span></div>
+  <div class="row"><span class="n">Google Calendar</span><span class="m">1 год</span><span class="chip on">OK</span></div>
+
+  <div class="kicker" style="margin-top:20px">Застосунок</div>
+  <div class="row"><span class="n">Тема</span><span class="v m">Видання ›</span></div>
+  <div class="row"><span class="n">Валюта</span><span class="v m">Гривня ›</span></div>
+  <div class="row"><span class="n">Експорт даних</span><span class="v m">›</span></div>
+
+  <button class="cta">Підключити MetaTrader 5</button>
+
+  <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--faint)" class="num">a3f91c2 · 28.07 14:20</div>
+</div>
+<div class="nav"><div><b>⌂</b>Дім</div><div><b>▤</b>Час</div><div><b>◈</b>Гроші</div><div><b>✦</b>ШІ</div><div><b>◹</b>Ринок</div></div>
+</div></div>
+
+</div>
+
+<div class="note">
+  <p><b>Ідея.</b> Кожен екран — розворот: рубрика дрібним капсом, головне число величезним кеглем, під ним речення живою мовою. Рамок майже немає, працюють лише горизонтальні лінії й повітря. Один кислотний акцент на глибокому темному тлі.</p>
+  <p><b>Де сильний.</b> Головна перетворюється з переліку віджетів на осмислену фразу — «цього тижня ти витратив стільки, але транспорт перевищив ліміт». Це найближче до того, заради чого відкриваєш застосунок вранці. Виглядає дорого й ні на що не схоже.</p>
+  <p><b>Де ризик.</b> Великий кегль з'їдає простір: там, де в напрямі B поміщається двадцять рядків, тут п'ять. Для журналу з шістдесятьма угодами чи стрічки транзакцій за місяць доведеться робити окремі щільніші екрани — тобто мова інтерфейсу роздвоїться. І темне тло як єдине рішення підходить не всім.</p>
+</div>
+
+</div></body></html>

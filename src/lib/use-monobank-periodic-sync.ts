@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useFinanceStore } from "./finance-store";
 import { useMonobankLinkStore } from "./monobank-store";
 import { waitForHydration } from "./store-hydration";
-import { syncMonobankAccount, fetchLiveMonobankAccounts } from "./monobank-sync";
+import { syncMonobankAccount, fetchLiveMonobankAccounts, MonobankSyncError } from "./monobank-sync";
 
 // Just above the shared live-balance cache's own TTL (see
 // LIVE_ACCOUNTS_CACHE_TTL_MS in monobank-sync.ts) — safe to run this often
@@ -15,7 +15,10 @@ const PERIODIC_SYNC_MS = 65_000;
 const MAX_CONSECUTIVE_FAILURES = 3;
 
 /** Keeps every linked Monobank account's transactions and balance fresh on a
- *  timer, with no manual "Синхронізувати" press required. The webhook-driven
+ *  timer — one account per cycle, round-robin, since Monobank's ~60s limit is
+ *  per token and all linked cards share it. With two cards each is refreshed
+ *  roughly every two minutes; real-time coverage comes from the webhook, so
+ *  this only has to catch what the webhook misses. The webhook-driven
  *  sync (use-monobank-webhook-sync.ts) covers new purchases almost
  *  instantly, but Monobank doesn't always send a second webhook when a
  *  pending hold quietly settles — without this, those only ever showed up
@@ -30,6 +33,15 @@ const MAX_CONSECUTIVE_FAILURES = 3;
 export function useMonobankPeriodicSync() {
   const isSyncing = useRef(false);
   const failureCount = useRef(0);
+  /** Which link to sync next. Monobank's ~60s limit is per TOKEN, not per
+   *  account, so syncing every link inside one cycle means the first request
+   *  succeeds and every one after it is refused — with two cards that looked
+   *  exactly like "one account works, the others never fill in", and three
+   *  refusals in a row used to trip the permanent backoff below and switch
+   *  background syncing off entirely for the session. One account per cycle,
+   *  round-robin, so each gets a turn within the limit instead of competing
+   *  for the same 60-second window. */
+  const nextLinkIndex = useRef(0);
 
   const syncAll = useCallback(async () => {
     // No tab showing this app is actually in front — skip the cycle rather
@@ -46,14 +58,22 @@ export function useMonobankPeriodicSync() {
       // account's balance together, so refetching it per link would just be
       // the same data requested redundantly.
       const liveAccounts = await fetchLiveMonobankAccounts();
-      for (const link of links) {
-        try {
-          await syncMonobankAccount(link, liveAccounts);
-          failureCount.current = 0;
-        } catch {
-          failureCount.current += 1;
-          if (failureCount.current >= MAX_CONSECUTIVE_FAILURES) break;
-        }
+
+      // Exactly one link per cycle (see nextLinkIndex). The index is taken
+      // modulo the CURRENT length every time, so unlinking a card mid-session
+      // can't leave the cursor pointing past the end.
+      const link = links[nextLinkIndex.current % links.length];
+      nextLinkIndex.current = (nextLinkIndex.current + 1) % links.length;
+
+      try {
+        await syncMonobankAccount(link, liveAccounts);
+        failureCount.current = 0;
+      } catch (e) {
+        // Being rate limited is the expected steady state with several cards,
+        // not a fault — counting it here is what used to disable background
+        // syncing for the whole session. The next cycle simply retries.
+        if (e instanceof MonobankSyncError && e.rateLimited) return;
+        failureCount.current += 1;
       }
     } finally {
       isSyncing.current = false;

@@ -15,6 +15,24 @@ const LIVE_ACCOUNTS_CACHE_TTL_MS = 60_000;
 // know is currently backed by BankDataSource.
 export type MonobankAccountInfo = BankAccount;
 
+/** Carries WHY a sync failed, not just a message. Rate limiting is an
+ *  expected, self-resolving condition — Monobank allows about one request per
+ *  60 seconds per TOKEN (not per account), so with several linked cards some
+ *  requests are simply going to be refused and retried later. Callers that
+ *  back off after repeated failures must not treat that as a real failure, or
+ *  a perfectly healthy multi-card setup permanently disables its own
+ *  background sync. Distinguishing on the message string instead would break
+ *  the moment the wording changes. */
+export class MonobankSyncError extends Error {
+  constructor(
+    message: string,
+    public rateLimited: boolean
+  ) {
+    super(message);
+    this.name = "MonobankSyncError";
+  }
+}
+
 async function fetchStatementRange(monobankAccountId: string, from: number, to: number): Promise<BankTransaction[]> {
   const res = await fetch("/api/finance/monobank/transactions", {
     method: "POST",
@@ -23,7 +41,11 @@ async function fetchStatementRange(monobankAccountId: string, from: number, to: 
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error === "rate_limited" ? "Забагато запитів — спробуй за хвилину" : "Не вдалося синхронізувати");
+    const rateLimited = data.error === "rate_limited";
+    throw new MonobankSyncError(
+      rateLimited ? "Забагато запитів — спробуй за хвилину" : "Не вдалося синхронізувати",
+      rateLimited
+    );
   }
   const data: { transactions: BankTransaction[] } = await res.json();
   return data.transactions;

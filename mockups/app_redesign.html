@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life OS — редизайн усього застосунку</title>
+<style>
+  :root{
+    --bg:#fafaf8; --surface:#fff; --surface-2:#f2f2ee;
+    --text:#1a1a17; --text-dim:#6b6b63; --text-faint:#9a9a90;
+    --border:#e8e8e2;
+    --accent:#2f6f4f;
+    --sage:#4e8f6b; --clay:#b4573f; --gold:#a8802c; --sky:#3f6fa8; --rose:#a84a63;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#e9e9e4;
+    font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;
+    color:var(--text);padding:34px 20px 70px;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto}
+  h2.title{font-size:20px;font-weight:650;letter-spacing:-.02em;margin-bottom:6px}
+  p.sub{font-size:13px;color:#55554e;line-height:1.6;max-width:760px;margin-bottom:26px}
+
+  /* ---------- design system strip ---------- */
+  .ds{background:var(--bg);border-radius:18px;padding:20px 22px;margin-bottom:34px;display:flex;gap:34px;flex-wrap:wrap}
+  .ds section{min-width:180px}
+  .ds h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);font-weight:650;margin-bottom:10px}
+  .sw{display:flex;gap:6px}
+  .sw i{width:26px;height:26px;border-radius:8px;display:block}
+  .tscale div{margin-bottom:5px}
+  .t40{font-size:26px;font-weight:650;letter-spacing:-.025em}
+  .t16{font-size:15px;font-weight:600}
+  .t13{font-size:13px}
+  .t11{font-size:11px;color:var(--text-dim)}
+  .t10{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);font-weight:650}
+
+  /* ---------- phones ---------- */
+  .grid{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+  .col{width:378px}
+  .cap{font-size:12px;font-weight:600;color:#42423c;margin:0 0 9px 4px}
+  .phone{background:var(--bg);border-radius:30px;overflow:hidden;box-shadow:0 18px 46px rgba(0,0,0,.14);height:772px;display:flex;flex-direction:column}
+  .screen{padding:18px 18px 8px;overflow:hidden;flex:1}
+
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* shared bits */
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .top h1{font-size:15px;font-weight:650;letter-spacing:-.01em}
+  .ib{width:29px;height:29px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-dim)}
+  .label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);font-weight:650}
+  .sec{margin-top:24px}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .sec-head a{font-size:11.5px;color:var(--accent);text-decoration:none;font-weight:500}
+  .chips{display:flex;gap:6px;margin-bottom:14px}
+  .chip{font-size:11.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);background:var(--surface)}
+  .chip.on{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:550}
+  .row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .ico{width:31px;height:31px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+  .mid{flex:1;min-width:0}
+  .nm{font-size:13px;font-weight:500}
+  .sb{font-size:11px;color:var(--text-faint);margin-top:2px}
+  .amt{font-size:13.5px;font-weight:600;letter-spacing:-.01em;text-align:right}
+  .pos{color:var(--sage)} .neg{color:var(--clay)}
+  .bar{height:3px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px}
+  .day{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);font-weight:650;margin:16px 0 2px}
+
+  .nav{display:flex;justify-content:space-around;background:rgba(250,250,248,.94);border-top:1px solid var(--border);padding:9px 0 20px}
+  .nav div{font-size:9.5px;color:var(--text-faint);text-align:center}
+  .nav div b{display:block;font-size:16px;margin-bottom:2px;font-weight:400}
+  .nav .on{color:var(--text);font-weight:650}
+
+  /* home */
+  .hello{font-size:22px;font-weight:650;letter-spacing:-.02em;margin-bottom:3px}
+  .hello span{color:var(--text-faint);font-weight:500}
+  .insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-top:16px}
+  .insight .h{font-size:12.5px;font-weight:600;margin-bottom:4px}
+  .insight .b{font-size:11.5px;color:var(--text-dim);line-height:1.5}
+  .stats{display:flex;gap:9px;margin-top:14px}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 12px}
+  .stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);font-weight:650}
+  .stat .v{font-size:18px;font-weight:650;letter-spacing:-.02em;margin-top:4px}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:6px}
+  .cal .h{font-size:9.5px;color:var(--text-faint);text-align:center;padding-bottom:5px;font-weight:600}
+  .cal .d{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;border-radius:9px;color:var(--text-dim)}
+  .cal .d.cur{background:var(--text);color:var(--bg);font-weight:650}
+  .cal .d.has::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--sky);margin-top:3px}
+  .cal .d.out{color:#d2d2ca}
+
+  /* assistant */
+  .msg{max-width:82%;padding:10px 13px;border-radius:15px;font-size:12.5px;line-height:1.55;margin-bottom:9px}
+  .me{background:var(--text);color:var(--bg);margin-left:auto;border-bottom-right-radius:5px}
+  .ai{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:5px}
+  .composer{display:flex;gap:8px;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:8px 8px 8px 15px;margin-top:12px}
+  .composer span{flex:1;font-size:12.5px;color:var(--text-faint)}
+  .composer b{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:400}
+
+  /* work */
+  .equity{height:58px;display:flex;align-items:flex-end;gap:2px;margin-top:10px}
+  .equity i{flex:1;background:var(--sage);border-radius:2px 2px 0 0;display:block;opacity:.85}
+  .pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--text-dim);font-weight:600}
+  .pill.l{background:#e7f0ea;color:var(--sage)}
+  .pill.s{background:#f6e7e3;color:var(--clay)}
+
+  .note{max-width:1320px;margin:34px auto 0;font-size:12.5px;line-height:1.7;color:#4a4a44}
+  .note b{color:#1a1a17}
+  .note p{margin-bottom:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h2 class="title">Life OS — єдина мова інтерфейсу</h2>
+<p class="sub">Monobank дає навігацію від картки, Notion — спокійне полотно й ієрархію типографікою, Wise — ясність грошей і моноширинні цифри. Нижче та сама мова застосована до всіх п'яти вкладок.</p>
+
+<div class="ds">
+  <section>
+    <h3>Полотно</h3>
+    <div class="sw">
+      <i style="background:#fafaf8;border:1px solid var(--border)"></i>
+      <i style="background:#fff;border:1px solid var(--border)"></i>
+      <i style="background:#f2f2ee"></i>
+      <i style="background:#e8e8e2"></i>
+      <i style="background:#1a1a17"></i>
+    </div>
+  </section>
+  <section>
+    <h3>Семантика</h3>
+    <div class="sw">
+      <i style="background:#4e8f6b"></i><i style="background:#b4573f"></i>
+      <i style="background:#a8802c"></i><i style="background:#3f6fa8"></i>
+      <i style="background:#a84a63"></i>
+    </div>
+  </section>
+  <section class="tscale">
+    <h3>Шкала</h3>
+    <div class="t40 num">142 380</div>
+    <div class="t16">Заголовок секції</div>
+    <div class="t13">Основний текст</div>
+    <div class="t11">Другорядний</div>
+    <div class="t10">Мітка секції</div>
+  </section>
+  <section>
+    <h3>Правила</h3>
+    <div class="t11" style="line-height:1.7">
+      Тіней немає · межі волосяні<br>
+      Радіус 9 / 14 / 30<br>
+      Цифри завжди моноширинні<br>
+      Один акцент на екран
+    </div>
+  </section>
+</div>
+
+<div class="grid">
+
+  <!-- ГОЛОВНА -->
+  <div class="col">
+    <div class="cap">Головна</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top">
+          <div>
+            <div class="hello">Доброго ранку<span>, Богдане</span></div>
+            <div class="t11">Понеділок, 28 липня</div>
+          </div>
+          <div class="ib">◔</div>
+        </div>
+
+        <div class="insight">
+          <div class="h">Транспорт випереджає темп</div>
+          <div class="b">Витрачено 4 810 ₴ із 4 000 ₴ ліміту, а місяця минуло 90%. Основне — таксі у вихідні.</div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">За тиждень</div><div class="v num neg">−7 240 ₴</div></div>
+          <div class="stat"><div class="k">Вінрейт</div><div class="v num">58%</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Сьогодні</div><a href="#">календар →</a></div>
+          <div class="row">
+            <div class="ico">◷</div>
+            <div class="mid"><div class="nm">Аналіз ринку</div><div class="sb">09:00 · Робота</div></div>
+          </div>
+          <div class="row">
+            <div class="ico">◷</div>
+            <div class="mid"><div class="nm">Зал</div><div class="sb">19:30 · Особисте</div></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Крива капіталу</div><a href="#">журнал →</a></div>
+          <div class="equity">
+            <i style="height:22%"></i><i style="height:31%"></i><i style="height:26%"></i>
+            <i style="height:44%"></i><i style="height:39%"></i><i style="height:58%"></i>
+            <i style="height:52%"></i><i style="height:71%"></i><i style="height:66%"></i>
+            <i style="height:88%"></i><i style="height:79%"></i><i style="height:100%"></i>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="on"><b>⌂</b>Головна</div><div><b>▤</b>Календар</div>
+        <div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- КАЛЕНДАР -->
+  <div class="col">
+    <div class="cap">Календар</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><h1>Липень 2026</h1><div class="ib">+</div></div>
+
+        <div class="cal">
+          <div class="h">Пн</div><div class="h">Вт</div><div class="h">Ср</div><div class="h">Чт</div><div class="h">Пт</div><div class="h">Сб</div><div class="h">Нд</div>
+          <div class="d out">30</div><div class="d">1</div><div class="d has">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div><div class="d">6</div>
+          <div class="d">7</div><div class="d has">8</div><div class="d">9</div><div class="d">10</div><div class="d has">11</div><div class="d">12</div><div class="d">13</div>
+          <div class="d">14</div><div class="d">15</div><div class="d has">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div><div class="d">20</div>
+          <div class="d">21</div><div class="d has">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div><div class="d">27</div>
+          <div class="d cur">28</div><div class="d">29</div><div class="d has">30</div><div class="d">31</div><div class="d out">1</div><div class="d out">2</div><div class="d out">3</div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Понеділок, 28 липня</div></div>
+          <div class="row">
+            <div class="ico" style="background:#f7f1e2;color:var(--gold)">▸</div>
+            <div class="mid"><div class="nm">Аналіз ринку</div><div class="sb">09:00 – 10:00 · Робота</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#eef2f8;color:var(--sky)">▸</div>
+            <div class="mid"><div class="nm">Зал</div><div class="sb">19:30 · Особисте</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#f6e7e3;color:var(--clay)">◇</div>
+            <div class="mid"><div class="nm">Оплатити інтернет</div><div class="sb">Нагадування · щомісяця</div></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Далі цього тижня</div></div>
+          <div class="row">
+            <div class="ico">▸</div>
+            <div class="mid"><div class="nm">Дані по інфляції США</div><div class="sb">Ср, 15:30 · Економічний календар</div></div>
+            <span class="pill s">High</span>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <div><b>⌂</b>Головна</div><div class="on"><b>▤</b>Календар</div>
+        <div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- БАЛАНС -->
+  <div class="col">
+    <div class="cap">Баланс</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><h1>Баланс</h1><div class="ib">⌄</div></div>
+        <div class="label">Усі рахунки</div>
+        <div style="font-size:38px;font-weight:650;letter-spacing:-.025em;margin:7px 0 2px" class="num">142 380<span style="font-size:21px;font-weight:500;color:var(--text-dim)">,45 ₴</span></div>
+        <div class="t11">1 $ = 41,80 ₴ · НБУ</div>
+
+        <div style="display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px;margin-top:12px">
+          <span style="font-size:12px;font-weight:600;padding:5px 13px;border-radius:999px;background:#fff">₴</span>
+          <span style="font-size:12px;font-weight:600;padding:5px 13px;color:var(--text-dim)">$</span>
+          <span style="font-size:12px;font-weight:600;padding:5px 13px;color:var(--text-dim)">€</span>
+        </div>
+
+        <div style="display:flex;gap:26px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <div><div class="t11">Надійшло</div><div style="font-size:15px;font-weight:600" class="num pos">+48 200 ₴</div></div>
+          <div><div class="t11">Витрачено</div><div style="font-size:15px;font-weight:600" class="num neg">−31 940 ₴</div></div>
+        </div>
+
+        <div style="display:flex;gap:7px;overflow:hidden;margin-top:18px">
+          <div style="min-width:118px;padding:10px 12px;background:var(--surface);border:1px solid var(--text);border-radius:14px">
+            <div class="t11">◼ Усі</div><div style="font-size:15px;font-weight:650;margin-top:4px" class="num">142 380 ₴</div>
+          </div>
+          <div style="min-width:118px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px">
+            <div class="t11">● Чорна</div><div style="font-size:15px;font-weight:650;margin-top:4px" class="num">38 410 ₴</div>
+          </div>
+          <div style="min-width:70px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px">
+            <div class="t11">● Біла</div><div style="font-size:15px;font-weight:650;margin-top:4px" class="num">0 ₴</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Категорії · липень</div><a href="#">аналітика →</a></div>
+          <div class="row">
+            <div class="ico" style="background:#e7f0ea">🍜</div>
+            <div class="mid"><div class="nm">Їжа</div><div class="bar" style="margin-top:5px"><i style="width:74%;background:var(--sage)"></i></div></div>
+            <div><div class="amt num">9 240 ₴</div><div class="sb num" style="text-align:right">із 12 500</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#f6e7e3">🚕</div>
+            <div class="mid"><div class="nm">Транспорт</div><div class="bar" style="margin-top:5px"><i style="width:100%;background:var(--clay)"></i></div></div>
+            <div><div class="amt num neg">4 810 ₴</div><div class="sb num" style="text-align:right">із 4 000</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#eef2f8">🛍️</div>
+            <div class="mid"><div class="nm">Покупки</div><div class="bar" style="margin-top:5px"><i style="width:41%;background:var(--sky)"></i></div></div>
+            <div><div class="amt num">6 120 ₴</div><div class="sb num" style="text-align:right">із 15 000</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div>
+        <div class="on"><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- АСИСТЕНТ -->
+  <div class="col">
+    <div class="cap">Асистент</div>
+    <div class="phone">
+      <div class="screen" style="display:flex;flex-direction:column">
+        <div class="top"><h1>Асистент</h1><div class="ib">⟳</div></div>
+
+        <div class="chips">
+          <div class="chip on">Все</div><div class="chip">Фінанси</div><div class="chip">Трейдинг</div>
+        </div>
+
+        <div style="flex:1;overflow:hidden">
+          <div class="msg me">Скільки я витратив на таксі цього місяця?</div>
+          <div class="msg ai">
+            <b>4 810 ₴</b> на транспорт у липні, з них таксі — 3 240 ₴ за 18 поїздок.<br><br>
+            Це на 34% більше, ніж у червні. Ліміт категорії 4 000 ₴ уже перевищено на 810 ₴.
+          </div>
+          <div class="msg me">Покажи найдорожчі</div>
+          <div class="msg ai">
+            Три найбільші поїздки: 480 ₴ (сб, 02:15), 410 ₴ (нд, 01:40), 390 ₴ (сб, 03:05).<br><br>
+            Усі три — ночі вихідних. Схоже, саме вони й дають перевитрату.
+          </div>
+        </div>
+
+        <div class="composer">
+          <span>Запитати про свої дані…</span><b>↑</b>
+        </div>
+      </div>
+      <div class="nav">
+        <div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div>
+        <div><b>◈</b>Баланс</div><div class="on"><b>✦</b>Асистент</div><div><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- РОБОТА -->
+  <div class="col">
+    <div class="cap">Робота · журнал</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><h1>Журнал</h1><div class="ib">+</div></div>
+
+        <div class="label">FTMO Phase 1 · 100 000 $</div>
+        <div style="font-size:34px;font-weight:650;letter-spacing:-.025em;margin:7px 0 2px" class="num pos">+4 280 $</div>
+        <div class="t11">Ціль 8 000 $ · просадка 1 240 / 5 000 $</div>
+
+        <div class="bar" style="margin-top:12px"><i style="width:53%;background:var(--sage)"></i></div>
+        <div class="bar" style="margin-top:6px"><i style="width:25%;background:var(--clay)"></i></div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Вінрейт</div><div class="v num">58%</div></div>
+          <div class="stat"><div class="k">Профіт-фактор</div><div class="v num">1,74</div></div>
+          <div class="stat"><div class="k">Угод</div><div class="v num">64</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><div class="label">Останні угоди</div><a href="#">всі →</a></div>
+          <div class="row">
+            <div class="ico" style="background:#e7f0ea;color:var(--sage)">▲</div>
+            <div class="mid"><div class="nm">EUR/USD <span class="pill l">LONG</span></div><div class="sb">28.07 · 1,0842 → 1,0901 · 0,5 лот</div></div>
+            <div class="amt num pos">+295 $</div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#f6e7e3;color:var(--clay)">▼</div>
+            <div class="mid"><div class="nm">XAU/USD <span class="pill s">SHORT</span></div><div class="sb">27.07 · 2 412 → 2 428 · 0,2 лот</div></div>
+            <div class="amt num neg">−320 $</div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#e7f0ea;color:var(--sage)">▲</div>
+            <div class="mid"><div class="nm">BTC/USD <span class="pill l">LONG</span></div><div class="sb">27.07 · Bybit · 0,15</div></div>
+            <div class="amt num pos">+610 $</div>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div>
+        <div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div class="on"><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ПРОФІЛЬ -->
+  <div class="col">
+    <div class="cap">Профіль</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><h1>Профіль</h1><div class="ib">✕</div></div>
+
+        <div style="display:flex;align-items:center;gap:13px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+          <div style="width:52px;height:52px;border-radius:16px;background:var(--surface-2);display:grid;place-items:center;font-size:22px">🐺</div>
+          <div>
+            <div style="font-size:16px;font-weight:650;letter-spacing:-.01em">Богдан</div>
+            <div class="t11">Трейдер · профіль «Робота»</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="label" style="margin-bottom:10px">Підключення</div>
+          <div class="row">
+            <div class="ico" style="background:#e7f0ea">◈</div>
+            <div class="mid"><div class="nm">Monobank</div><div class="sb">3 картки · синхронізовано 2 хв тому</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:#f7f1e2">◈</div>
+            <div class="mid"><div class="nm">Bybit</div><div class="sb">Ключ дійсний · 64 угоди</div></div>
+          </div>
+          <div class="row">
+            <div class="ico" style="background:var(--surface-2)">◈</div>
+            <div class="mid"><div class="nm">MetaTrader 5</div><div class="sb" style="color:var(--clay)">Не підключено</div></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="label" style="margin-bottom:10px">Застосунок</div>
+          <div class="row"><div class="ico">◑</div><div class="mid"><div class="nm">Тема</div></div><div class="sb">Світла ›</div></div>
+          <div class="row"><div class="ico">₴</div><div class="mid"><div class="nm">Валюта</div></div><div class="sb">Гривня ›</div></div>
+          <div class="row"><div class="ico">↓</div><div class="mid"><div class="nm">Експорт даних</div></div><div class="sb">›</div></div>
+        </div>
+
+        <div style="text-align:center;margin-top:20px" class="t11 num">Збірка a3f91c2 · 28.07 14:20</div>
+      </div>
+      <div class="nav">
+        <div><b>⌂</b>Головна</div><div><b>▤</b>Календар</div>
+        <div><b>◈</b>Баланс</div><div><b>✦</b>Асистент</div><div><b>◹</b>Робота</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <p><b>Що змінюється всюди однаково.</b> Тіні прибрані — замість карток на кожен блок лишається рівне полотно з волосяними лініями. Ієрархію тримає розмір і вага шрифту, а не рамки. Усі числа моноширинні, тож стовпчики сум вирівнюються самі й не смикаються при зміні цифр.</p>
+  <p><b>Один акцент на екран.</b> Зелений — лише для дії, на яку справді треба натиснути. Решта кольорів семантична: зелений дохід, теракотовий витрата, золотий і синій — розрізнення категорій. Зараз кольори конкурують між собою.</p>
+  <p><b>Кільця замінені смугами.</b> Кільце добре читається на чотирьох категоріях і розсипається на дванадцяти — у тебе вже дев'ять. Смуга в рядку дає місце для суми, ліміту й стану «без ліміту» водночас.</p>
+  <p><b>Головна стала відповіддю, а не вітриною.</b> Замість плитки з модулями — один змістовний висновок згори, два числа, найближчі події й крива капіталу. Те, заради чого відкриваєш застосунок вранці.</p>
+  <p><b>Підключення винесені в Профіль.</b> Monobank, Bybit і MT5 зараз розкидані по різних екранах. Разом вони читаються як одна панель стану, де одразу видно, що відвалилось.</p>
+</div>
+
+</div>
+</body>
+</html>

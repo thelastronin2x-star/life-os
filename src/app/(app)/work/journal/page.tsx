@@ -204,15 +204,34 @@ export default function JournalPage() {
       </div>
 
       {activeAccount && (
-        <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-[10.5px] text-text-dim">{activeAccount.name}</div>
-            <div className="font-mono text-[15px] font-bold text-sage">
-              {activeAccount.kind === "personal"
-                ? `${activeAccount.balance.toFixed(0)} ${currencySymbol}`
-                : `${activeAccount.profitPct}% / ${activeAccount.profitTarget}%`}
-            </div>
+        <div className="mb-3 rounded-card bg-[linear-gradient(140deg,#1e4636,#2e7d5b)] p-4 text-white">
+          <div className="mb-1 text-[11px] text-white/70">{activeAccount.name}</div>
+          <div className="font-mono text-[26px] font-bold">
+            {activeAccount.kind === "personal"
+              ? `${activeAccount.balance.toFixed(0)} ${currencySymbol}`
+              : `${netTotal >= 0 ? "+" : ""}${netTotal.toFixed(0)} ${currencySymbol}`}
           </div>
+          {activeAccount.kind === "prop" && (
+            <div className="mt-3 flex gap-5 text-[11px] text-white/70">
+              <div>
+                До цілі
+                <div className="mt-0.5 font-mono text-[13px] font-bold text-white">
+                  {activeAccount.profitPct}% / {activeAccount.profitTarget}%
+                </div>
+              </div>
+              <div>
+                Просадка
+                <div className="mt-0.5 font-mono text-[13px] font-bold text-white">
+                  {activeAccount.drawdownPct}% / {activeAccount.maxDrawdown}%
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeAccount && (
+        <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
           <div className="mb-3 flex rounded-[10px] bg-surface-2 p-[3px]">
             {CHART_TYPES.map((c) => (
               <button

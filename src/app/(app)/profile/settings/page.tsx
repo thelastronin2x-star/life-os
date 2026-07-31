@@ -12,6 +12,7 @@ import {
 } from "@/lib/store";
 import { PickerSheet } from "@/components/ui/PickerSheet";
 import { BuildInfo } from "@/components/BuildInfo";
+import { FinanceDiagnostics } from "@/components/finance/FinanceDiagnostics";
 import { useGoogleCalendar } from "@/lib/use-google-calendar";
 import { deleteAllUserData } from "@/lib/delete-data";
 import {
@@ -213,6 +214,8 @@ export default function SettingsPage() {
           onClick={() => setConfirmDelete(true)}
         />
       </div>
+
+      <FinanceDiagnostics />
 
       <BuildInfo />
 

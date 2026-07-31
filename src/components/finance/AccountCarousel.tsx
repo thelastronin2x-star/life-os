@@ -27,6 +27,7 @@ function CardBody({
   rateHint,
   active,
   onTapBalance,
+  dark,
 }: {
   titleContent: ReactNode;
   symbol: string;
@@ -36,32 +37,45 @@ function CardBody({
   rateHint: string | null;
   active: boolean;
   onTapBalance: () => void;
+  /** The "Усі рахунки" hero card always sits on a fixed dark gradient,
+   *  regardless of the active theme (see AGENTS.md "М'які блоки" spec) — its
+   *  text needs to stay white/light-on-dark rather than following the
+   *  theme's own text tokens, which assume a light-on-surface card. */
+  dark?: boolean;
 }) {
   return (
     <>
-      <div className="mb-1 text-[11px] text-text-dim">{titleContent}</div>
+      <div className={cn("mb-1 text-[11px]", dark ? "text-white/70" : "text-text-dim")}>{titleContent}</div>
       {active ? (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onTapBalance();
           }}
-          className="inline-block font-mono text-[24px] font-bold text-text"
+          className={cn("inline-block font-mono text-[26px] font-bold", dark ? "text-white" : "text-text")}
         >
           {formatCurrency(balance, symbol)}
         </button>
       ) : (
-        <div className="font-mono text-[24px] font-bold text-text">{formatCurrency(balance, symbol)}</div>
+        <div className={cn("font-mono text-[26px] font-bold", dark ? "text-white" : "text-text")}>
+          {formatCurrency(balance, symbol)}
+        </div>
       )}
-      {rateHint && <div className="mt-0.5 text-[9px] text-text-faint">{rateHint}</div>}
+      {rateHint && (
+        <div className={cn("mt-0.5 text-[9px]", dark ? "text-white/50" : "text-text-faint")}>{rateHint}</div>
+      )}
       <div className="mt-3 flex gap-4">
         <div>
-          <div className="text-[11px] text-sage">↑ Дохід</div>
-          <div className="mt-0.5 font-mono text-[13px] font-bold text-text">+{formatCurrency(income, symbol)}</div>
+          <div className={cn("text-[11px]", dark ? "text-white/70" : "text-sage")}>↑ Дохід</div>
+          <div className={cn("mt-0.5 font-mono text-[13px] font-bold", dark ? "text-white" : "text-text")}>
+            +{formatCurrency(income, symbol)}
+          </div>
         </div>
         <div>
-          <div className="text-[11px] text-clay">↓ Витрати</div>
-          <div className="mt-0.5 font-mono text-[13px] font-bold text-text">-{formatCurrency(expense, symbol)}</div>
+          <div className={cn("text-[11px]", dark ? "text-white/70" : "text-clay")}>↓ Витрати</div>
+          <div className={cn("mt-0.5 font-mono text-[13px] font-bold", dark ? "text-white" : "text-text")}>
+            -{formatCurrency(expense, symbol)}
+          </div>
         </div>
       </div>
     </>
@@ -211,7 +225,7 @@ export function AccountCarousel({
     <div>
       <div className="mb-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
         <CardShell
-          bg="bg-gradient-to-br from-accent/20 to-surface"
+          bg="bg-[linear-gradient(140deg,#20241f,#31382e)]"
           active={selectedAccountId === null}
           onSelect={() => onSelect(null)}
         >
@@ -229,6 +243,7 @@ export function AccountCarousel({
             rateHint={null}
             active={selectedAccountId === null}
             onTapBalance={handleTapBalance}
+            dark
           />
         </CardShell>
         {accounts.map((acc) => {

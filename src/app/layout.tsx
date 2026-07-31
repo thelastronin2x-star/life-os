@@ -1,21 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Nunito, JetBrains_Mono } from "next/font/google";
 import { ThemeSync } from "@/components/ThemeSync";
 import { LaunchAnimation } from "@/components/LaunchAnimation";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { MonobankBackgroundSync } from "@/components/MonobankBackgroundSync";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-space-grotesk",
-});
-
-const inter = Inter({
+// "М'які блоки" — one rounded face for headings and body text everywhere
+// (see claude_code_prompt_soft_blocks_redesign.md). Replaces Space Grotesk +
+// Inter; JetBrains Mono stays for genuinely tabular number display.
+const nunito = Nunito({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-nunito",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -37,10 +34,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0E1210",
+  themeColor: "#f4f2ee",
 };
 
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('life-os-store');if(raw){var d=JSON.parse(raw).state;if(d){document.documentElement.setAttribute('data-theme',d.theme||'deep-forest');document.documentElement.setAttribute('data-profile',d.profile||'trader');}}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('life-os-store');if(raw){var d=JSON.parse(raw).state;if(d){document.documentElement.setAttribute('data-theme',d.theme||'soft-blocks');document.documentElement.setAttribute('data-profile',d.profile||'trader');}}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -50,10 +47,10 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      data-theme="deep-forest"
+      data-theme="soft-blocks"
       data-profile="trader"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${nunito.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
