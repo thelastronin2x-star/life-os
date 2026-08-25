@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { TradeForm } from "@/components/work/TradeForm";
-import { WorkBubble } from "@/components/assistant/WorkBubble";
-import type { TradeDraft } from "@/lib/assistant-tool-executors-work";
 import { TradeItem } from "@/components/work/TradeItem";
 import { TradeDetailSheet } from "@/components/work/TradeDetailSheet";
 import { AccountSelector } from "@/components/work/AccountSelector";
@@ -60,7 +58,6 @@ export default function JournalPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
-  const [draftTrade, setDraftTrade] = useState<TradeDraft | null>(null);
   // Tapping a row opens the read view; editing is one deliberate step further.
   // Looking at a trade is much more frequent than changing one, and a form
   // full of inputs is a poor way to read.
@@ -72,6 +69,7 @@ export default function JournalPage() {
   const [chartType, setChartType] = useState<EquityChartType>("line");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [dateFilter, setDateFilter] = useState<string | null>(null);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | null>(null);
 
   const activeAccountId = selectedAccountId ?? accounts[0]?.id ?? null;
   const activeAccount = accounts.find((a) => a.id === activeAccountId) ?? null;
@@ -164,6 +162,20 @@ export default function JournalPage() {
     return map;
   }, [enriched]);
 
+  // The day-detail panel shown inline below the calendar grid when a day is
+  // tapped — same "every account trade, not just the filtered list" scope
+  // as netByDay above, and the same per-day sort (newest first) the List
+  // view's own day groups use.
+  const calendarDayTrades = useMemo(
+    () =>
+      calendarSelectedDate
+        ? enriched.filter((e) => e.trade.date === calendarSelectedDate).sort((a, b) => b.trade.time.localeCompare(a.trade.time))
+        : [],
+    [enriched, calendarSelectedDate]
+  );
+  const calendarDayNet = calendarDayTrades.reduce((sum, e) => sum + (e.pnl.net ?? 0), 0);
+  const calendarDayHasClosed = calendarDayTrades.some((e) => e.pnl.net !== null);
+
   const todayKey = formatDateKey(new Date());
   function dayLabel(date: string): string {
     if (date === todayKey) return "Сьогодні";
@@ -198,13 +210,6 @@ export default function JournalPage() {
   function closeForm() {
     setFormOpen(false);
     setEditingTrade(null);
-    setDraftTrade(null);
-  }
-
-  function openDraftForm(draft: TradeDraft) {
-    setEditingTrade(null);
-    setDraftTrade(draft);
-    setFormOpen(true);
   }
 
   function handleSave(data: Omit<Trade, "id">) {
@@ -284,14 +289,52 @@ export default function JournalPage() {
       </div>
 
       {viewMode === "calendar" ? (
-        <JournalCalendarView
-          netByDay={netByDay}
-          currencySymbol={currencySymbol}
-          onSelectDay={(dateKey) => {
-            setDateFilter(dateKey);
-            setViewMode("list");
-          }}
-        />
+        <>
+          <JournalCalendarView
+            netByDay={netByDay}
+            currencySymbol={currencySymbol}
+            selectedDate={calendarSelectedDate}
+            onSelectDay={setCalendarSelectedDate}
+          />
+          {calendarSelectedDate && (
+            <div className="mt-4">
+              <div className="mb-2 flex items-baseline justify-between px-0.5">
+                <span className="text-[12px] font-extrabold capitalize text-text-faint">{dayLabel(calendarSelectedDate)}</span>
+                {calendarDayHasClosed && (
+                  <span
+                    className={cn(
+                      "font-mono text-[13.5px] font-extrabold tracking-tight",
+                      calendarDayNet >= 0 ? "text-sage" : "text-clay"
+                    )}
+                  >
+                    {calendarDayNet >= 0 ? "+" : ""}
+                    {calendarDayNet.toFixed(0)} {currencySymbol}
+                  </span>
+                )}
+              </div>
+              {calendarDayTrades.length === 0 ? (
+                <div className="rounded-card bg-surface shadow-card py-8 text-center text-[11.5px] font-semibold text-text-faint">
+                  Угод не було
+                </div>
+              ) : (
+                <div className="rounded-card bg-surface shadow-card px-3.5">
+                  {calendarDayTrades.map(({ trade: t, instrument, pnl }) => (
+                    <TradeItem
+                      key={t.id}
+                      trade={t}
+                      instrument={instrument}
+                      pnl={pnl}
+                      currencySymbol={currencySymbol}
+                      session={t.sessionId ? sessionById.get(t.sessionId) : undefined}
+                      tags={t.tagIds.map((id) => tagById.get(id)).filter((tag): tag is NonNullable<typeof tag> => !!tag)}
+                      onClick={() => setViewingTradeId(t.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       ) : (
         <>
       {dateFilter && (
@@ -480,7 +523,6 @@ export default function JournalPage() {
         <TradeForm
           initialDateKey={formatDateKey(new Date())}
           editingTrade={editingTrade}
-          draftValues={draftTrade ?? undefined}
           accounts={accounts}
           defaultAccountId={activeAccountId}
           onSave={handleSave}
@@ -498,7 +540,6 @@ export default function JournalPage() {
       )}
 
       {importOpen && <MT5ImportSheet accountId={activeAccountId} onClose={() => setImportOpen(false)} />}
-      <WorkBubble onDraftTrade={openDraftForm} />
     </div>
   );
 }

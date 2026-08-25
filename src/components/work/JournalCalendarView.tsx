@@ -11,16 +11,20 @@ export interface DayNet {
 
 /** Month-grid view of the journal — every day is a cell colored by that
  *  day's realized result (green/red/neutral), tapping one hands the date
- *  back to the parent so it can switch to List filtered to that day. Pure
- *  presentation: the parent already owns which account/trades are active,
- *  this only owns which month is on screen. */
+ *  back to the parent, which renders an inline day-detail panel below this
+ *  same view (staying in Calendar mode — this component doesn't decide
+ *  what happens on selection, just reports it and highlights the choice).
+ *  Pure presentation: the parent already owns which account/trades are
+ *  active, this only owns which month is on screen. */
 export function JournalCalendarView({
   netByDay,
   currencySymbol,
+  selectedDate,
   onSelectDay,
 }: {
   netByDay: Map<string, DayNet>;
   currencySymbol: string;
+  selectedDate: string | null;
   onSelectDay: (dateKey: string) => void;
 }) {
   const [cursor, setCursor] = useState(() => {
@@ -105,6 +109,7 @@ export function JournalCalendarView({
           if (!cell.inCurrentMonth) return <div key={cell.key} />;
           const day = netByDay.get(cell.key);
           const isToday = cell.key === todayKey;
+          const isSelected = cell.key === selectedDate;
           const isProfit = !!day && day.hasClosed && day.net > 0;
           const isLoss = !!day && day.hasClosed && day.net < 0;
           return (
@@ -116,7 +121,8 @@ export function JournalCalendarView({
                 isProfit && "border-sage/25 bg-sage-soft",
                 isLoss && "border-clay/25 bg-clay-soft",
                 !isProfit && !isLoss && "border-border bg-surface",
-                isToday && "outline outline-2 -outline-offset-2 outline-text"
+                isToday && !isSelected && "outline outline-2 -outline-offset-2 outline-text",
+                isSelected && "outline outline-2 -outline-offset-2 outline-sage"
               )}
             >
               <span
