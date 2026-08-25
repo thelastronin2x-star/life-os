@@ -43,13 +43,13 @@ export function MonthGrid({
         <div className="flex gap-1.5">
           <button
             onClick={() => onNavigate(-1)}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[9px] border border-border bg-surface text-text-dim"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
           >
             ‹
           </button>
           <button
             onClick={() => onNavigate(1)}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[9px] border border-border bg-surface text-text-dim"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
           >
             ›
           </button>
@@ -77,11 +77,11 @@ export function MonthGrid({
               data-date={cell.key}
               onClick={() => onSelectDay(cell.key)}
               className={cn(
-                "relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-[9px] text-[11.5px]",
+                "relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-icon text-[11.5px]",
                 !cell.inCurrentMonth && "opacity-40",
                 isToday && "bg-sage font-bold text-bg",
-                !isToday && isSelected && "border-[1.5px] border-sage font-semibold text-text",
-                !isToday && !isSelected && "text-text-dim",
+                !isToday && isSelected && "border-[1.5px] border-sage bg-surface font-semibold text-text",
+                !isToday && !isSelected && "bg-surface text-text-dim",
                 !isToday && holiday && !isSelected && "font-semibold text-gold"
               )}
             >

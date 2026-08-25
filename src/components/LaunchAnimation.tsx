@@ -3,13 +3,15 @@
 import { useEffect, useRef } from "react";
 import { useAppStore, useHasHydrated } from "@/lib/store";
 import { LAUNCH_MOTIFS } from "@/lib/launch-motifs";
-import { STRONG_BUILDERS } from "@/lib/launch-animation-builders";
+import { buildSkyLaunch } from "@/lib/launch-animation-builders";
 
 const SESSION_FLAG_KEY = "life-os-launch-session";
-const LAST_INDEX_KEY = "life-os-launch-last-index";
 const INACTIVITY_THRESHOLD_MS = 2 * 60 * 1000;
 const SIMPLE_VISIBLE_MS = 550;
-const STRONG_VISIBLE_MS = 950;
+// Long enough for the sun to actually travel its arc (1.5s) and for the
+// greeting to land after it — a shorter hold cut the movement off mid-flight,
+// which read as a glitch rather than as motion.
+const STRONG_VISIBLE_MS = 1900;
 const FADE_MS = 300;
 
 export function LaunchAnimation() {
@@ -48,18 +50,16 @@ export function LaunchAnimation() {
     if (!el) return;
 
     const { profile } = useAppStore.getState();
-    const motifBuilder = LAUNCH_MOTIFS[profile];
-    const motifSvg = motifBuilder("var(--accent)", "var(--gold)");
-
-    const lastIdx = Number(sessionStorage.getItem(LAST_INDEX_KEY) ?? "-1");
-    let idx: number;
-    do {
-      idx = Math.floor(Math.random() * STRONG_BUILDERS.length);
-    } while (idx === lastIdx && STRONG_BUILDERS.length > 1);
-    sessionStorage.setItem(LAST_INDEX_KEY, String(idx));
+    // The motif is drawn in the sky's own text colour, not --accent: at night
+    // the sky is near-black and an accent-coloured motif can vanish into it.
+    const motifSvg = LAUNCH_MOTIFS[profile]("currentColor", "currentColor");
 
     el.style.display = "flex";
-    el.innerHTML = STRONG_BUILDERS[idx]("var(--accent)", "var(--gold)", motifSvg);
+    // Randomising between five interchangeable animations is what the previous
+    // set needed to stay interesting. The sky doesn't: it's already different
+    // at every hour, and picking randomly on top of that would only make it
+    // feel inconsistent rather than varied.
+    el.innerHTML = buildSkyLaunch(motifSvg);
     fadeOutAndClear(STRONG_VISIBLE_MS);
   }
 

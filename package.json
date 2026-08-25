@@ -13,6 +13,7 @@
     "db:studio": "node --env-file=.env.local node_modules/.bin/drizzle-kit studio"
   },
   "dependencies": {
+    "@types/web-push": "^3.6.4",
     "@upstash/qstash": "^2.11.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -24,6 +25,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
+    "web-push": "^3.6.7",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

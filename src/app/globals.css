@@ -16,12 +16,34 @@
   --sky: #6fa5c2;
   --rose: #d98fa3;
 
+  /* Pastel tile backgrounds (category tiles, list-row icon squares). Derived
+     generically so every theme gets one without hand-picking 5 hex values
+     per theme — [data-theme="soft-blocks"] overrides these with the exact
+     mockup hex, since that palette wasn't a simple tint-over-surface mix. */
+  --sage-soft: color-mix(in srgb, var(--sage) 16%, var(--surface));
+  --clay-soft: color-mix(in srgb, var(--clay) 16%, var(--surface));
+  --gold-soft: color-mix(in srgb, var(--gold) 16%, var(--surface));
+  --sky-soft: color-mix(in srgb, var(--sky) 16%, var(--surface));
+  --rose-soft: color-mix(in srgb, var(--rose) 16%, var(--surface));
+
+  /* One step deeper than -soft, for blocks that have to hold their own as a
+     whole widget rather than sit inside one as a small icon square. At 16%
+     a tinted card on a warm off-white canvas is barely distinguishable from
+     the canvas; these sit far enough from --bg to read as objects, while
+     still keeping dark text comfortably legible on top. */
+  --sage-deep: color-mix(in srgb, var(--sage) 30%, var(--surface));
+  --clay-deep: color-mix(in srgb, var(--clay) 30%, var(--surface));
+  --gold-deep: color-mix(in srgb, var(--gold) 30%, var(--surface));
+  --sky-deep: color-mix(in srgb, var(--sky) 30%, var(--surface));
+  --rose-deep: color-mix(in srgb, var(--rose) 30%, var(--surface));
+
   --accent: var(--sage);
 
-  /* Border style "C · Soft / pill" — shared radius/shadow tokens.
-     Shadow is theme-reactive: dark themes get a strong shadow, light
-     themes override it to a much lighter one (see [data-theme="cloud"] etc). */
-  --shadow-card-value: 0 8px 24px rgba(0, 0, 0, 0.3);
+  /* Two layers, not one: the wide soft layer lifts the card off the canvas,
+     the tight 2px layer keeps its bottom edge from dissolving into that blur.
+     A single large shadow gives a card that floats but has no contact.
+     Theme-reactive — light themes override both layers below. */
+  --shadow-card-value: 0 10px 28px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.22);
 }
 
 [data-theme="obsidian-violet"] {
@@ -152,7 +174,7 @@
   --sky: #4e86a3;
   --rose: #b5687d;
 
-  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-card-value: 0 10px 28px rgba(60, 52, 40, 0.1), 0 2px 6px rgba(60, 52, 40, 0.05);
 }
 
 [data-theme="cloud-rose"] {
@@ -171,7 +193,7 @@
   --sky: #4e7a97;
   --rose: #a34f68;
 
-  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-card-value: 0 10px 28px rgba(60, 52, 40, 0.1), 0 2px 6px rgba(60, 52, 40, 0.05);
 }
 
 [data-theme="cloud-sky"] {
@@ -190,7 +212,7 @@
   --sky: #5f8f6e;
   --rose: #b5687d;
 
-  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-card-value: 0 10px 28px rgba(60, 52, 40, 0.1), 0 2px 6px rgba(60, 52, 40, 0.05);
 }
 
 /* М'які блоки — default theme. Warm, rounded, high-contrast category
@@ -201,21 +223,42 @@
    mockup's red — same meaning, no component code needed to change. */
 [data-theme="soft-blocks"] {
   color-scheme: light;
-  --bg: #f4f2ee;
+  /* Warmed to the canvas the Home mockups were approved on. The old #f4f2ee
+     was a grey with a hint of beige; against it the white cards read as the
+     brighter thing on screen. #f6f1e6 is properly warm, so white now reads as
+     paper sitting on sand rather than as a light source. */
+  --bg: #f6f1e6;
   --surface: #ffffff;
-  --surface-2: #ece7dd;
-  --border: #e6e2da;
-  --text: #171512;
-  --text-dim: #77716a;
-  --text-faint: #a8a29a;
+  --surface-2: #ece5d6;
+  --border: #eee6d8;
+  --text: #1f2018;
+  --text-dim: #7d7866;
+  --text-faint: #a8a294;
 
-  --sage: #2e7d5b;
-  --clay: #c2553c;
-  --gold: #b8862f;
+  --sage: #4f7a52;
+  --clay: #b2543f;
+  --gold: #b58b3a;
   --sky: #3c6ea5;
   --rose: #7a5aa8;
 
-  --shadow-card-value: 0 8px 20px rgba(0, 0, 0, 0.08);
+  /* Exact mockup pastels (claude_code_prompt_soft_blocks_v2.md) — not a
+     derived tint, so declared literally rather than via color-mix. */
+  --sage-soft: #dcefe5;
+  --clay-soft: #fbe6e0;
+  --gold-soft: #f8efdc;
+  --sky-soft: #e3ecf6;
+  --rose-soft: #ece5f7;
+
+  /* Hand-picked rather than a 30% mix, for the same reason the -soft values
+     are: this palette isn't a straight tint over white, and a generated
+     version came out muddy against the warm canvas. */
+  --sage-deep: #bfe0cd;
+  --clay-deep: #f5cec2;
+  --gold-deep: #f1e0b9;
+  --sky-deep: #c9dcee;
+  --rose-deep: #dbcdf0;
+
+  --shadow-card-value: 0 10px 28px rgba(60, 52, 40, 0.1), 0 2px 6px rgba(60, 52, 40, 0.05);
 }
 
 /* Per-profession accent — layered on top of whichever theme is active */
@@ -241,24 +284,36 @@
   --color-gold: var(--gold);
   --color-sky: var(--sky);
   --color-rose: var(--rose);
+  --color-sage-soft: var(--sage-soft);
+  --color-clay-soft: var(--clay-soft);
+  --color-gold-soft: var(--gold-soft);
+  --color-sky-soft: var(--sky-soft);
+  --color-rose-soft: var(--rose-soft);
+
+  --color-sage-deep: var(--sage-deep);
+  --color-clay-deep: var(--clay-deep);
+  --color-gold-deep: var(--gold-deep);
+  --color-sky-deep: var(--sky-deep);
+  --color-rose-deep: var(--rose-deep);
   --color-accent: var(--accent);
 
-  /* "М'які блоки" — a single rounded body/heading face everywhere (see
-     claude_code_prompt_soft_blocks_redesign.md). Numbers keep JetBrains Mono
-     for genuine tabular alignment — safer than restyling every font-mono
-     amount/price display in the app to rely on tabular-nums alone, and the
-     mockup's own .num rule only adds tabular-nums on top of the same
-     typeface, it doesn't require a non-monospace font for numbers. */
-  --font-heading: var(--font-nunito);
-  --font-sans: var(--font-nunito);
+  /* One body/heading face everywhere. `font-display` is a separate, sparing
+     slot: the one figure a widget is built around, never a column of them —
+     Unbounded has no tabular figures. `font-mono` stays for anything that
+     must align digit under digit. */
+  --font-heading: var(--font-onest);
+  --font-sans: var(--font-onest);
+  --font-display: var(--font-unbounded);
   --font-mono: var(--font-jetbrains-mono);
 
-  /* "М'які блоки" tokens — change once here, not per-component. */
-  --radius-card: 22px;
-  --radius-card-sm: 18px;
+  /* Shared shape tokens — change once here, not per-component.
+     22px read as a bubble once cards started carrying a hairline border and
+     a soft shadow; at 16px the border has a corner to actually follow. */
+  --radius-card: 16px;
+  --radius-card-sm: 14px;
   --radius-btn: 99px;
-  --radius-input: 16px;
-  --radius-icon: 13px;
+  --radius-input: 14px;
+  --radius-icon: 11px;
   --shadow-card: var(--shadow-card-value);
 }
 
@@ -270,6 +325,271 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
+}
+
+/* Здоров'я widget-card icon badges — fixed per-category colors, not theme
+   tokens: unlike --sky/--gold/etc, these stay the same regardless of the
+   selected app theme, since they're this tab's own small "brand" identity
+   for each tracker rather than part of the ambient palette. */
+:root {
+  --health-sleep: #5b4b8a;
+  --health-water: #3e8ca8;
+  --health-well: #a6633d;
+  --health-well-deep: #7c4626;
+  --health-meds: #4e8a6b;
+  --health-activity: #2e7d5b;
+  --health-habits: #7a5aa8;
+  --health-cycle: #b0508c;
+  /* Two sub-accents within the Звички widget itself — "build" (streak)
+     vs "limit" (capped counter) cards need visually distinct colors since
+     they're functionally different mechanics shown side by side, not just
+     --health-habits reused for both. Defined separately from
+     --health-meds/--health-well even though the hex values coincide, so
+     changing one category's color later can't accidentally change this
+     one's too. */
+  --health-habit-build: #4e8a6b;
+  --health-habit-limit: #a6633d;
+}
+
+/* "Retro sticker" icon badge: a solid border + a hard-edged color offset
+   behind it (no blur — a real shadow reads soft/subtle, this is meant to
+   read as a printed sticker). The stroke stays var(--text) regardless of
+   category — the accent color's whole job is the offset shape behind it,
+   not tinting the glyph, so the icon itself stays legible in every theme. */
+.health-widget-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid var(--text);
+  background: var(--surface);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.health-widget-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  transform: translate(3px, 3px);
+  z-index: -1;
+  background: var(--icon-accent);
+}
+.health-widget-icon svg {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  width: 19px;
+  height: 19px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Draggable "scale-slider" — track + fill + tap target, shared by the Сон
+   quality rating and the Самопочуття overall-feeling rating (see
+   DraggableQualitySlider.tsx). The accent color is set per-instance via the
+   --slider-accent custom property on the wrapper, not hardcoded here —
+   --surface-2/--border stand in for the prompt's original --paper/--line,
+   which don't exist here since Здоров'я follows the app theme rather than a
+   static palette. */
+.quality-slider-track {
+  position: relative;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  margin: 24px 6px 8px;
+  cursor: pointer;
+  /* Without this, iOS Safari can grab a drag gesture starting on the track
+     as a page-scroll instead of handing it to the pointer handlers below. */
+  touch-action: none;
+}
+.quality-slider-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--slider-accent);
+  border-radius: 4px;
+  /* scaleX instead of animating width — same visual "catch up" grow, but
+     transform is composited (no layout thrash) instead of triggering a
+     reflow on every frame. */
+  transform-origin: left;
+}
+/* Transition applies ONLY when not actively dragging — that's what makes
+   the settle-after-release feel like a "catch up" while the drag itself
+   stays perfectly 1:1 with the finger, with zero lag from an animation
+   still playing catch-up to last frame's position. */
+.quality-slider-fill:not(.dragging) {
+  transition: transform 0.2s ease;
+}
+.quality-slider-thumb {
+  position: absolute;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--slider-accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%);
+  touch-action: none;
+}
+.quality-slider-thumb:not(.dragging) {
+  transition: left 0.2s ease;
+}
+.quality-slider-thumb:focus-visible {
+  outline: 2px solid var(--slider-accent);
+  outline-offset: 2px;
+}
+.quality-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+.quality-slider-labels span {
+  /* 9.5px, not 10.5 — 5 labels share the row, each gets less width. */
+  font-size: 9.5px;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+.quality-slider-labels span.active {
+  color: var(--slider-accent);
+  font-weight: 800;
+}
+/* Compact variant (dashboard widget): no room for 5 labels, just the
+   current value as a single centered line under the track. */
+.quality-slider-value {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slider-accent);
+}
+
+/* Самопочуття body map — SVG silhouette + a duplicate text list on the
+   right that drives the same activeZones state. The list isn't a caption,
+   it's the accessible fallback for anyone who can't reliably land a tap on
+   a small SVG shape (see BodyMap.tsx). --well/--well-deep from the prompt
+   map to the fixed --health-well/--health-well-deep accent already added
+   alongside the other --health-* category colors. */
+.bodymap-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.bodymap {
+  width: 120px;
+  flex-shrink: 0;
+}
+.bodymap .zone {
+  fill: var(--surface-2);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+.bodymap .zone.active {
+  fill: var(--health-well);
+  stroke: var(--health-well);
+}
+.zone-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.zone-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.zone-item.active {
+  color: var(--health-well-deep);
+  font-weight: 700;
+}
+.zone-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.zone-item.active .zone-dot {
+  background: var(--health-well);
+}
+
+/* Самопочуття week trend — bar height = that day's overall-feeling level
+   as % of 5; a small dot under the label flags days with any body zone
+   marked, a visual nudge toward "feeling dips on symptom days" ahead of
+   whatever the AI insight card says explicitly. */
+.trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  height: 56px;
+}
+.tbar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.tbar {
+  width: 100%;
+  border-radius: 5px 5px 2px 2px;
+  background: var(--health-well);
+}
+.tbar.low {
+  background: var(--border);
+}
+.tbar-lbl {
+  font-size: 9px;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-top: 5px;
+}
+.tbar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--health-well-deep);
+  margin-top: 3px;
+}
+
+/* Календар — compact meds-count marker next to a day-period label (День
+   view) or a day header (Тиждень view), replacing a full event card per
+   medication reminder. --meds from the prompt maps to the existing fixed
+   --health-meds accent already used for the Ліки widget icon, so the same
+   color identifies "this is medication" in both places. */
+.meds-marker {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--health-meds);
+  background: color-mix(in srgb, var(--health-meds) 14%, transparent);
+  padding: 3px 9px;
+  border-radius: 10px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* Hides the scrollbar on an otherwise-scrollable element (the time-picker
+   wheels) — `scrollbar-width` covers Firefox, the pseudo-element covers
+   Chrome/Safari; neither has a Tailwind utility. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Tap feedback — a quick, subtle press-down on any interactive element,
@@ -328,6 +648,68 @@ a:active,
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
+  .assistant-fab,
+  .assistant-fab-icon {
+    animation: none !important;
+  }
+  .ai-thinking-dot {
+    animation: none !important;
+    opacity: 0.6 !important;
+  }
+}
+
+/* Floating assistant button — a soft "breathing" pulse so the monochrome
+   circle reads as alive rather than a static icon. Plain black shadow, not
+   tinted to any theme color — the button itself is monochrome now, so a
+   colored glow would reintroduce the "support chat widget" look this was
+   changed away from. */
+@keyframes assistant-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+@keyframes assistant-glow {
+  0%,
+  100% {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+.assistant-fab {
+  animation: assistant-glow 2.2s ease-in-out infinite;
+}
+.assistant-fab-icon {
+  animation: assistant-breathe 2.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Light "передумує" indicator on the insight message itself while a
+   background regeneration is in flight — three dots, staggered, not a
+   spinner over the whole panel (the panel isn't loading, one message is). */
+@keyframes ai-thinking-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.ai-thinking-dot {
+  animation: ai-thinking-pulse 1.2s ease-in-out infinite;
+}
+.ai-thinking-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ai-thinking-dot:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 @keyframes launchSimpleIn {

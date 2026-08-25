@@ -17,6 +17,8 @@ import {
   WalletIcon,
 } from "@/components/icons";
 
+const NOTES_PROMPTS = ["Чому зайшов?", "Що зробив не так?", "Емоційний стан"];
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -67,6 +69,7 @@ function FormRow({
 export function TradeForm({
   initialDateKey,
   editingTrade,
+  draftValues,
   accounts,
   defaultAccountId,
   onSave,
@@ -75,6 +78,11 @@ export function TradeForm({
 }: {
   initialDateKey: string;
   editingTrade: Trade | null;
+  /** Prefill for a brand-new trade — from the assistant's prepare_trade_draft
+   *  tool, for instance. Only used as a fallback when there's no
+   *  editingTrade, and never affects the update-vs-add branch in onSave:
+   *  this is a draft, not an edit, so it still creates a new trade. */
+  draftValues?: Partial<Omit<Trade, "id">>;
   accounts: TradingAccountView[];
   defaultAccountId: string | null;
   onSave: (data: Omit<Trade, "id">) => void;
@@ -92,22 +100,29 @@ export function TradeForm({
   const [accountId, setAccountId] = useState<string | null>(
     editingTrade?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? null
   );
-  const [instrumentId, setInstrumentId] = useState(editingTrade?.instrumentId ?? instruments[0]?.id ?? "");
-  const [direction, setDirection] = useState<TradeDirection>(editingTrade?.direction ?? "LONG");
+  const [instrumentId, setInstrumentId] = useState(
+    editingTrade?.instrumentId ?? draftValues?.instrumentId ?? instruments[0]?.id ?? ""
+  );
+  const [direction, setDirection] = useState<TradeDirection>(editingTrade?.direction ?? draftValues?.direction ?? "LONG");
   const [status, setStatus] = useState<TradeStatus>(editingTrade?.status ?? "closed");
   const [date, setDate] = useState(editingTrade?.date ?? initialDateKey);
   const [time, setTime] = useState(editingTrade?.time ?? "09:00");
-  const [entry, setEntry] = useState(editingTrade?.entry ?? 0);
-  const [stop, setStop] = useState(editingTrade?.stop ?? 0);
-  const [take, setTake] = useState(editingTrade?.take ?? 0);
-  const [lot, setLot] = useState(editingTrade?.lot ?? 0.1);
+  const [entry, setEntry] = useState(editingTrade?.entry ?? draftValues?.entry ?? 0);
+  const [stop, setStop] = useState(editingTrade?.stop ?? draftValues?.stop ?? 0);
+  const [take, setTake] = useState(editingTrade?.take ?? draftValues?.take ?? 0);
+  const [lot, setLot] = useState(editingTrade?.lot ?? draftValues?.lot ?? 0.1);
   const [closePrice, setClosePrice] = useState(editingTrade?.closePrice ?? 0);
   const [commission, setCommission] = useState(editingTrade?.commission ?? 0);
   const [swap, setSwap] = useState(editingTrade?.swap ?? 0);
   const [tagIds, setTagIds] = useState<string[]>(editingTrade?.tagIds ?? []);
   const [sessionId, setSessionId] = useState<string | null>(editingTrade?.sessionId ?? null);
   const [screenshots, setScreenshots] = useState<string[]>(editingTrade?.screenshots ?? []);
+  // Starts undefined rather than defaulting to true: an unanswered question
+  // has to stay unanswered, or the stat it feeds becomes flattering fiction.
+  const [followedPlan, setFollowedPlan] = useState<boolean | undefined>(editingTrade?.followedPlan);
   const [newTagName, setNewTagName] = useState("");
+  const [notes, setNotes] = useState(editingTrade?.notes ?? draftValues?.notes ?? "");
+  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   const [entryExpanded, setEntryExpanded] = useState(false);
   const [lotExpanded, setLotExpanded] = useState(false);
@@ -129,6 +144,16 @@ export function TradeForm({
       const created = latest[latest.length - 1];
       if (created) setTagIds((prev) => [...prev, created.id]);
     });
+  }
+
+  /** Inserting a prompt is a starting point for writing, not a toggle — tapping
+   *  it a second time just adds a fresh blank line for the next thought rather
+   *  than trying to detect and remove what's already there (the trader may
+   *  have already started answering it, and silently deleting that would be
+   *  far worse than an extra "Чому зайшов?" line). */
+  function insertNotesPrompt(question: string) {
+    setNotes((prev) => (prev.trim() ? `${prev}\n\n${question}\n` : `${question}\n`));
+    notesRef.current?.focus();
   }
 
   async function handleFiles(files: FileList | null) {
@@ -201,6 +226,8 @@ export function TradeForm({
       tagIds,
       sessionId,
       screenshots,
+      followedPlan,
+      notes: notes.trim() ? notes : undefined,
     });
   }
 
@@ -246,6 +273,36 @@ export function TradeForm({
                 {s === "open" ? "Відкрита" : "Закрита"}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* The one question worth asking about every trade. Deliberately here,
+            above the numbers: it's about the decision, and the decision is
+            what gets reviewed later — the P&L is just the consequence.
+            Tapping the active answer clears it back to unanswered. */}
+        <div className="mb-3">
+          <div className="mb-1.5 px-0.5 text-[11px] font-extrabold text-text-faint">За планом?</div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setFollowedPlan(followedPlan === true ? undefined : true)}
+              className={cn(
+                "flex-1 rounded-btn py-2.5 text-center text-[12.5px] font-extrabold",
+                followedPlan === true ? "bg-sage text-bg" : "bg-surface text-text-dim"
+              )}
+            >
+              ✓ Так
+            </button>
+            <button
+              type="button"
+              onClick={() => setFollowedPlan(followedPlan === false ? undefined : false)}
+              className={cn(
+                "flex-1 rounded-btn py-2.5 text-center text-[12.5px] font-extrabold",
+                followedPlan === false ? "bg-clay text-bg" : "bg-surface text-text-dim"
+              )}
+            >
+              ✕ Порушив
+            </button>
           </div>
         </div>
 
@@ -482,6 +539,30 @@ export function TradeForm({
               >
                 Додати
               </button>
+            </div>
+          </div>
+
+          <div className="border-t border-border py-3.5">
+            <span className="mb-1.5 block text-[10.5px] font-semibold text-text-dim">Логіка входу / нотатки</span>
+            <textarea
+              ref={notesRef}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Чому зайшов у цю угоду? Що бачив на графіку, який був план, чи дотримався його..."
+              rows={4}
+              className="w-full resize-none rounded-input border border-border bg-surface-2 px-3 py-2.5 text-[12.5px] leading-relaxed text-text outline-none placeholder:text-text-faint"
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {NOTES_PROMPTS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => insertNotesPrompt(q)}
+                  className="rounded-full bg-surface-2 px-3 py-1.5 text-[10.5px] font-medium text-text-dim"
+                >
+                  {q}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -12,7 +12,10 @@ export function BottomNav() {
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border bg-bg/90 px-1.5 pb-6 pt-2 backdrop-blur-xl md:hidden",
+        // pb-6 was hand-tuned for the home indicator; with edge-to-edge
+        // rendering the real inset is available, so use it and keep pb-6 as
+        // the floor for devices that report none.
+        "fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border bg-bg/90 px-1.5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden",
         overlay && "opacity-35"
       )}
     >

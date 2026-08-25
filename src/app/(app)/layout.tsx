@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppStore, useHasHydrated } from "@/lib/store";
 import { NavShell } from "@/components/nav/NavShell";
 import { useNewsReminders } from "@/lib/use-news-reminders";
+import { useWorkoutActivitySync } from "@/lib/use-workout-activity-sync";
 import { checkAndGenerateAutoReports } from "@/lib/reports";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useNewsReminders(hydrated && onboarded && profile === "trader");
+  useWorkoutActivitySync();
 
   useEffect(() => {
     if (!hydrated) return;

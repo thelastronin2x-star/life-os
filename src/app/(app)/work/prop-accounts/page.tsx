@@ -6,6 +6,10 @@ import { PropAccountForm } from "@/components/work/PropAccountForm";
 import { Card } from "@/components/ui/Card";
 import { usePropAccountsStore, type PropAccount } from "@/lib/prop-accounts-store";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
+import { BriefcaseIcon } from "@/components/icons";
+import { cn } from "@/lib/cn";
+
+const ACCOUNT_COLORS = ["sage", "sky", "gold", "rose", "clay"] as const;
 
 export default function PropAccountsPage() {
   const isTrader = useTraderOnlyGuard();
@@ -50,7 +54,7 @@ export default function PropAccountsPage() {
         <WorkSubpageHeader title="Prop-акаунти" subtitle={`${accounts.length} акаунтів`} />
         <button
           onClick={openAddForm}
-          className="mt-2 flex-shrink-0 rounded-full bg-accent px-3.5 py-2 text-[11.5px] font-semibold text-bg"
+          className="mt-2 flex-shrink-0 rounded-btn bg-accent px-3.5 py-2 text-[11.5px] font-semibold text-bg"
         >
           + акаунт
         </button>
@@ -62,33 +66,59 @@ export default function PropAccountsPage() {
         </div>
       )}
 
-      {accounts.map((acc) => (
-        <Card key={acc.id} className="mb-2.5">
-          <div className="mb-2 flex items-baseline justify-between">
-            <div>
-              <div className="text-[13px] font-semibold text-text">{acc.firm}</div>
-              <div className="text-[10.5px] text-text-faint">{acc.phase}</div>
+      {accounts.map((acc, i) => {
+        const color = ACCOUNT_COLORS[i % ACCOUNT_COLORS.length];
+        return (
+          <Card key={acc.id} className="mb-2.5">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon"
+                style={{ background: `var(--${color}-soft)`, color: `var(--${color})` }}
+              >
+                <BriefcaseIcon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold text-text">{acc.firm}</div>
+                <div className="text-[10.5px] text-text-faint">{acc.phase}</div>
+              </div>
+              <button onClick={() => openEditForm(acc)} className="flex-shrink-0 text-[10.5px] text-text-faint">
+                ред. ›
+              </button>
             </div>
-            <button onClick={() => openEditForm(acc)} className="text-[10.5px] text-text-faint">
-              ред. ›
-            </button>
-          </div>
-          <div className="mb-2 h-2 overflow-hidden rounded-full bg-surface-2">
-            <div
-              className="h-full rounded-full bg-sage"
-              style={{ width: `${Math.min(100, (acc.profitPct / acc.profitTarget) * 100)}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10.5px] text-text-faint">
-            <span>
-              Profit: {acc.profitPct}% / {acc.profitTarget}%
-            </span>
-            <span>
-              Drawdown: {acc.drawdownPct}% / {acc.maxDrawdown}%
-            </span>
-          </div>
-        </Card>
-      ))}
+
+            <div className="mb-1 flex items-center justify-between text-[10.5px] text-text-faint">
+              <span>Ціль {acc.profitTarget}%</span>
+              <span className="font-mono">
+                {acc.profitPct}% / {acc.profitTarget}%
+              </span>
+            </div>
+            <div className="mb-2.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
+              <div
+                className="h-full rounded-full bg-sage"
+                style={{ width: `${Math.min(100, (acc.profitPct / acc.profitTarget) * 100)}%` }}
+              />
+            </div>
+
+            <div className="mb-1 flex items-center justify-between text-[10.5px] text-text-faint">
+              <span>Просадка</span>
+              <span
+                className={cn(
+                  "font-mono",
+                  acc.drawdownPct / acc.maxDrawdown > 0.8 ? "font-semibold text-clay" : undefined
+                )}
+              >
+                {acc.drawdownPct}% / {acc.maxDrawdown}%
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+              <div
+                className={cn("h-full rounded-full", acc.drawdownPct / acc.maxDrawdown > 0.8 ? "bg-clay" : "bg-gold")}
+                style={{ width: `${Math.min(100, (acc.drawdownPct / acc.maxDrawdown) * 100)}%` }}
+              />
+            </div>
+          </Card>
+        );
+      })}
 
       {formOpen && (
         <PropAccountForm

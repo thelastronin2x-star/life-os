@@ -2,18 +2,29 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAppStore } from "./store";
+import { useAppStore, type Profile } from "./store";
 
-/** Redirects away from Trader-only sub-pages when the active profile isn't Trader. */
-export function useTraderOnlyGuard(): boolean {
+/** Redirects away from a profile-only sub-page when the active profile
+ *  doesn't match. Shared by every profile's own sub-pages (Journal/library
+ *  for Trader, the flashcard library for Student, ...) rather than each
+ *  hand-rolling the same effect. */
+function useProfileOnlyGuard(required: Profile): boolean {
   const profile = useAppStore((s) => s.profile);
   const router = useRouter();
 
   useEffect(() => {
-    if (profile !== "trader") {
+    if (profile !== required) {
       router.replace("/work");
     }
-  }, [profile, router]);
+  }, [profile, required, router]);
 
-  return profile === "trader";
+  return profile === required;
+}
+
+export function useTraderOnlyGuard(): boolean {
+  return useProfileOnlyGuard("trader");
+}
+
+export function useStudentOnlyGuard(): boolean {
+  return useProfileOnlyGuard("student");
 }

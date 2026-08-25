@@ -26,7 +26,7 @@ export default function AvatarEditPage() {
   return (
     <div>
       <Link href="/profile" className="mb-2 flex items-center gap-2 pt-2 text-[12.5px] text-text-dim">
-        <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+        <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
           ‹
         </span>
         Профіль
@@ -54,7 +54,7 @@ export default function AvatarEditPage() {
               key={opt.id}
               onClick={() => setAvatarDraft(opt.id)}
               className={cn(
-                "relative flex aspect-square items-center justify-center rounded-[18px] border-2 bg-gradient-to-br from-sage to-sky text-bg",
+                "relative flex aspect-square items-center justify-center rounded-card-sm border-2 bg-gradient-to-br from-sage to-sky text-bg",
                 active ? "border-text" : "border-transparent"
               )}
             >

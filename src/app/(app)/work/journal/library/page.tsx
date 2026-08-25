@@ -105,7 +105,7 @@ export default function JournalLibraryPage() {
     <div>
       <div className="pb-3.5 pt-2">
         <Link href="/work/journal" className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+          <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
             ‹
           </span>
           Журнал
@@ -114,14 +114,14 @@ export default function JournalLibraryPage() {
         <div className="mt-0.5 text-[11.5px] text-text-faint">Керуй бібліотекою журналу</div>
       </div>
 
-      <div className="mb-4 flex rounded-xl border border-border bg-surface p-1">
+      <div className="mb-4 flex rounded-btn bg-surface-2 p-1">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             onClick={() => setSection(s.id)}
             className={cn(
-              "flex-1 rounded-lg py-2 text-center text-xs font-semibold",
-              section === s.id ? "bg-surface-2 text-text" : "text-text-faint"
+              "flex-1 rounded-btn py-2 text-center text-xs font-semibold",
+              section === s.id ? "bg-surface text-text shadow-card" : "text-text-dim"
             )}
           >
             {s.label}
@@ -160,14 +160,14 @@ export default function JournalLibraryPage() {
           <div className="mt-3 text-[10.5px] font-semibold uppercase tracking-wide text-text-dim">
             Швидко додати
           </div>
-          <div className="mt-1.5 mb-2 flex rounded-xl border border-border bg-surface p-1">
+          <div className="mt-1.5 mb-2 flex rounded-btn bg-surface-2 p-1">
             {QUICK_ADD_TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setQuickAddCategory(t.id)}
                 className={cn(
-                  "flex-1 rounded-lg py-1.5 text-center text-[11px] font-semibold",
-                  quickAddCategory === t.id ? "bg-surface-2 text-text" : "text-text-faint"
+                  "flex-1 rounded-btn py-1.5 text-center text-[11px] font-semibold",
+                  quickAddCategory === t.id ? "bg-surface text-text shadow-card" : "text-text-dim"
                 )}
               >
                 {t.label}
@@ -224,7 +224,7 @@ export default function JournalLibraryPage() {
               />
               <button
                 onClick={handleAddInstrument}
-                className="rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-bg"
+                className="rounded-input bg-accent px-3 py-1.5 text-[12px] font-semibold text-bg"
               >
                 Додати
               </button>
@@ -261,9 +261,9 @@ export default function JournalLibraryPage() {
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="Новий тег"
-              className="flex-1 rounded-[8px] border border-dashed border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-dim outline-none"
+              className="flex-1 rounded-input border border-dashed border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-dim outline-none"
             />
-            <button onClick={handleAddTag} className="rounded-[8px] bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-text-dim">
+            <button onClick={handleAddTag} className="rounded-input bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-text-dim">
               Додати
             </button>
           </div>
@@ -317,7 +317,7 @@ export default function JournalLibraryPage() {
               />
               <button
                 onClick={handleAddSession}
-                className={cn("rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-bg")}
+                className={cn("rounded-input bg-accent px-3 py-1.5 text-[12px] font-semibold text-bg")}
               >
                 Додати
               </button>

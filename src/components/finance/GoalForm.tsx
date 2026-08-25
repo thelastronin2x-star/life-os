@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { NumberInput } from "@/components/ui/NumberInput";
-import type { FinanceGoal, GoalColor } from "@/lib/finance-store";
+import type { FinancialGoal } from "@/lib/finance-store";
 import { validateGoal } from "@/lib/goal-validation";
-import { cn } from "@/lib/cn";
-
-const COLORS: GoalColor[] = ["sage", "sky", "gold", "clay", "rose"];
 
 export function GoalForm({
   editingGoal,
@@ -14,27 +11,32 @@ export function GoalForm({
   onClose,
   onDelete,
 }: {
-  editingGoal: FinanceGoal | null;
-  onSave: (data: Omit<FinanceGoal, "id">) => void;
+  editingGoal: FinancialGoal | null;
+  onSave: (data: Omit<FinancialGoal, "id">) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const [name, setName] = useState(editingGoal?.name ?? "");
-  const [target, setTarget] = useState(editingGoal?.target ?? 10000);
-  const [contributed, setContributed] = useState(editingGoal?.contributed ?? 0);
-  const [color, setColor] = useState<GoalColor>(editingGoal?.color ?? "sage");
+  const [targetAmount, setTargetAmount] = useState(editingGoal?.targetAmount ?? 10000);
+  const [currentAmount, setCurrentAmount] = useState(editingGoal?.currentAmount ?? 0);
+  const [targetDate, setTargetDate] = useState(editingGoal?.targetDate ?? "");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    const validationError = validateGoal(target, contributed);
+    const validationError = validateGoal(targetAmount, currentAmount);
     if (validationError) {
       setError(validationError);
       return;
     }
     setError(null);
-    onSave({ name: name.trim(), target, contributed, color });
+    onSave({
+      name: name.trim(),
+      targetAmount,
+      currentAmount,
+      ...(targetDate ? { targetDate } : {}),
+    });
   }
 
   return (
@@ -63,38 +65,30 @@ export function GoalForm({
             <label className="block flex-1">
               <span className="mb-1 block text-[9.5px] uppercase text-text-faint">Ціль (₴)</span>
               <NumberInput
-                value={target}
-                onChange={setTarget}
+                value={targetAmount}
+                onChange={setTargetAmount}
                 className="w-full rounded-input border border-border bg-surface-2 px-2 py-2 font-mono text-[12px] text-text outline-none"
               />
             </label>
             <label className="block flex-1">
               <span className="mb-1 block text-[9.5px] uppercase text-text-faint">Вже накопичено (₴)</span>
               <NumberInput
-                value={contributed}
-                onChange={setContributed}
+                value={currentAmount}
+                onChange={setCurrentAmount}
                 className="w-full rounded-input border border-border bg-surface-2 px-2 py-2 font-mono text-[12px] text-text outline-none"
               />
             </label>
           </div>
 
-          <div>
-            <span className="mb-1.5 block text-[10.5px] font-semibold text-text-dim">Колір</span>
-            <div className="flex gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={cn(
-                    "h-8 w-8 rounded-full border-2",
-                    color === c ? "border-text" : "border-transparent"
-                  )}
-                  style={{ background: `var(--${c})` }}
-                />
-              ))}
-            </div>
-          </div>
+          <label className="block">
+            <span className="mb-1 block text-[9.5px] uppercase text-text-faint">Орієнтовна дата (необов&apos;язково)</span>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="w-full rounded-input border border-border bg-surface-2 px-3 py-2 text-[12px] text-text outline-none"
+            />
+          </label>
 
           {error && <div className="text-[11.5px] text-rose">{error}</div>}
 

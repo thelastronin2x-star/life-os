@@ -2,23 +2,22 @@
 
 import { useAppStore } from "@/lib/store";
 import { TraderWork } from "@/components/work/TraderWork";
+import { StudentWork } from "@/components/student/StudentWork";
 import { ITWork } from "@/components/work/ITWork";
-import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
 
+/** Branches by profile — each profile's Робота tab is its own component
+ *  tree (TraderWork/StudentWork/ITWork), never sharing layout beyond this
+ *  switch. ITWork is still the "in development" placeholder (see its own
+ *  file) — only Trader and Student have a real screen behind this tab so
+ *  far. */
 export default function WorkPage() {
   const profile = useAppStore((s) => s.profile);
 
   return (
     <div>
-      <div className="pb-3.5 pt-2">
-        <div className="font-heading text-lg font-semibold text-text">Робота</div>
-        <div className="mt-0.5 text-[11.5px] text-text-faint">
-          {profile === "trader" ? "Трейдер" : "IT / Розробник"}
-        </div>
-      </div>
-      {profile === "trader" ? <TraderWork /> : <ITWork />}
-
-      <FloatingAssistant context="work" />
+      {profile === "trader" && <TraderWork />}
+      {profile === "student" && <StudentWork />}
+      {profile === "it" && <ITWork />}
     </div>
   );
 }

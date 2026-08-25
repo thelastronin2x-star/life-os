@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BudgetCategory, GoalColor } from "@/lib/finance-store";
-import { CATEGORY_ICON_OPTIONS, getCategoryIcon } from "@/lib/category-icons";
+import { FINANCE_CATEGORY_KEYS, categoryMeta, CategoryIcon, type FinanceCategoryKey } from "@/lib/finance-categories";
 import { PlusIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
@@ -22,17 +22,19 @@ export function CategoryPickerSheet({
   onClose: () => void;
 }) {
   const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState(CATEGORY_ICON_OPTIONS[0].id);
-  const [color, setColor] = useState<GoalColor>("sage");
+  const [categoryKey, setCategoryKey] = useState<FinanceCategoryKey>(FINANCE_CATEGORY_KEYS[0]);
+  const [color, setColor] = useState<GoalColor>(categoryMeta(FINANCE_CATEGORY_KEYS[0]).color);
+
+  // Categories already tracked don't need to be offered again — picking one
+  // that already exists belongs to the "select" grid above, not "create".
+  const usedKeys = new Set(categories.map((c) => c.icon));
+  const availableKeys = FINANCE_CATEGORY_KEYS.filter((k) => !usedKeys.has(k));
 
   function handleCreate() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
     // No limit on any account by default — a quick-created category starts
     // unlimited until the user explicitly sets one via BudgetCategoryForm,
     // rather than silently inheriting an arbitrary guessed number.
-    onCreate({ name: trimmed, icon, color, limitsByAccount: {} });
+    onCreate({ name: categoryMeta(categoryKey).name, icon: categoryKey, color, limitsByAccount: {} });
     onClose();
   }
 
@@ -48,7 +50,6 @@ export function CategoryPickerSheet({
 
         <div className="mb-1.5 grid grid-cols-4 gap-2.5">
           {categories.map((cat) => {
-            const CatIcon = getCategoryIcon(cat.icon);
             const active = value === cat.id;
             return (
               <button
@@ -62,12 +63,7 @@ export function CategoryPickerSheet({
                   active && "bg-surface shadow-card"
                 )}
               >
-                <div
-                  className="flex h-9 w-9 items-center justify-center rounded-card-sm"
-                  style={{ background: `color-mix(in srgb, var(--${cat.color}) 15%, transparent)` }}
-                >
-                  <CatIcon className="h-4 w-4" style={{ color: `var(--${cat.color})` }} />
-                </div>
+                <CategoryIcon categoryKey={cat.icon} color={cat.color} className="h-9 w-9 rounded-full" />
                 <div className="text-[9.5px] text-text-dim">{cat.name}</div>
               </button>
             );
@@ -75,41 +71,48 @@ export function CategoryPickerSheet({
         </div>
 
         {!creating ? (
-          <button
-            onClick={() => setCreating(true)}
-            className="mt-2 flex w-full items-center gap-2.5 border-t border-border py-3.5 text-left"
-          >
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm border-[1.5px] border-dashed border-border text-sage">
-              <PlusIcon className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-[13px] font-semibold text-sage">Додати свою категорію</span>
-          </button>
+          availableKeys.length > 0 && (
+            <button
+              onClick={() => {
+                setCategoryKey(availableKeys[0]);
+                setColor(categoryMeta(availableKeys[0]).color);
+                setCreating(true);
+              }}
+              className="mt-2 flex w-full items-center gap-2.5 border-t border-border py-3.5 text-left"
+            >
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm border-[1.5px] border-dashed border-border text-sage">
+                <PlusIcon className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-[13px] font-semibold text-sage">Додати категорію</span>
+            </button>
+          )
         ) : (
           <div className="mt-3 border-t border-border pt-4">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
               Нова категорія
             </div>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Назва (напр. Спортзал)"
-              className="mb-3.5 w-full rounded-input border border-border bg-surface-2 px-3.5 py-3 text-[14px] text-text outline-none"
-            />
-            <div className="mb-1.5 text-[10px] text-text-faint">Іконка</div>
-            <div className="mb-3.5 flex flex-wrap gap-1.5">
-              {CATEGORY_ICON_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setIcon(opt.id)}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-card-sm border-2",
-                    icon === opt.id ? "border-sage" : "border-transparent bg-surface-2"
-                  )}
-                >
-                  <opt.Icon className="h-4 w-4 text-text-dim" />
-                </button>
-              ))}
+            <div className="mb-3.5 grid grid-cols-4 gap-1.5">
+              {availableKeys.map((key) => {
+                const meta = categoryMeta(key);
+                const active = categoryKey === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setCategoryKey(key);
+                      setColor(meta.color);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-card-sm border-2 p-2 text-center",
+                      active ? "border-sage" : "border-transparent bg-surface-2"
+                    )}
+                  >
+                    <CategoryIcon categoryKey={key} color={meta.color} className="h-8 w-8 rounded-full" />
+                    <span className="truncate text-[9px] font-medium text-text-dim">{meta.name}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="mb-1.5 text-[10px] text-text-faint">Колір</div>
             <div className="mb-4 flex gap-2">
@@ -130,7 +133,7 @@ export function CategoryPickerSheet({
               onClick={handleCreate}
               className="w-full rounded-btn bg-accent py-2.5 text-center text-[12.5px] font-semibold text-bg"
             >
-              Створити категорію
+              Додати категорію
             </button>
           </div>
         )}

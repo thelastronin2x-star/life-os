@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAssistantStore } from "@/lib/assistant-store";
 import { useAppStore } from "@/lib/store";
 import { generateReport, type ReportType } from "@/lib/reports";
+import { callAssistantTurn } from "@/lib/assistant-client";
 import { cn } from "@/lib/cn";
 import { BarChartIcon, TrendingUpIcon, ChatBubbleIcon } from "@/components/icons";
 
@@ -67,30 +68,12 @@ export default function AssistantPage() {
         (m) => m.id !== assistantId && m.content.trim() !== ""
       );
 
-      const res = await fetch("/api/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role, content: m.content })),
-          taskType: "chat",
-        }),
-      });
-
-      if (!res.ok || !res.body) {
-        updateMessage(assistantId, "Вибач, асистент зараз недоступний. Спробуй ще раз пізніше.");
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        updateMessage(assistantId, acc);
-      }
+      const res = await callAssistantTurn(
+        history.map((m) => ({ role: m.role, content: m.content })),
+        "",
+        "chat"
+      );
+      updateMessage(assistantId, res.text || "Вибач, асистент зараз недоступний. Спробуй ще раз пізніше.");
     } catch {
       updateMessage(assistantId, "Вибач, сталася помилка. Спробуй ще раз.");
     } finally {
@@ -129,6 +112,12 @@ export default function AssistantPage() {
     <div>
       <div className="mb-3 flex items-center justify-between pt-2">
         <div>
+          <Link href="/work" className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim">
+            <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
+              ‹
+            </span>
+            Робота
+          </Link>
           <div className="font-heading text-lg font-semibold text-text">Асистент</div>
           <div className="mt-0.5 text-[11.5px] text-text-faint">на зв&apos;язку 24/7</div>
         </div>
@@ -169,8 +158,8 @@ export default function AssistantPage() {
           <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
             <div
               className={cn(
-                "max-w-[85%] whitespace-pre-wrap rounded-[14px] px-3.5 py-2.5 text-[13px] leading-relaxed",
-                m.role === "user" ? "bg-accent text-bg" : "border border-border bg-surface text-text"
+                "max-w-[85%] whitespace-pre-wrap rounded-[20px] px-3.5 py-2.5 text-[13px] font-medium leading-relaxed",
+                m.role === "user" ? "rounded-br-[7px] bg-text text-bg" : "rounded-bl-[7px] bg-surface text-text"
               )}
             >
               {m.content || (isStreaming && m.role === "assistant" ? "…" : "")}
@@ -180,22 +169,24 @@ export default function AssistantPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="sticky bottom-[84px] z-10 mt-3 flex items-end gap-2 border-t border-border bg-bg pt-2.5 md:bottom-3">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          placeholder="Напиши повідомлення..."
-          className="max-h-28 flex-1 resize-none rounded-input border border-border bg-surface-2 px-3 py-2.5 text-[13px] text-text outline-none"
-        />
-        <button
-          onClick={handleSend}
-          disabled={isStreaming || !input.trim()}
-          className="flex-shrink-0 rounded-btn bg-accent px-4 py-2.5 text-[13px] font-semibold text-bg disabled:opacity-40"
-        >
-          →
-        </button>
+      <div className="sticky bottom-[84px] z-10 mt-3 md:bottom-3">
+        <div className="flex items-end gap-2 rounded-btn bg-surface shadow-card py-1.5 pl-4 pr-1.5">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            placeholder="Напиши повідомлення..."
+            className="max-h-28 flex-1 resize-none bg-transparent py-1.5 text-[13px] text-text outline-none placeholder:text-text-faint"
+          />
+          <button
+            onClick={handleSend}
+            disabled={isStreaming || !input.trim()}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-btn bg-sage text-[14px] text-bg disabled:opacity-40"
+          >
+            →
+          </button>
+        </div>
       </div>
     </div>
   );

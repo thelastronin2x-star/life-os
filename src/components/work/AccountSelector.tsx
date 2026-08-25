@@ -46,7 +46,7 @@ export function AccountSelector({
             <div
               className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
               style={{
-                background: `color-mix(in srgb, var(--${color}) 20%, transparent)`,
+                background: `var(--${color}-soft)`,
                 color: `var(--${color})`,
               }}
             >

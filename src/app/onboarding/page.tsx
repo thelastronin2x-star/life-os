@@ -48,7 +48,7 @@ export default function OnboardingPage() {
                 </span>
               )}
               <span
-                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-accent"
+                className="flex h-9 w-9 items-center justify-center rounded-icon text-accent"
                 style={{
                   background: "color-mix(in srgb, var(--accent) 15%, transparent)",
                 }}

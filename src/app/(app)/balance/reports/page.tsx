@@ -381,8 +381,8 @@ export default function FinanceReportsPage() {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${
-              period === p ? "border-sage bg-sage text-bg font-semibold" : "border-border bg-surface text-text-dim"
+            className={`rounded-btn px-3.5 py-1.5 text-[11px] font-semibold ${
+              period === p ? "bg-text text-bg" : "bg-surface text-text-dim"
             }`}
           >
             {p}

@@ -32,7 +32,7 @@ export function PickerSheet<T extends string>({
                   onSelect(opt.id);
                   onClose();
                 }}
-                className={`flex w-full items-center justify-between rounded-[12px] border p-3 text-left text-[13px] ${
+                className={`flex w-full items-center justify-between rounded-card-sm border p-3 text-left text-[13px] ${
                   active
                     ? "border-accent bg-surface-2 text-text"
                     : "border-border bg-surface text-text-dim"

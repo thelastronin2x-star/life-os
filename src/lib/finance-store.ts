@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { FINANCE_CATEGORIES, isFinanceCategoryKey, type FinanceCategoryKey } from "./finance-categories";
 
 export type AccountType = "personal" | "prop" | "savings";
 export type GoalColor = "sage" | "sky" | "gold" | "clay" | "rose";
@@ -15,12 +16,87 @@ export interface FinanceAccount {
   startingBalance: number;
 }
 
-export interface FinanceGoal {
+export interface FinancialGoal {
   id: string;
   name: string;
-  target: number;
-  contributed: number;
-  color: GoalColor;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string; // "YYYY-MM-DD"
+}
+
+/** One snapshot in time — the central entity behind Резервний фонд, Норма
+ *  заощаджень and Чистий капітал (see finance-manual-checkin-prompt.md).
+ *  Fully manual, no Monobank dependency: `savings`/`monthlyIncome`/
+ *  `monthlyExpenses` are typed in by hand once a month; `investmentsTotal`/
+ *  `debtsTotal` are captured automatically from the live Investment[]/
+ *  Debt[] arrays at save time (see upsertCheckIn) rather than asked again,
+ *  since those are already tracked in their own sections. At most one
+ *  entry per `month` — resaving the same month updates it in place instead
+ *  of appending a second point for the same month on the trend chart. */
+export interface MonthlyCheckIn {
+  id: string;
+  month: string; // "YYYY-MM"
+  savings: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  investmentsTotal: number;
+  debtsTotal: number;
+  /** Also auto-captured at save time, same reasoning as investmentsTotal/
+   *  debtsTotal above — not in the prompt's own MonthlyCheckIn type, but
+   *  without it there's no way to reconstruct a historical борги-проти-
+   *  доходу trend at all (the ratio needs monthly payments at each point
+   *  in time, not just the current live Debt[] total). Added rather than
+   *  worked around, since it's the same "snapshot what's already tracked
+   *  elsewhere" pattern already established for the other two totals. */
+  totalMonthlyDebtPayments: number;
+}
+
+export interface Debt {
+  id: string;
+  name: string;
+  remainingAmount: number;
+  monthlyPayment: number;
+}
+
+export interface Investment {
+  id: string;
+  type: string;
+  amount: number;
+}
+
+export type InsuranceType = "life" | "health" | "property";
+
+export interface InsurancePolicy {
+  type: InsuranceType;
+  hasPolicy: boolean;
+}
+
+/** Fixed set — insurance policies aren't user-addable/removable like debts
+ *  or investments, just three toggles. */
+export const INSURANCE_TYPES: InsuranceType[] = ["life", "health", "property"];
+
+function seedInsurancePolicies(): InsurancePolicy[] {
+  return INSURANCE_TYPES.map((type) => ({ type, hasPolicy: false }));
+}
+
+/** One completed pass through the financial-literacy quiz (see
+ *  finance-quiz.ts's FINANCIAL_LITERACY_QUESTIONS) — the 8th dashboard
+ *  card, the only one about understanding rather than financial state.
+ *  Every attempt is kept (not just the latest), so the card's mini-trend
+ *  can show whether comprehension is actually improving over repeat
+ *  attempts, not just the most recent score in isolation. */
+export interface QuizAttempt {
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  answers: { questionId: string; selectedOptionId: string; correct: boolean }[];
+  scorePct: number;
+}
+
+/** Most recent attempt first — QuizAttempt.date is a plain "YYYY-MM-DD" key,
+ *  so a lexicographic sort is already a chronological one. */
+export function latestQuizAttempt(attempts: QuizAttempt[]): QuizAttempt | null {
+  if (attempts.length === 0) return null;
+  return [...attempts].sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
 export interface BudgetCategory {
@@ -65,7 +141,7 @@ function seedAccounts(): FinanceAccount[] {
   return [];
 }
 
-function seedGoals(): FinanceGoal[] {
+function seedGoals(): FinancialGoal[] {
   return [];
 }
 
@@ -75,6 +151,41 @@ function seedBudgetCategories(): BudgetCategory[] {
 
 function seedTransactions(): Transaction[] {
   return [];
+}
+
+/** v2 -> v3: goals moved from `{target, contributed, color}` (never
+ *  actually displayed anywhere in the app — see finance-manual-data-
+ *  prompt.md) to `{targetAmount, currentAmount, targetDate?}`. `color` is
+ *  dropped — the new goal card is a plain progress bar, not a colored
+ *  ring. A `linkedMonobankJarId` field existed briefly between the manual-
+ *  data and manual-checkin prompts but was never actually settable from
+ *  any UI (no jar picker was ever built), so there's nothing to migrate
+ *  off of it — it just stops being read. */
+export function migrateFinancialGoals(
+  goals: (Partial<FinancialGoal> & { target?: number; contributed?: number })[]
+): FinancialGoal[] {
+  return goals.map((g) => ({
+    id: g.id ?? crypto.randomUUID(),
+    name: g.name ?? "",
+    targetAmount: g.targetAmount ?? g.target ?? 0,
+    currentAmount: g.currentAmount ?? g.contributed ?? 0,
+    ...(g.targetDate ? { targetDate: g.targetDate } : {}),
+  }));
+}
+
+/** "2026-08" for the current calendar month, in the user's local time —
+ *  the natural key for MonthlyCheckIn's `month` field and for finding
+ *  "this month's" entry (upsertCheckIn) without a separate lookup index. */
+export function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Most-recent month first — MonthlyCheckIn.month sorts lexicographically
+ *  the same as chronologically ("YYYY-MM"), so a plain string sort works. */
+export function latestCheckIn(checkIns: MonthlyCheckIn[]): MonthlyCheckIn | null {
+  if (checkIns.length === 0) return null;
+  return [...checkIns].sort((a, b) => b.month.localeCompare(a.month))[0];
 }
 
 /** v0 -> v1: `BudgetCategory.limit` (one number for the category) became
@@ -115,20 +226,56 @@ export function migrateBudgetCategoryLimits(
   });
 }
 
+/** v1 -> v2: category identity moved from a free-text name + a pick of 9
+ *  SVG icon ids to a fixed key from FINANCE_CATEGORIES (see finance-
+ *  categories.ts) — the "Своя категорія" free-naming flow is gone, so every
+ *  existing category has to land on *some* fixed key, and its `name` has to
+ *  match that key's canonical Ukrainian name (a category's name is no longer
+ *  independently editable). Old icon ids map to their closest equivalent;
+ *  anything unrecognised (or already a valid key, if this ever re-runs)
+ *  falls back to "home" rather than crashing on an unknown category. */
+const LEGACY_ICON_TO_CATEGORY: Record<string, FinanceCategoryKey> = {
+  utensils: "restaurant",
+  car: "car",
+  clapperboard: "entertainment",
+  smartphone: "subscriptions",
+  house: "home",
+  "shopping-bag": "clothes",
+  pill: "health",
+  book: "education",
+  transfer: "transfers",
+};
+
+export function migrateBudgetCategoryIconIds(categories: BudgetCategory[]): BudgetCategory[] {
+  return categories.map((cat) => {
+    const key = isFinanceCategoryKey(cat.icon) ? cat.icon : (LEGACY_ICON_TO_CATEGORY[cat.icon] ?? "home");
+    return { ...cat, icon: key, name: FINANCE_CATEGORIES[key].name };
+  });
+}
+
 interface FinanceState {
   accounts: FinanceAccount[];
-  goals: FinanceGoal[];
+  goals: FinancialGoal[];
   budgetCategories: BudgetCategory[];
   transactions: Transaction[];
+  debts: Debt[];
+  investments: Investment[];
+  insurancePolicies: InsurancePolicy[];
+  checkIns: MonthlyCheckIn[];
+  quizAttempts: QuizAttempt[];
+  /** Set once the 4-step manual-data flow (Чек-ін/Борги/Інвестиції/
+   *  Страхування) has been shown once, whether finished or skipped — so it
+   *  auto-opens exactly once on first visit to Фінанси, and only ever
+   *  again from Налаштування after that. */
+  manualDataOnboarded: boolean;
 
   addTransaction: (t: Omit<Transaction, "id">) => void;
   updateTransaction: (id: string, patch: Partial<Omit<Transaction, "id">>) => void;
   removeTransaction: (id: string) => void;
 
-  addGoal: (g: Omit<FinanceGoal, "id">) => void;
-  updateGoal: (id: string, patch: Partial<Omit<FinanceGoal, "id">>) => void;
+  addGoal: (g: Omit<FinancialGoal, "id">) => void;
+  updateGoal: (id: string, patch: Partial<Omit<FinancialGoal, "id">>) => void;
   removeGoal: (id: string) => void;
-  contributeToGoal: (id: string, amount: number) => void;
 
   addBudgetCategory: (c: Omit<BudgetCategory, "id">) => string;
   updateBudgetCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id">>) => void;
@@ -137,6 +284,23 @@ interface FinanceState {
   addAccount: (a: Omit<FinanceAccount, "id">) => string;
   updateAccount: (id: string, patch: Partial<Omit<FinanceAccount, "id">>) => void;
   removeAccount: (id: string) => void;
+
+  addDebt: (d: Omit<Debt, "id">) => void;
+  updateDebt: (id: string, patch: Partial<Omit<Debt, "id">>) => void;
+  removeDebt: (id: string) => void;
+
+  addInvestment: (i: Omit<Investment, "id">) => void;
+  updateInvestment: (id: string, patch: Partial<Omit<Investment, "id">>) => void;
+  removeInvestment: (id: string) => void;
+
+  setInsurancePolicy: (type: InsuranceType, hasPolicy: boolean) => void;
+  /** `investmentsTotal`/`debtsTotal` are NOT parameters — they're captured
+   *  from the live investments/debts arrays at save time (see this store's
+   *  own doc comment on MonthlyCheckIn), so the caller only ever supplies
+   *  the three numbers the person actually typed in. */
+  upsertCheckIn: (data: { savings: number; monthlyIncome: number; monthlyExpenses: number }) => void;
+  addQuizAttempt: (a: Omit<QuizAttempt, "id">) => void;
+  setManualDataOnboarded: (v: boolean) => void;
 }
 
 export const useFinanceStore = create<FinanceState>()(
@@ -146,6 +310,12 @@ export const useFinanceStore = create<FinanceState>()(
       goals: seedGoals(),
       budgetCategories: seedBudgetCategories(),
       transactions: seedTransactions(),
+      debts: [],
+      investments: [],
+      insurancePolicies: seedInsurancePolicies(),
+      checkIns: [],
+      quizAttempts: [],
+      manualDataOnboarded: false,
 
       addTransaction: (t) =>
         set((s) => {
@@ -171,10 +341,6 @@ export const useFinanceStore = create<FinanceState>()(
       updateGoal: (id, patch) =>
         set((s) => ({ goals: s.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) })),
       removeGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
-      contributeToGoal: (id, amount) =>
-        set((s) => ({
-          goals: s.goals.map((g) => (g.id === id ? { ...g, contributed: g.contributed + amount } : g)),
-        })),
 
       addBudgetCategory: (c) => {
         const id = crypto.randomUUID();
@@ -196,15 +362,73 @@ export const useFinanceStore = create<FinanceState>()(
       updateAccount: (id, patch) =>
         set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
       removeAccount: (id) => set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) })),
+
+      addDebt: (d) => set((s) => ({ debts: [...s.debts, { ...d, id: crypto.randomUUID() }] })),
+      updateDebt: (id, patch) =>
+        set((s) => ({ debts: s.debts.map((d) => (d.id === id ? { ...d, ...patch } : d)) })),
+      removeDebt: (id) => set((s) => ({ debts: s.debts.filter((d) => d.id !== id) })),
+
+      addInvestment: (i) => set((s) => ({ investments: [...s.investments, { ...i, id: crypto.randomUUID() }] })),
+      updateInvestment: (id, patch) =>
+        set((s) => ({ investments: s.investments.map((i) => (i.id === id ? { ...i, ...patch } : i)) })),
+      removeInvestment: (id) => set((s) => ({ investments: s.investments.filter((i) => i.id !== id) })),
+
+      setInsurancePolicy: (type, hasPolicy) =>
+        set((s) => ({
+          insurancePolicies: s.insurancePolicies.map((p) => (p.type === type ? { ...p, hasPolicy } : p)),
+        })),
+      upsertCheckIn: (data) =>
+        set((s) => {
+          const month = currentMonthKey();
+          const investmentsTotal = s.investments.reduce((sum, i) => sum + i.amount, 0);
+          const debtsTotal = s.debts.reduce((sum, d) => sum + d.remainingAmount, 0);
+          const totalMonthlyDebtPayments = s.debts.reduce((sum, d) => sum + d.monthlyPayment, 0);
+          const existing = s.checkIns.find((c) => c.month === month);
+          const entry: MonthlyCheckIn = {
+            id: existing?.id ?? crypto.randomUUID(),
+            month,
+            ...data,
+            investmentsTotal,
+            debtsTotal,
+            totalMonthlyDebtPayments,
+          };
+          return {
+            checkIns: existing ? s.checkIns.map((c) => (c.month === month ? entry : c)) : [...s.checkIns, entry],
+          };
+        }),
+      addQuizAttempt: (a) => set((s) => ({ quizAttempts: [...s.quizAttempts, { ...a, id: crypto.randomUUID() }] })),
+      setManualDataOnboarded: (v) => set({ manualDataOnboarded: v }),
     }),
     {
       name: "life-os-finance-v2",
-      version: 1,
-      migrate: (persisted) => {
+      version: 6,
+      migrate: (persisted, version) => {
         const state = persisted as FinanceState;
+        let budgetCategories = migrateBudgetCategoryLimits(state.budgetCategories ?? [], state.transactions ?? []);
+        if (version < 2) {
+          budgetCategories = migrateBudgetCategoryIconIds(budgetCategories);
+        }
+        let goals = state.goals ?? [];
+        if (version < 3) {
+          goals = migrateFinancialGoals(goals);
+        }
+        let checkIns = state.checkIns ?? [];
+        if (version < 6) {
+          // Old check-ins predate totalMonthlyDebtPayments — 0 (not today's
+          // live debt total) is the honest value for a month we never
+          // actually captured it in, not a guess dressed up as history.
+          checkIns = checkIns.map((c) => ({ ...c, totalMonthlyDebtPayments: (c as Partial<MonthlyCheckIn>).totalMonthlyDebtPayments ?? 0 }));
+        }
         return {
           ...state,
-          budgetCategories: migrateBudgetCategoryLimits(state.budgetCategories ?? [], state.transactions ?? []),
+          budgetCategories,
+          goals,
+          debts: state.debts ?? [],
+          investments: state.investments ?? [],
+          insurancePolicies: state.insurancePolicies?.length ? state.insurancePolicies : seedInsurancePolicies(),
+          checkIns,
+          quizAttempts: state.quizAttempts ?? [],
+          manualDataOnboarded: state.manualDataOnboarded ?? false,
         };
       },
     }

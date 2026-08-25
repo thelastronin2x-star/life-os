@@ -1,4 +1,4 @@
-import { pgTable, text, integer, bigint, bigserial, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, bigint, bigserial, boolean, timestamp, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 
 /** Minimum entities for the server becoming the source of truth for
  *  transactions (see monobank-server-ledger-prompt.md, Stage 2). No auth,
@@ -24,6 +24,26 @@ export const bankConnections = pgTable("bank_connections", {
   provider: text("provider").notNull(), // "monobank" for now
   encryptedToken: text("encrypted_token").notNull(),
   webhookSecretId: text("webhook_secret_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** One row per pending Monobank Corporate-API auth request (the
+ *  deep-link-into-the-app connect flow — see monobank-corp-sign.ts). Kept
+ *  separate from bankConnections since most rows here never become a real
+ *  connection (declined, expired, abandoned tab): `id` doubles as the
+ *  opaque token the client polls with, `proof` is the unguessable secret
+ *  baked into the webhook URL Monobank calls back on. No userId here —
+ *  same as bankConnections, one is minted fresh only once the request
+ *  actually resolves into a connection. `encryptedToken` is set by the
+ *  webhook (server-to-server, no browser cookies available) and consumed
+ *  by the status route (which the browser polls and which DOES have a
+ *  cookie jar to finish the connection into) — see completeMonobankConnection. */
+export const monobankCorpAuthRequests = pgTable("monobank_corp_auth_requests", {
+  id: text("id").primaryKey(),
+  proof: text("proof").notNull(),
+  monobankTokenRequestId: text("monobank_token_request_id"),
+  status: text("status", { enum: ["pending", "confirmed", "expired"] }).notNull().default("pending"),
+  encryptedToken: text("encrypted_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -129,5 +149,136 @@ export const backfillJobs = pgTable("backfill_jobs", {
   historyExhausted: boolean("history_exhausted").notNull().default(false),
   lastError: text("last_error"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Web Push — none of this reuses `users`/`userId`: that identity only
+ *  exists once a Monobank connection is made (see the file-level comment
+ *  above), and push has to work for someone who never connects a bank.
+ *  `deviceId` is a separate, unencrypted random cookie (device-session.ts) —
+ *  reminders are inherently per-installed-PWA, not per-account anyway. */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey(),
+  deviceId: text("device_id").notNull(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** A synced copy of only the calendar items that actually need a push —
+ *  `reminder !== "none"` — written from calendar-store.ts on every add/
+ *  update, deleted when a reminder is cleared or the item is removed. Not a
+ *  general calendar sync: title/date/time/kind/reminder/recurrence is
+ *  exactly what /api/push/send-reminders needs to recompute occurrences via
+ *  the existing expandRecurringEvents (recurrence.ts), and nothing more. */
+export const calendarReminderItems = pgTable("calendar_reminder_items", {
+  id: text("id").primaryKey(), // same id as the client's CalendarItem
+  deviceId: text("device_id").notNull(),
+  title: text("title").notNull(),
+  date: text("date").notNull(), // "YYYY-MM-DD"
+  time: text("time"), // "HH:MM"
+  kind: text("kind").notNull(), // "event" | "note"
+  reminder: text("reminder").notNull(), // "10min" | "1hour" | "day"
+  recurrence: jsonb("recurrence"), // EventRecurrence | null, as-is
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** One row per device that has ever touched sleep tracking — not just
+ *  "bedtime reminder on" anymore. Carries both independent reminder times
+ *  (either can be null = off) *and* the live sleep state, synced from
+ *  startSleep/endSleep as well as the two setTarget*Time actions
+ *  (health-store.ts's syncSleepSchedule) — /api/push/send-reminders needs
+ *  sleepState to gate each reminder ("don't say 'time to sleep' if already
+ *  sleeping", "don't say 'time to wake up' if the session never started"),
+ *  and needs sessionStartedAt to do the "wake time is really tomorrow
+ *  morning if earlier than bedtime" math and to dedupe the wake reminder
+ *  per session rather than per calendar day. Always upserted, never
+ *  deleted — a row with both times null and state "idle" is harmless, the
+ *  cron just has nothing to do with it. */
+export const bedtimeReminders = pgTable("bedtime_reminders", {
+  deviceId: text("device_id").primaryKey(),
+  // DB column stays "target_time" (its original name) — only the TS-side
+  // property is renamed to targetBedtime for clarity paired with
+  // targetWakeTime below. Keeping the column identifier unchanged turns
+  // this into a plain "drop NOT NULL" diff instead of an ambiguous rename
+  // drizzle-kit would otherwise need an interactive prompt to resolve.
+  targetBedtime: text("target_time"), // "HH:MM", Europe/Kyiv wall-clock, null = off
+  targetWakeTime: text("target_wake_time"), // "HH:MM", null = off
+  sleepState: text("sleep_state").notNull().default("idle"), // "idle" | "sleeping"
+  sessionStartedAt: timestamp("session_started_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** One row per device that has ever touched water tracking — same "always
+ *  upserted, never deleted" shape as bedtimeReminders above, and for the
+ *  same reason: the cron in /api/push/send-reminders has no access to this
+ *  device's localStorage, so both the reminder settings AND a live copy of
+ *  today's intake/goal have to be synced here (health-store.ts's
+ *  syncWaterSchedule, called from addWater/setWaterGoal and the two
+ *  settings actions). `todayDate` exists specifically so the cron can tell
+ *  a genuinely-empty today apart from a stale snapshot nobody refreshed
+ *  since yesterday — without it, a device that goes untouched overnight
+ *  would keep showing as "already at yesterday's pace" and every reminder
+ *  would silently (and wrongly) skip all day. */
+export const waterReminders = pgTable("water_reminders", {
+  deviceId: text("device_id").primaryKey(),
+  remindersPerDay: integer("reminders_per_day").notNull().default(5),
+  activeStart: text("active_start").notNull().default("09:00"), // "HH:MM", Europe/Kyiv wall-clock
+  activeEnd: text("active_end").notNull().default("22:00"),
+  todayAmountMl: integer("today_amount_ml").notNull().default(0),
+  todayGoalMl: integer("today_goal_ml").notNull().default(2000),
+  todayDate: text("today_date"), // "YYYY-MM-DD" the two fields above actually belong to; null before the first sync
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Dedup is a database-level guarantee here too, same as
+ *  ledgerTransactions above: two overlapping cron ticks (or a retry) racing
+ *  to send the same occurrence both attempt the insert, only one can win the
+ *  unique constraint, and only the winner sends the push. `occurrenceKey` is
+ *  "<itemId>|<fireAt ISO>" — distinct per occurrence of a recurring item.
+ *  Reused for bedtime reminders too (itemId = "bedtime:<deviceId>",
+ *  occurrenceKey = today's date) — same one-send-per-occurrence guarantee,
+ *  no need for a parallel dedup mechanism. */
+export const sentReminderLog = pgTable(
+  "sent_reminder_log",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    itemId: text("item_id").notNull(),
+    occurrenceKey: text("occurrence_key").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("sent_reminder_log_item_occurrence_idx").on(table.itemId, table.occurrenceKey)]
+);
+
+/** "Що рухає твої ринки" news cache — `id` is sha256(url) (see
+ *  news/dedupe.ts), so re-fetching a URL Alpha Vantage has already served
+ *  is a plain upsert instead of a separate lookup-then-insert step; that's
+ *  the entire dedup-by-URL requirement. `markets`/`tickers` are the app's
+ *  own normalized tags, not Alpha Vantage's raw topic/ticker-sentiment
+ *  shape — see news/alpha-vantage-provider.ts for that mapping. Never
+ *  stores full article text, only what the feed UI actually shows. */
+export const newsItems = pgTable("news_items", {
+  id: text("id").primaryKey(),
+  headline: text("headline").notNull(),
+  source: text("source").notNull(),
+  url: text("url").notNull(),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+  summary: text("summary"),
+  sentiment: text("sentiment"), // "positive" | "neutral" | "negative" | null
+  markets: jsonb("markets").notNull().$type<string[]>(),
+  tickers: jsonb("tickers").notNull().$type<string[]>(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Custom tickers a device has opted into beyond the four standard markets
+ *  (see news-preferences-store.ts) — synced here so /api/news/refresh (a
+ *  cron job with no access to any device's localStorage) knows which extra
+ *  tickers to fetch from Alpha Vantage. Same "always upserted, one row per
+ *  device" shape as bedtimeReminders/waterReminders above; refresh reads
+ *  every row and fetches the union across all devices. */
+export const newsTrackedTickers = pgTable("news_tracked_tickers", {
+  deviceId: text("device_id").primaryKey(),
+  tickers: jsonb("tickers").notNull().$type<string[]>().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

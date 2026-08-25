@@ -16,4 +16,9 @@ export const LAUNCH_MOTIFS: Record<Profile, MotifBuilder> = {
     <path d="M50 4 L66 20 L50 36" stroke="${c}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M40 2 L30 38" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6"/>
   </svg>`,
+  student: (c) => `<svg width="70" height="46" viewBox="0 0 70 46">
+    <path d="M35 4 L66 16 L35 28 L4 16 Z" fill="${c}" opacity="0.9"/>
+    <path d="M18 20 V32 C18 36 26 39 35 39 C44 39 52 36 52 32 V20" stroke="${c}" stroke-width="3" fill="none" opacity="0.6"/>
+    <path d="M64 16 V30" stroke="${c}" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  </svg>`,
 };

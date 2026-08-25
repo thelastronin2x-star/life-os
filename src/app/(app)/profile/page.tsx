@@ -25,7 +25,7 @@ export default function ProfilePage() {
   return (
     <div>
       <Link href="/" className="mb-1 flex items-center gap-2 pt-2 text-[12.5px] text-text-dim">
-        <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+        <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
           ‹
         </span>
         Назад на Головну
@@ -53,7 +53,7 @@ export default function ProfilePage() {
           href="/profile/theme"
           className="flex items-center gap-3.5 border-b border-border py-3.5"
         >
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface text-text-dim">
             <ThemeIcon className="h-4 w-4" />
           </span>
           <span className="flex-1">
@@ -66,7 +66,7 @@ export default function ProfilePage() {
           href="/profile/avatar"
           className="flex items-center gap-3.5 border-b border-border py-3.5"
         >
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface text-text-dim">
             <AvatarFrameIcon className="h-4 w-4" />
           </span>
           <span className="flex-1">
@@ -79,7 +79,7 @@ export default function ProfilePage() {
           onClick={() => setProfilePickerOpen(true)}
           className="flex items-center gap-3.5 border-b border-border py-3.5 text-left"
         >
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface text-text-dim">
             <BriefcaseIcon className="h-4 w-4" />
           </span>
           <span className="flex-1">
@@ -91,7 +91,7 @@ export default function ProfilePage() {
 
       <div className="mt-4 flex flex-col gap-0.5">
         <Link href="/profile/settings" className="flex items-center gap-3.5 border-b border-border py-3.5">
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface text-text-dim">
             <GearIcon className="h-4 w-4" />
           </span>
           <span className="flex-1">
@@ -104,7 +104,7 @@ export default function ProfilePage() {
         </Link>
 
         <Link href="/profile/help" className="flex items-center gap-3.5 py-3.5">
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface text-text-dim">
             <HelpIcon className="h-4 w-4" />
           </span>
           <span className="flex-1">

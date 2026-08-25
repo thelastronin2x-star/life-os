@@ -30,3 +30,29 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
   );
 });
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data?.json() ?? {};
+  } catch {
+    data = { title: "Life OS", body: event.data?.text() ?? "" };
+  }
+
+  // waitUntil is required, not just tidy — a push the SW doesn't resolve
+  // with a shown notification reads to iOS as "silent," and enough silent
+  // pushes in a row gets the subscription revoked outright.
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Life OS", {
+      body: data.body || "",
+      icon: "/manifest-icon-192",
+      badge: "/manifest-icon-192",
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url));
+});

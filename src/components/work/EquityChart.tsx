@@ -1,9 +1,14 @@
 "use client";
 
+import { smoothPath, smoothArea, type Point } from "@/lib/smooth-path";
+
 export type EquityChartType = "line" | "bar" | "drawdown";
+/** Which way the curve went. The chart no longer sits on a coloured card, so
+ *  the line itself has to say whether the period was up or down. */
+export type EquityTone = "positive" | "negative";
 
 const W = 300;
-const H = 70;
+const H = 52;
 
 function buildEquity(deltas: number[]): number[] {
   return deltas.reduce<number[]>((acc, d) => {
@@ -12,30 +17,37 @@ function buildEquity(deltas: number[]): number[] {
   }, []);
 }
 
-function LineVariant({ points }: { points: number[] }) {
+function LineVariant({ points, tone }: { points: number[]; tone: EquityTone }) {
+  const color = tone === "negative" ? "var(--clay)" : "var(--sage)";
   const min = Math.min(0, ...points);
   const max = Math.max(0, ...points);
   const range = max - min || 1;
   const step = points.length > 1 ? W / (points.length - 1) : 0;
-  const path = points
-    .map((v, i) => {
-      const x = i * step;
-      const y = H - ((v - min) / range) * H;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const area = `${path} L${((points.length - 1) * step).toFixed(1)},${H} L0,${H} Z`;
+  const coords: Point[] = points.map((v, i) => ({ x: i * step, y: H - ((v - min) / range) * H }));
+  const path = smoothPath(coords);
+  const area = smoothArea(coords, H);
 
   return (
     <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
       <defs>
-        <linearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--sage)" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="var(--sage)" stopOpacity="0" />
+        {/* Gradient id varies with tone: two charts of different tones on one
+            screen would otherwise share the first one's <defs> and both come
+            out the same colour. */}
+        <linearGradient id={`equityFill-${tone}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#equityFill)" />
-      <path d={path} fill="none" stroke="var(--sage)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+      <path d={area} fill={`url(#equityFill-${tone})`} />
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
@@ -43,7 +55,7 @@ function LineVariant({ points }: { points: number[] }) {
 function BarVariant({ deltas }: { deltas: number[] }) {
   const maxAbs = Math.max(1, ...deltas.map((d) => Math.abs(d)));
   return (
-    <div className="flex h-[70px] items-end gap-1">
+    <div className="flex h-[52px] items-end gap-1">
       {deltas.map((d, i) => (
         <div
           key={i}
@@ -71,14 +83,9 @@ function DrawdownVariant({ equity, maxDrawdownPct }: { equity: number[]; maxDraw
   const minDD = Math.min(0, ...drawdown);
   const range = Math.abs(minDD) || 1;
   const step = drawdown.length > 1 ? W / (drawdown.length - 1) : 0;
-  const path = drawdown
-    .map((v, i) => {
-      const x = i * step;
-      const y = (Math.abs(v) / range) * H;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const area = `${path} L${((drawdown.length - 1) * step).toFixed(1)},0 L0,0 Z`;
+  const coords: Point[] = drawdown.map((v, i) => ({ x: i * step, y: (Math.abs(v) / range) * H }));
+  const path = smoothPath(coords);
+  const area = smoothArea(coords, 0);
 
   return (
     <div>
@@ -103,14 +110,16 @@ export function EquityChart({
   type,
   deltas,
   maxDrawdownPct,
+  tone = "positive",
 }: {
   type: EquityChartType;
   deltas: number[];
   maxDrawdownPct?: number;
+  tone?: EquityTone;
 }) {
   if (deltas.length < 2) {
     return (
-      <div className="flex h-[70px] items-center justify-center text-[10.5px] text-text-faint">
+      <div className="flex h-[52px] items-center justify-center text-[10.5px] text-text-faint">
         Замало закритих угод для графіка
       </div>
     );
@@ -119,5 +128,5 @@ export function EquityChart({
   if (type === "bar") return <BarVariant deltas={deltas} />;
   const equity = buildEquity(deltas);
   if (type === "drawdown") return <DrawdownVariant equity={equity} maxDrawdownPct={maxDrawdownPct} />;
-  return <LineVariant points={equity} />;
+  return <LineVariant points={equity} tone={tone} />;
 }

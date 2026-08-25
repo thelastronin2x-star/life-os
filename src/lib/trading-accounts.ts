@@ -1,6 +1,6 @@
 "use client";
 
-import { usePersonalTradingAccountsStore } from "./personal-trading-accounts-store";
+import { usePersonalTradingAccountsStore, TRADING_CURRENCY_SYMBOL } from "./personal-trading-accounts-store";
 import { usePropAccountsStore } from "./prop-accounts-store";
 import { useJournalStore, type Trade } from "./journal-store";
 import { useJournalConfigStore, type JournalInstrument } from "./journal-config-store";
@@ -13,6 +13,9 @@ export interface PersonalAccountView {
   startingDeposit: number;
   netPnL: number;
   balance: number;
+  /** Symbol to print this account's money in — the account's own, never the
+   *  app-wide display currency. */
+  currencySymbol: string;
 }
 
 export interface PropAccountView {
@@ -25,6 +28,7 @@ export interface PropAccountView {
   drawdownPct: number;
   maxDrawdown: number;
   netPnL: number;
+  currencySymbol: string;
 }
 
 export type TradingAccountView = PersonalAccountView | PropAccountView;
@@ -54,6 +58,7 @@ export function useTradingAccounts(): TradingAccountView[] {
       startingDeposit: a.startingDeposit,
       netPnL,
       balance: a.startingDeposit + netPnL,
+      currencySymbol: TRADING_CURRENCY_SYMBOL[a.currency ?? "USD"],
     };
   });
 
@@ -67,6 +72,7 @@ export function useTradingAccounts(): TradingAccountView[] {
     drawdownPct: a.drawdownPct,
     maxDrawdown: a.maxDrawdown,
     netPnL: closedNetPnL(trades, a.id, instrumentById),
+    currencySymbol: TRADING_CURRENCY_SYMBOL[a.currency ?? "USD"],
   }));
 
   return [...personalViews, ...propViews];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCalendarStore } from "./calendar-store";
+import { useCalendarStore, type ReminderOption } from "./calendar-store";
 import { formatDateKey } from "./calendar-utils";
 
 // Module-scope so a note's "day before" reminder doesn't refire on every
@@ -22,32 +22,38 @@ export function useReminderNotifications() {
 
     const timers: number[] = [];
 
+    // "day" for an event means "the day before its date" — that can be up to
+    // ~24h ahead, comfortably inside the 26h window below; "10min"/"1hour"
+    // are always well inside it too.
+    const MINUTES_BEFORE: Record<Exclude<ReminderOption, "none">, number> = {
+      "10min": 10,
+      "1hour": 60,
+      day: 24 * 60,
+    };
+
     for (const item of items) {
-      if (item.kind === "event" && item.date === todayKey && item.time) {
+      if (item.kind === "event" && item.date === todayKey && item.time && item.reminder !== "none") {
         const [h, m] = item.time.split(":").map(Number);
         const start = new Date();
         start.setHours(h, m, 0, 0);
 
-        const schedule = (minutesBefore: number, enabled: boolean) => {
-          if (!enabled) return;
-          const fireAt = start.getTime() - minutesBefore * 60_000;
-          const delay = fireAt - Date.now();
-          if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
-            const timer = window.setTimeout(() => {
-              new Notification(item.title, {
-                body: minutesBefore === 0 ? "Починається зараз" : `Починається через ${minutesBefore} хв`,
-                tag: `${item.id}-${minutesBefore}`,
-              });
-            }, delay);
-            timers.push(timer);
-          }
-        };
-
-        schedule(30, item.reminder30);
-        schedule(5, item.reminder5);
+        const minutesBefore = MINUTES_BEFORE[item.reminder];
+        const fireAt = start.getTime() - minutesBefore * 60_000;
+        const delay = fireAt - Date.now();
+        if (delay > 0 && delay < 26 * 60 * 60 * 1000) {
+          // Same wording as the server's push body (send-reminders/route.ts)
+          // — says the actual time, not just "today", so the two channels
+          // never read as two different reminders about the same event.
+          const body =
+            minutesBefore >= 60 ? `Сьогодні о ${item.time}` : `Починається через ${minutesBefore} хв`;
+          const timer = window.setTimeout(() => {
+            new Notification(item.title, { body, tag: `${item.id}-${minutesBefore}` });
+          }, delay);
+          timers.push(timer);
+        }
       }
 
-      if (item.kind === "note" && item.reminderDayBefore && item.date === tomorrowKey) {
+      if (item.kind === "note" && item.reminder === "day" && item.date === tomorrowKey) {
         if (!notifiedNoteIds.has(item.id)) {
           notifiedNoteIds.add(item.id);
           new Notification("Нагадування на завтра", { body: item.title, tag: item.id });

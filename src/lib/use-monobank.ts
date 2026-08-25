@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMonobankLinkStore } from "./monobank-store";
 import { useFinanceStore } from "./finance-store";
 import { importMonobankTransactions } from "./monobank-import";
@@ -29,12 +29,22 @@ export type BackfillProgress =
   | { phase: "extending"; probed: number }
   | { phase: "refreshing"; current: number; total: number };
 
+// Persisted (not just in-memory) because connectViaApp navigates the whole
+// tab away to the Monobank app — surviving a reload/relaunch is the point,
+// not an edge case.
+const PENDING_CORP_REQUEST_KEY = "monobank-corp-pending-request";
+const CORP_POLL_INTERVAL_MS = 2_500;
+
+export type CorpConnectStatus = "idle" | "waiting" | "error";
+
 export function useMonobank() {
   const [status, setStatus] = useState<Status>("loading");
   const [monoAccounts, setMonoAccounts] = useState<MonobankAccountInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [backfillProgress, setBackfillProgress] = useState<BackfillProgress | null>(null);
+  const [corpConnectStatus, setCorpConnectStatus] = useState<CorpConnectStatus>("idle");
+  const corpPollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { links, setLink, removeLink } = useMonobankLinkStore();
 
@@ -146,6 +156,80 @@ export function useMonobank() {
     },
     [autoLinkAccounts]
   );
+
+  const stopCorpPoll = useCallback(() => {
+    if (corpPollTimerRef.current) {
+      clearInterval(corpPollTimerRef.current);
+      corpPollTimerRef.current = null;
+    }
+  }, []);
+
+  /** Polls the Corporate-connect status route, which is also the one place
+   *  that actually finishes the connection (sets the cookie) once
+   *  Monobank's webhook has delivered a confirmed token server-side — see
+   *  /api/finance/monobank-corp/status/[requestToken]. Started both right
+   *  after connectViaApp fires (in case the tab never actually unloads) and
+   *  on mount if a request was left pending across a reload. */
+  const pollCorpStatus = useCallback(
+    (requestToken: string) => {
+      stopCorpPoll();
+      setCorpConnectStatus("waiting");
+      corpPollTimerRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/finance/monobank-corp/status/${requestToken}`);
+          const data = await res.json();
+          if (data.status === "confirmed") {
+            stopCorpPoll();
+            localStorage.removeItem(PENDING_CORP_REQUEST_KEY);
+            setCorpConnectStatus("idle");
+            await refresh();
+          } else if (data.status === "expired" || data.error) {
+            stopCorpPoll();
+            localStorage.removeItem(PENDING_CORP_REQUEST_KEY);
+            setCorpConnectStatus("error");
+            setError("Запит на підключення більше не дійсний — спробуй ще раз");
+          }
+          // "pending" — keep waiting for the next tick.
+        } catch {
+          // Transient network hiccup — the next tick retries on its own.
+        }
+      }, CORP_POLL_INTERVAL_MS);
+    },
+    [stopCorpPoll, refresh]
+  );
+
+  useEffect(() => stopCorpPoll, [stopCorpPoll]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(PENDING_CORP_REQUEST_KEY);
+    if (!raw) return;
+    try {
+      const { requestToken } = JSON.parse(raw);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time resume-on-mount kickoff, same justification as the refresh()-on-mount effect above
+      if (typeof requestToken === "string") pollCorpStatus(requestToken);
+    } catch {
+      localStorage.removeItem(PENDING_CORP_REQUEST_KEY);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time resume check on mount only
+  }, []);
+
+  /** Corporate/Provider API deep-link flow — opens the Monobank app for a
+   *  one-tap confirmation instead of a manually pasted token. Gated server-
+   *  side by MONOBANK_CORP_ENABLED; the connect route 404s until that's
+   *  configured, so this is safe to call unconditionally, but the UI only
+   *  shows the button when NEXT_PUBLIC_MONOBANK_CORP_ENABLED is set. */
+  const connectViaApp = useCallback(async () => {
+    setError(null);
+    const res = await fetch("/api/finance/monobank-corp/connect", { method: "POST" });
+    if (!res.ok) {
+      setError("Не вдалося почати підключення через застосунок");
+      return;
+    }
+    const { acceptUrl, requestToken } = await res.json();
+    localStorage.setItem(PENDING_CORP_REQUEST_KEY, JSON.stringify({ requestToken, createdAt: Date.now() }));
+    pollCorpStatus(requestToken);
+    window.location.href = acceptUrl;
+  }, [pollCorpStatus]);
 
   const disconnect = useCallback(async () => {
     await fetch("/api/finance/monobank/disconnect", { method: "POST" });
@@ -358,7 +442,9 @@ export function useMonobank() {
     error,
     syncingId,
     backfillProgress,
+    corpConnectStatus,
     connect,
+    connectViaApp,
     disconnect,
     link,
     unlink: removeLink,

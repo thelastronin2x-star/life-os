@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { getHoliday } from "@/lib/holidays";
-import { formatAgendaDate } from "@/lib/calendar-utils";
+import { formatAgendaDate, formatDateKey, DAY_PERIODS, periodForHour, pluralizeUk } from "@/lib/calendar-utils";
 import { describeRecurrenceShort } from "@/lib/recurrence";
 import type { CalendarItem } from "@/lib/calendar-store";
 import type { CalendarEvent } from "@/app/api/calendar/events/route";
-import { BellIcon, PinIcon, NoteIcon, RepeatIcon } from "@/components/icons";
+import { MedsQuickView } from "./MedsQuickView";
+import { useHealthStore } from "@/lib/health-store";
+import { isMedicationReminderItem } from "@/lib/meds-calendar-link";
+import { cn } from "@/lib/cn";
 
 const CATEGORY_LABEL: Record<CalendarItem["category"], string> = {
   personal: "Особисте",
@@ -17,33 +21,96 @@ const CATEGORY_COLOR: Record<CalendarItem["category"], string> = {
   work: "var(--gold)",
 };
 
-function RepeatBadge({ item }: { item: CalendarItem }) {
-  if (!item.recurrence) return null;
+const REMINDER_LABEL: Record<CalendarItem["reminder"], string | null> = {
+  none: null,
+  "10min": "нагад. 10хв",
+  "1hour": "нагад. 1год",
+  day: "нагад. за день",
+};
+
+function EventMeta({ item }: { item: CalendarItem }) {
+  const bits: string[] = [];
+  if (item.durationMinutes) bits.push(`${item.durationMinutes} хв`);
+  const reminderText = REMINDER_LABEL[item.reminder];
+  if (reminderText) bits.push(reminderText);
+  const repeatText = item.recurrence ? describeRecurrenceShort(item.recurrence) : null;
+  if (repeatText) bits.push(repeatText);
+
   return (
-    <span className="flex flex-shrink-0 items-center gap-1 rounded-full bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-sage">
-      <RepeatIcon className="h-2.5 w-2.5" />
-      {describeRecurrenceShort(item.recurrence)}
+    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-text-faint">
+      <span style={{ color: CATEGORY_COLOR[item.category] }} className="font-semibold">
+        {CATEGORY_LABEL[item.category]}
+      </span>
+      {bits.map((b) => (
+        <span key={b}>· {b}</span>
+      ))}
+    </div>
+  );
+}
+
+/** Manual "виконано" toggle for isWorkout events — the checked state IS the
+ *  derived boolean "does an Активність entry with this calendarEventId+date
+ *  already exist", not a separate stored flag (see use-workout-activity-
+ *  sync.ts and the store's upsert/removeCalendarActivity). Tapping again
+ *  undoes it, in case of a mistap or a plan that changed. */
+function WorkoutDoneToggle({ item }: { item: CalendarItem }) {
+  const synced = useHealthStore((s) =>
+    s.activityEntries.some((a) => a.calendarEventId === item.id && a.date === item.date)
+  );
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        const health = useHealthStore.getState();
+        if (synced) {
+          health.removeCalendarActivity(item.id, item.date);
+        } else {
+          health.upsertCalendarActivity({
+            calendarEventId: item.id,
+            date: item.date,
+            type: item.title,
+            minutes: item.durationMinutes ?? 0,
+          });
+        }
+      }}
+      className={cn("flex-shrink-0 px-1 text-[15px]", synced ? "text-sage" : "text-text-faint")}
+    >
+      ✓
     </span>
   );
 }
 
-function ReminderChips({ item }: { item: CalendarItem }) {
-  const chips: string[] = [];
-  if (item.reminder30) chips.push("30хв");
-  if (item.reminder5) chips.push("5хв");
-  if (item.reminderDayBefore) chips.push("за день");
-  if (chips.length === 0) return null;
+function TimelineCard({
+  item,
+  onEdit,
+  onDelete,
+}: {
+  item: CalendarItem;
+  onEdit: (item: CalendarItem) => void;
+  onDelete: (item: CalendarItem) => void;
+}) {
   return (
-    <div className="mt-1.5 flex flex-wrap gap-1">
-      {chips.map((c) => (
-        <span
-          key={c}
-          className="flex items-center gap-1 rounded-full border border-sage/25 bg-sage/10 px-1.5 py-0.5 text-[9px] text-sage"
-        >
-          <BellIcon className="h-2.5 w-2.5" /> {c}
+    <button onClick={() => onEdit(item)} className="mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left">
+      {item.kind === "event" && item.time && (
+        <span className="flex-shrink-0 rounded-btn bg-surface-2 px-2 py-1 font-mono text-[11px] font-bold text-text-dim">
+          {item.time}
         </span>
-      ))}
-    </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-semibold text-text">{item.title}</div>
+        <EventMeta item={item} />
+      </div>
+      {item.isWorkout && <WorkoutDoneToggle item={item} />}
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(item);
+        }}
+        className="flex-shrink-0 px-1 text-[13px] text-text-faint"
+      >
+        ✕
+      </span>
+    </button>
   );
 }
 
@@ -54,7 +121,7 @@ export function DayAgenda({
   googleEvents,
   onEdit,
   onDelete,
-  onAdd,
+  onNavigate,
 }: {
   date: Date;
   events: CalendarItem[];
@@ -62,76 +129,88 @@ export function DayAgenda({
   googleEvents: CalendarEvent[];
   onEdit: (item: CalendarItem) => void;
   onDelete: (item: CalendarItem) => void;
-  onAdd: () => void;
+  onNavigate: (direction: -1 | 1) => void;
 }) {
+  const [medsPopoverItems, setMedsPopoverItems] = useState<CalendarItem[] | null>(null);
+
   const holiday = getHoliday(date);
-  const isEmpty = events.length === 0 && notes.length === 0 && googleEvents.length === 0;
+  const dateKey = formatDateKey(date);
+
+  // Medication-reminder events (medicationId set) get a compact count marker
+  // on the period header instead of a full TimelineCard — see the "Ліки в
+  // Календарі" prompt. Kept out of `nonMedEvents` entirely so they never
+  // show up as cards below.
+  const nonMedEvents = events.filter((e) => !isMedicationReminderItem(e));
+  const medEvents = events.filter((e) => isMedicationReminderItem(e));
+
+  const groups = DAY_PERIODS.map((period) => ({
+    period,
+    items: nonMedEvents.filter((e) => periodForHour(e.time ? parseInt(e.time.split(":")[0], 10) : 12) === period),
+    meds: medEvents.filter((e) => periodForHour(e.time ? parseInt(e.time.split(":")[0], 10) : 12) === period),
+  }));
+  const looseEvents = nonMedEvents.filter((e) => !e.time); // scheduled without a time — shown with the notes, not lost
 
   return (
     <div>
       <div className="mb-2.5 flex items-center justify-between">
-        <div className="font-heading text-[14px] font-semibold text-text">
-          {formatAgendaDate(date)}
+        <div className="font-heading text-[15px] font-semibold text-text">{formatAgendaDate(date)}</div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => onNavigate(-1)}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => onNavigate(1)}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
+          >
+            ›
+          </button>
         </div>
-        <button
-          onClick={onAdd}
-          className="rounded-full bg-accent px-3 py-1.5 text-[11px] font-semibold text-bg"
-        >
-          + додати
-        </button>
       </div>
 
       {holiday && (
-        <div className="mb-3 rounded-card-sm bg-surface-2 shadow-card px-3 py-2.5">
-          <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold text-gold">
-            <PinIcon className="h-3.5 w-3.5" /> {holiday.name}
-          </div>
-          <div className="text-[11px] text-text-dim">Державне свято</div>
+        <div className="mb-3 rounded-card-sm bg-surface-2 px-3 py-2.5 text-[11.5px] font-medium text-text">
+          {holiday.name} · державне свято
         </div>
       )}
 
-      {notes.map((note) => (
-        <div key={note.id} className="mb-2 rounded-card-sm bg-surface-2 shadow-card px-3 py-2.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="mb-1 flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold text-gold">
-              <NoteIcon className="h-3.5 w-3.5" /> {note.title}
-              <RepeatBadge item={note} />
-            </div>
-            <div className="flex flex-shrink-0 gap-2 text-[10px] text-text-faint">
-              <button onClick={() => onEdit(note)}>ред.</button>
-              <button onClick={() => onDelete(note)}>✕</button>
-            </div>
+      {(notes.length > 0 || looseEvents.length > 0) && (
+        <div className="mb-3">
+          {notes.map((note) => (
+            <TimelineCard key={note.id} item={note} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+          {looseEvents.map((event) => (
+            <TimelineCard key={event.id} item={event} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+        </div>
+      )}
+
+      {groups.map(({ period, items, meds }) => (
+        <div key={period.key} className="mb-3.5">
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <span className="text-[11px] font-bold text-text-dim">{period.label}</span>
+            {meds.length > 0 && (
+              <span onClick={() => setMedsPopoverItems(meds)} className="meds-marker">
+                {meds.length} {pluralizeUk(meds.length, ["прийом", "прийоми", "прийомів"])}
+              </span>
+            )}
+            <span className="h-px flex-1 bg-border" />
           </div>
-          <ReminderChips item={note} />
+          {items.length === 0 ? (
+            <div className="py-2 text-[11.5px] text-text-faint">Нічого не заплановано</div>
+          ) : (
+            items
+              .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""))
+              .map((event) => <TimelineCard key={event.id} item={event} onEdit={onEdit} onDelete={onDelete} />)
+          )}
         </div>
       ))}
 
-      {events.map((event) => (
-        <div key={event.id} className="mb-1.5 flex gap-2.5">
-          <div className="w-11 flex-shrink-0 pt-2.5 text-right font-mono text-[10.5px] text-text-faint">
-            {event.time}
-          </div>
-          <div className="w-[2px] flex-shrink-0 rounded bg-border" />
-          <div className="mb-2.5 flex-1 rounded-card-sm bg-surface shadow-card p-2.5">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-text">
-                {event.title}
-                <RepeatBadge item={event} />
-              </div>
-              <div className="flex flex-shrink-0 gap-2 text-[10px] text-text-faint">
-                <button onClick={() => onEdit(event)}>ред.</button>
-                <button onClick={() => onDelete(event)}>✕</button>
-              </div>
-            </div>
-            <div className="mt-1 flex items-center gap-1.5 text-[10px] text-text-faint">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: CATEGORY_COLOR[event.category] }} />
-              {CATEGORY_LABEL[event.category]}
-              {event.durationMinutes && ` · ${event.durationMinutes} хв`}
-            </div>
-            <ReminderChips item={event} />
-          </div>
-        </div>
-      ))}
+      {medsPopoverItems && (
+        <MedsQuickView date={dateKey} items={medsPopoverItems} onClose={() => setMedsPopoverItems(null)} />
+      )}
 
       {googleEvents.map((event) => (
         <a
@@ -139,29 +218,17 @@ export function DayAgenda({
           href={event.htmlLink}
           target="_blank"
           rel="noreferrer"
-          className="mb-1.5 flex gap-2.5"
+          className={cn("mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left")}
         >
-          <div className="w-11 flex-shrink-0 pt-2.5 text-right font-mono text-[10.5px] text-text-faint">
-            {event.allDay
-              ? "увесь"
-              : new Date(event.start).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}
-          </div>
-          <div className="w-[2px] flex-shrink-0 rounded bg-sage" />
-          <div className="mb-2.5 flex-1 rounded-card-sm bg-surface shadow-card p-2.5">
-            <div className="text-[12.5px] font-semibold text-text">{event.title}</div>
-            <div className="mt-1 flex items-center gap-1.5 text-[10px] text-text-faint">
-              <span className="h-1.5 w-1.5 rounded-full bg-sage" />
-              Google Календар
-            </div>
+          <span className="flex-shrink-0 rounded-btn bg-surface-2 px-2 py-1 font-mono text-[11px] font-bold text-text-dim">
+            {event.allDay ? "увесь" : new Date(event.start).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-text">{event.title}</div>
+            <div className="mt-1 text-[10px] text-text-faint">Google Календар</div>
           </div>
         </a>
       ))}
-
-      {isEmpty && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
-          На цей день нічого не заплановано
-        </div>
-      )}
     </div>
   );
 }

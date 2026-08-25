@@ -1,4 +1,4 @@
-import { useJournalStore, type Trade, type TradeDirection, type TradeSource } from "./journal-store";
+import { useJournalStore, type Trade, type TradeDirection, type TradeSource, type TradeSourceMeta } from "./journal-store";
 
 /** What every external trade source (MT5 report, MT5 EA, Bybit sync, any
  *  future one) must normalize itself into before reaching the journal —
@@ -32,6 +32,13 @@ export interface IncomingTrade {
    *  closedPnl) — see Trade.externalPnl for why this overrides the locally
    *  recomputed formula. */
   externalPnl?: number;
+  /** Whatever else the source could tell us about the position — leverage,
+   *  fees, funding, margin mode, how it closed. Passed through verbatim
+   *  rather than folded into the fields above: `commission` is a number the
+   *  journal's own P&L formula uses, while these are reference detail shown
+   *  on the trade screen, and conflating the two would let display data leak
+   *  into calculations. */
+  meta?: TradeSourceMeta;
 }
 
 export interface IngestResult {
@@ -92,6 +99,7 @@ export function ingestTrades(accountId: string, incoming: IncomingTrade[]): Inge
       externalPnl: t.externalPnl,
       source: t.source,
       sourceSymbol: t.sourceSymbol,
+      meta: t.meta,
     };
     addTrade(trade);
     imported += 1;

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CURRENCIES,
   DATE_FORMATS,
@@ -15,12 +16,14 @@ import { BuildInfo } from "@/components/BuildInfo";
 import { FinanceDiagnostics } from "@/components/finance/FinanceDiagnostics";
 import { useGoogleCalendar } from "@/lib/use-google-calendar";
 import { deleteAllUserData } from "@/lib/delete-data";
+import { getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import {
   GlobeIcon,
   ClockIcon,
   BanknoteIcon,
   CalendarDateIcon,
   HeartIcon,
+  RepeatIcon,
   SmartphoneIcon,
   BellIcon,
   DocumentIcon,
@@ -31,8 +34,21 @@ const SETTINGS_ITEMS = [{ label: "Сповіщення асистента", valu
 
 type ActivePicker = "language" | "timezone" | "currency" | "dateFormat" | "firstDayOfWeek" | null;
 
+function StatusPill({ ok }: { ok: boolean }) {
+  return (
+    <span
+      className={`flex-shrink-0 rounded-btn px-2.5 py-1 text-[10px] font-bold ${
+        ok ? "bg-sage-soft text-sage" : "bg-clay-soft text-clay"
+      }`}
+    >
+      {ok ? "OK" : "OFF"}
+    </span>
+  );
+}
+
 function MenuRow({
   icon,
+  iconColor = "text-dim",
   title,
   sub,
   right,
@@ -40,6 +56,7 @@ function MenuRow({
   disabled,
 }: {
   icon: React.ReactNode;
+  iconColor?: "sage" | "clay" | "gold" | "sky" | "rose" | "text-dim";
   title: string;
   sub?: string;
   right?: React.ReactNode;
@@ -55,7 +72,16 @@ function MenuRow({
         disabled ? "opacity-50" : ""
       }`}
     >
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-surface text-text-dim">
+      <span
+        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon ${
+          iconColor === "text-dim" ? "bg-surface text-text-dim" : ""
+        }`}
+        style={
+          iconColor === "text-dim"
+            ? undefined
+            : { background: `var(--${iconColor}-soft)`, color: `var(--${iconColor})` }
+        }
+      >
         {icon}
       </span>
       <span className="min-w-0 flex-1">
@@ -68,6 +94,7 @@ function MenuRow({
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
@@ -75,6 +102,40 @@ export default function SettingsPage() {
   const [deleted, setDeleted] = useState(false);
 
   const { status: gcalStatus, email: gcalEmail, disconnect: gcalDisconnect } = useGoogleCalendar();
+
+  const [pushStatus, setPushStatus] = useState<"loading" | "subscribed" | "not-subscribed" | "unsupported">(
+    "loading"
+  );
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    getPushSubscriptionStatus().then(setPushStatus);
+  }, []);
+
+  // Only meaningful when unsupported — distinguishes "iOS, but not installed
+  // as a standalone PWA yet" (show the hint) from every other unsupported
+  // case (old Safari, desktop without Push API, etc. — nothing to suggest).
+  const isIOSNotStandalone =
+    typeof navigator !== "undefined" &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    typeof window !== "undefined" &&
+    !window.matchMedia("(display-mode: standalone)").matches;
+
+  async function handleTogglePush() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (pushStatus === "subscribed") {
+        await unsubscribeFromPush();
+        setPushStatus("not-subscribed");
+      } else {
+        const result = await subscribeToPush();
+        if (result === "subscribed" || result === "already-subscribed") setPushStatus("subscribed");
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   const languageName = LANGUAGES.find((l) => l.id === settings.language)!.name;
   const timezoneName = TIMEZONES.find((t) => t.id === settings.timezone)?.name ?? settings.timezone;
@@ -90,7 +151,7 @@ export default function SettingsPage() {
   return (
     <div>
       <Link href="/profile" className="mb-2 flex items-center gap-2 pt-2 text-[12.5px] text-text-dim">
-        <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+        <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
           ‹
         </span>
         Профіль
@@ -138,23 +199,42 @@ export default function SettingsPage() {
       </div>
 
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
+        Здоров&apos;я
+      </div>
+      <div className="mb-4">
+        <MenuRow
+          icon={<RepeatIcon className="h-4 w-4" />}
+          iconColor="rose"
+          title="Віджети Здоров'я"
+          sub="Що показувати на дашборді"
+          onClick={() => router.push("/health/widgets")}
+          right={<span className="text-[11px] text-text-faint">›</span>}
+        />
+      </div>
+
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
         Підключення
       </div>
       <div className="mb-4">
         <MenuRow
           icon={<HeartIcon className="h-4 w-4" />}
+          iconColor="rose"
           title="Apple Health"
           sub="Недоступно у веб-версії"
           disabled
+          right={<StatusPill ok={false} />}
         />
         <MenuRow
           icon={<SmartphoneIcon className="h-4 w-4" />}
+          iconColor="sky"
           title="Screen Time"
           sub="Недоступно у веб-версії"
           disabled
+          right={<StatusPill ok={false} />}
         />
         <MenuRow
           icon={<CalendarDateIcon className="h-4 w-4" />}
+          iconColor="gold"
           title="Google Calendar"
           sub={
             gcalStatus === "loading"
@@ -165,16 +245,16 @@ export default function SettingsPage() {
           }
           right={
             gcalStatus === "connected" ? (
-              <button
-                onClick={gcalDisconnect}
-                className="flex-shrink-0 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-faint"
-              >
-                Відключити
-              </button>
+              <span className="flex flex-shrink-0 items-center gap-1.5">
+                <StatusPill ok />
+                <button onClick={gcalDisconnect} className="text-[10px] text-text-faint">
+                  Відключити
+                </button>
+              </span>
             ) : gcalStatus === "disconnected" ? (
               <a
                 href="/api/auth/google"
-                className="flex-shrink-0 rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-semibold text-accent"
+                className="flex-shrink-0 rounded-btn bg-sage-soft px-2.5 py-1 text-[10px] font-bold text-sage"
               >
                 Підключити
               </a>
@@ -195,6 +275,43 @@ export default function SettingsPage() {
             right={<span className="text-[11px] text-text-faint">{item.value} ›</span>}
           />
         ))}
+      </div>
+
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
+        Сповіщення
+      </div>
+      <div className="mb-4">
+        <MenuRow
+          icon={<BellIcon className="h-4 w-4" />}
+          iconColor="sage"
+          title="Push-сповіщення"
+          sub={
+            pushStatus === "loading"
+              ? "Перевірка…"
+              : pushStatus === "subscribed"
+                ? "Нагадування приходитимуть навіть коли застосунок закритий"
+                : pushStatus === "unsupported"
+                  ? isIOSNotStandalone
+                    ? "Спочатку додай застосунок на головний екран"
+                    : "Недоступно в цьому браузері"
+                  : "Вимкнено"
+          }
+          disabled={pushStatus === "unsupported" || pushBusy}
+          onClick={pushStatus === "unsupported" ? undefined : handleTogglePush}
+          right={
+            pushStatus === "unsupported" ? (
+              <StatusPill ok={false} />
+            ) : (
+              <StatusPill ok={pushStatus === "subscribed"} />
+            )
+          }
+        />
+        {pushStatus === "unsupported" && isIOSNotStandalone && (
+          <div className="mt-1.5 rounded-card-sm bg-surface-2 px-3 py-2.5 text-[11px] leading-relaxed text-text-dim">
+            Натисни «Поділитись» у Safari → «На екран Домівка», відкрий застосунок з головного екрана і повернись
+            сюди.
+          </div>
+        )}
       </div>
 
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">

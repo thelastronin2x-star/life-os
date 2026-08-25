@@ -147,8 +147,22 @@ function AccountRow({ account, link, sync, loadOlderHistory, refreshHistory, syn
 }
 
 export default function MonobankPage() {
-  const { status, monoAccounts, error, connect, disconnect, link, sync, loadOlderHistory, refreshHistory, syncingId, backfillProgress } =
-    useMonobank();
+  const {
+    status,
+    monoAccounts,
+    error,
+    connect,
+    connectViaApp,
+    corpConnectStatus,
+    disconnect,
+    link,
+    sync,
+    loadOlderHistory,
+    refreshHistory,
+    syncingId,
+    backfillProgress,
+  } = useMonobank();
+  const corpEnabled = process.env.NEXT_PUBLIC_MONOBANK_CORP_ENABLED === "1";
   const [token, setToken] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [duplicates, setDuplicates] = useState<OrphanDuplicate[] | null>(null);
@@ -190,42 +204,68 @@ export default function MonobankPage() {
       {status === "loading" && <div className="py-8 text-center text-[11.5px] text-text-faint">Завантаження…</div>}
 
       {status === "disconnected" && (
-        <form onSubmit={handleConnect} className="rounded-card-sm bg-surface shadow-card p-3.5">
-          <div className="mb-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
-            <BankIcon className="h-4 w-4 text-text-dim" /> Підключити токен
-          </div>
-          <div className="mb-3 text-[11px] leading-relaxed text-text-faint">
-            Згенеруй особистий токен на{" "}
-            <a href="https://api.monobank.ua" target="_blank" rel="noreferrer" className="text-sage underline">
-              api.monobank.ua
-            </a>{" "}
-            (вхід через QR у застосунку Monobank) і встав його сюди. Токен шифрується і зберігається лише на сервері.
-          </div>
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Особистий токен"
-            className="mb-2.5 w-full rounded-input border border-border bg-surface-2 px-3 py-2 font-mono text-[12px] text-text outline-none"
-          />
+        <>
           {error && <div className="mb-2.5 text-[11px] text-rose">{error}</div>}
-          <button
-            type="submit"
-            disabled={connecting || !token.trim()}
-            className="w-full rounded-btn bg-accent py-2.5 text-center text-[12.5px] font-semibold text-bg disabled:opacity-50"
-          >
-            {connecting ? "Перевірка…" : "Підключити"}
-          </button>
-        </form>
+
+          {corpEnabled && (
+            <div className="mb-2.5 rounded-card-sm bg-surface shadow-card p-3.5">
+              <div className="mb-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
+                <BankIcon className="h-4 w-4 text-text-dim" /> Підключити одним тапом
+              </div>
+              <div className="mb-3 text-[11px] leading-relaxed text-text-faint">
+                Відкриється застосунок Monobank — підтверди доступ там, повертатись і щось копіювати не треба.
+              </div>
+              {corpConnectStatus === "waiting" ? (
+                <div className="w-full rounded-btn border border-border py-2.5 text-center text-[12.5px] font-semibold text-text-faint">
+                  Очікування підтвердження в застосунку…
+                </div>
+              ) : (
+                <button
+                  onClick={connectViaApp}
+                  className="w-full rounded-btn bg-accent py-2.5 text-center text-[12.5px] font-semibold text-bg"
+                >
+                  Відкрити застосунок Monobank
+                </button>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleConnect} className="rounded-card-sm bg-surface shadow-card p-3.5">
+            <div className="mb-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
+              <BankIcon className="h-4 w-4 text-text-dim" /> Підключити токен
+            </div>
+            <div className="mb-3 text-[11px] leading-relaxed text-text-faint">
+              Згенеруй особистий токен на{" "}
+              <a href="https://api.monobank.ua" target="_blank" rel="noreferrer" className="text-sage underline">
+                api.monobank.ua
+              </a>{" "}
+              (вхід через QR у застосунку Monobank) і встав його сюди. Токен шифрується і зберігається лише на сервері.
+            </div>
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Особистий токен"
+              className="mb-2.5 w-full rounded-input border border-border bg-surface-2 px-3 py-2 font-mono text-[12px] text-text outline-none"
+            />
+            <button
+              type="submit"
+              disabled={connecting || !token.trim()}
+              className="w-full rounded-btn bg-accent py-2.5 text-center text-[12.5px] font-semibold text-bg disabled:opacity-50"
+            >
+              {connecting ? "Перевірка…" : "Підключити"}
+            </button>
+          </form>
+        </>
       )}
 
       {status === "connected" && (
         <>
           {error && (
-            <div className="mb-2.5 rounded-card-sm bg-rose/10 p-2.5 text-[11px] text-rose">{error}</div>
+            <div className="mb-2.5 rounded-card-sm bg-rose-soft p-2.5 text-[11px] text-rose">{error}</div>
           )}
           {duplicates && duplicates.length > 0 && (
-            <div className="mb-2.5 rounded-card-sm border border-gold/40 bg-gold/10 p-3">
+            <div className="mb-2.5 rounded-card-sm bg-gold-soft p-3">
               <div className="mb-1.5 text-[11.5px] font-semibold text-text">
                 Знайдено {duplicates.length} можливих дублікатів
               </div>

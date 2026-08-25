@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { TradeForm } from "@/components/work/TradeForm";
+import { WorkBubble } from "@/components/assistant/WorkBubble";
+import type { TradeDraft } from "@/lib/assistant-tool-executors-work";
 import { TradeItem } from "@/components/work/TradeItem";
+import { TradeDetailSheet } from "@/components/work/TradeDetailSheet";
 import { AccountSelector } from "@/components/work/AccountSelector";
 import { TradingAccountForm } from "@/components/work/TradingAccountForm";
 import { EquityChart, type EquityChartType } from "@/components/work/EquityChart";
 import { MT5ImportSheet } from "@/components/work/MT5ImportSheet";
-import { BybitConnectSheet } from "@/components/work/BybitConnectSheet";
-import { CURRENCIES, useAppStore } from "@/lib/store";
+import { JournalCalendarView, type DayNet } from "@/components/work/JournalCalendarView";
 import { useJournalStore, type Trade } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { useTradingAccounts } from "@/lib/trading-accounts";
@@ -20,9 +22,26 @@ import { computeTradePnL } from "@/lib/trade-calculations";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 import { cn } from "@/lib/cn";
-import { BarChartIcon, GearIcon, TrendingUpIcon, HourglassIcon, UploadIcon, RefreshIcon } from "@/components/icons";
+import {
+  BarChartIcon,
+  GearIcon,
+  TrendingUpIcon,
+  HourglassIcon,
+  UploadIcon,
+  ListIcon,
+  GridIcon,
+} from "@/components/icons";
 
-type StatusFilter = "all" | "open" | "closed";
+type StatusFilter = "all" | "followed" | "broke" | "open" | "closed";
+type ViewMode = "list" | "calendar";
+
+const FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: "all", label: "Всі" },
+  { id: "followed", label: "За планом" },
+  { id: "broke", label: "Порушення" },
+  { id: "open", label: "Відкриті" },
+  { id: "closed", label: "Закриті" },
+];
 
 const CHART_TYPES: { id: EquityChartType; label: string; icon: React.ReactNode }[] = [
   { id: "line", label: "Крива", icon: <TrendingUpIcon className="h-3 w-3" /> },
@@ -32,8 +51,6 @@ const CHART_TYPES: { id: EquityChartType; label: string; icon: React.ReactNode }
 
 export default function JournalPage() {
   const isTrader = useTraderOnlyGuard();
-  const currencyId = useAppStore((s) => s.settings.currency);
-  const currencySymbol = CURRENCIES.find((c) => c.id === currencyId)?.symbol ?? "₴";
 
   const { trades, addTrade, updateTrade, removeTrade } = useJournalStore();
   const { instruments, tags, sessions } = useJournalConfigStore();
@@ -43,15 +60,25 @@ export default function JournalPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [draftTrade, setDraftTrade] = useState<TradeDraft | null>(null);
+  // Tapping a row opens the read view; editing is one deliberate step further.
+  // Looking at a trade is much more frequent than changing one, and a form
+  // full of inputs is a poor way to read.
+  const [viewingTradeId, setViewingTradeId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [accountFormOpen, setAccountFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [bybitOpen, setBybitOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [chartType, setChartType] = useState<EquityChartType>("line");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [dateFilter, setDateFilter] = useState<string | null>(null);
 
   const activeAccountId = selectedAccountId ?? accounts[0]?.id ?? null;
   const activeAccount = accounts.find((a) => a.id === activeAccountId) ?? null;
+  // The account's own denomination. Falls back to $ rather than to the app's
+  // display currency: an unlabelled trading account is a dollar account, and
+  // showing "₴" over a USDT result was the bug this replaces.
+  const currencySymbol = activeAccount?.currencySymbol ?? "$";
 
   const instrumentById = useMemo(() => new Map(instruments.map((i) => [i.id, i])), [instruments]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
@@ -86,9 +113,63 @@ export default function JournalPage() {
     .sort((a, b) => `${a.trade.date}${a.trade.time}`.localeCompare(`${b.trade.date}${b.trade.time}`))
     .map((e) => e.pnl.net ?? 0);
 
-  const filtered = enriched.filter((e) =>
-    statusFilter === "all" ? true : e.trade.status === statusFilter
-  );
+  const filtered = enriched.filter((e) => {
+    if (dateFilter && e.trade.date !== dateFilter) return false;
+    if (statusFilter === "open" || statusFilter === "closed") return e.trade.status === statusFilter;
+    if (statusFilter === "followed") return e.trade.followedPlan === true;
+    if (statusFilter === "broke") return e.trade.followedPlan === false;
+    return true;
+  });
+
+  /** Trades bundled into the days they happened on, newest day first, each
+   *  with its own net result.
+   *
+   *  A trader's unit of reflection is the day, not the individual trade —
+   *  "today I'm green" is what you actually carry around. A flat list forces
+   *  you to add the rows up by eye to answer that, which is exactly the sort
+   *  of arithmetic the app should be doing. */
+  const days = useMemo(() => {
+    const byDate = new Map<string, typeof filtered>();
+    for (const e of filtered) {
+      const list = byDate.get(e.trade.date) ?? [];
+      list.push(e);
+      byDate.set(e.trade.date, list);
+    }
+    return Array.from(byDate.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, list]) => ({
+        date,
+        trades: [...list].sort((a, b) => b.trade.time.localeCompare(a.trade.time)),
+        // Open trades have no net yet and must not drag the day's total to
+        // zero — they're simply not part of a realised result.
+        net: list.reduce((sum, e) => sum + (e.pnl.net ?? 0), 0),
+        hasClosed: list.some((e) => e.pnl.net !== null),
+      }));
+  }, [filtered]);
+
+  // Calendar month view is its own lens on the account's whole history —
+  // unlike the list below, it isn't affected by the status-filter chips, so
+  // it's built from `enriched` (every trade on the active account) rather
+  // than `filtered`.
+  const netByDay = useMemo(() => {
+    const map = new Map<string, DayNet>();
+    for (const e of enriched) {
+      const existing = map.get(e.trade.date) ?? { net: 0, hasClosed: false };
+      if (e.pnl.net !== null) {
+        existing.net += e.pnl.net;
+        existing.hasClosed = true;
+      }
+      map.set(e.trade.date, existing);
+    }
+    return map;
+  }, [enriched]);
+
+  const todayKey = formatDateKey(new Date());
+  function dayLabel(date: string): string {
+    if (date === todayKey) return "Сьогодні";
+    const d = new Date(`${date}T12:00:00`);
+    return d.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" });
+  }
 
   function handleAddPersonalAccount(data: Parameters<typeof addPersonalAccount>[0]) {
     const id = addPersonalAccount(data);
@@ -117,6 +198,13 @@ export default function JournalPage() {
   function closeForm() {
     setFormOpen(false);
     setEditingTrade(null);
+    setDraftTrade(null);
+  }
+
+  function openDraftForm(draft: TradeDraft) {
+    setEditingTrade(null);
+    setDraftTrade(draft);
+    setFormOpen(true);
   }
 
   function handleSave(data: Omit<Trade, "id">) {
@@ -144,20 +232,14 @@ export default function JournalPage() {
         />
         <div className="mt-2 flex flex-shrink-0 gap-1.5">
           <button
-            onClick={() => setBybitOpen(true)}
-            className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-2 text-[11.5px] font-semibold text-text-dim"
-          >
-            <RefreshIcon className="h-3 w-3" /> Bybit
-          </button>
-          <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-2 text-[11.5px] font-semibold text-text-dim"
+            className="flex items-center gap-1 rounded-btn bg-surface shadow-card px-3 py-2 text-[11.5px] font-semibold text-text-dim"
           >
             <UploadIcon className="h-3 w-3" /> MT5
           </button>
           <button
             onClick={openAddForm}
-            className="rounded-full bg-accent px-3.5 py-2 text-[11.5px] font-semibold text-bg"
+            className="rounded-btn bg-accent px-3.5 py-2 text-[11.5px] font-semibold text-bg"
           >
             + угода
           </button>
@@ -179,6 +261,47 @@ export default function JournalPage() {
           onAdd={() => setAccountFormOpen(true)}
           currencySymbol={currencySymbol}
         />
+      )}
+
+      <div className="mb-3 flex rounded-btn bg-surface-2 p-[3px]">
+        {(
+          [
+            { id: "list" as const, label: "Список", icon: <ListIcon className="h-3.5 w-3.5" /> },
+            { id: "calendar" as const, label: "Календар", icon: <GridIcon className="h-3.5 w-3.5" /> },
+          ]
+        ).map((v) => (
+          <button
+            key={v.id}
+            onClick={() => setViewMode(v.id)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-btn py-2 text-[12px] font-semibold",
+              viewMode === v.id ? "bg-bg text-text shadow-card" : "text-text-faint"
+            )}
+          >
+            {v.icon} {v.label}
+          </button>
+        ))}
+      </div>
+
+      {viewMode === "calendar" ? (
+        <JournalCalendarView
+          netByDay={netByDay}
+          currencySymbol={currencySymbol}
+          onSelectDay={(dateKey) => {
+            setDateFilter(dateKey);
+            setViewMode("list");
+          }}
+        />
+      ) : (
+        <>
+      {dateFilter && (
+        <button
+          onClick={() => setDateFilter(null)}
+          className="mb-3 flex w-full items-center justify-between rounded-card-sm bg-surface-2 px-3.5 py-2.5 text-[11.5px] font-semibold text-text-dim"
+        >
+          Фільтр за датою: {dateFilter}
+          <span className="text-text-faint">✕ скинути</span>
+        </button>
       )}
 
       <div className="mb-3 grid grid-cols-4 gap-2">
@@ -232,13 +355,13 @@ export default function JournalPage() {
 
       {activeAccount && (
         <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
-          <div className="mb-3 flex rounded-[10px] bg-surface-2 p-[3px]">
+          <div className="mb-3 flex rounded-btn bg-surface-2 p-[3px]">
             {CHART_TYPES.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setChartType(c.id)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1 rounded-[7px] py-1.5 text-[10px] font-semibold",
+                  "flex flex-1 items-center justify-center gap-1 rounded-btn py-1.5 text-[10px] font-semibold",
                   chartType === c.id ? "bg-bg text-sage" : "text-text-faint"
                 )}
               >
@@ -269,48 +392,95 @@ export default function JournalPage() {
         </Link>
       </div>
 
-      <div className="mb-3 flex rounded-xl border border-border bg-surface p-1">
-        {([
-          ["all", "Всі"],
-          ["open", "Відкриті"],
-          ["closed", "Закриті"],
-        ] as const).map(([key, label]) => (
+      {/* Scrollable pills rather than a fixed segmented control: five filters
+          don't fit as equal segments on a phone without truncating the labels
+          into nonsense. */}
+      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        {FILTERS.map((f) => (
           <button
-            key={key}
-            onClick={() => setStatusFilter(key)}
+            key={f.id}
+            onClick={() => setStatusFilter(f.id)}
             className={cn(
-              "flex-1 rounded-lg py-1.5 text-center text-[11.5px] font-semibold",
-              statusFilter === key ? "bg-surface-2 text-text" : "text-text-faint"
+              "flex-shrink-0 rounded-btn px-3.5 py-2 text-[11.5px] font-extrabold",
+              statusFilter === f.id ? "bg-text text-bg" : "bg-surface text-text-dim"
             )}
           >
-            {label}
+            {f.label}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+      {days.length === 0 && (
+        <div className="rounded-card bg-surface shadow-card py-8 text-center text-[11.5px] font-semibold text-text-faint">
           Немає угод у цій категорії
         </div>
       )}
 
-      {filtered.map(({ trade: t, instrument, pnl }) => (
-        <TradeItem
-          key={t.id}
-          trade={t}
-          instrument={instrument}
-          pnl={pnl}
-          currencySymbol={currencySymbol}
-          session={t.sessionId ? sessionById.get(t.sessionId) : undefined}
-          tags={t.tagIds.map((id) => tagById.get(id)).filter((tag): tag is NonNullable<typeof tag> => !!tag)}
-          onClick={() => openEditForm(t)}
-        />
+      {days.map((day) => (
+        <div key={day.date}>
+          <div className="mb-2 mt-4 flex items-baseline justify-between px-0.5">
+            <span className="text-[12px] font-extrabold capitalize text-text-faint">{dayLabel(day.date)}</span>
+            {day.hasClosed && (
+              <span
+                className={cn(
+                  "font-mono text-[13.5px] font-extrabold tracking-tight",
+                  day.net >= 0 ? "text-sage" : "text-clay"
+                )}
+              >
+                {day.net >= 0 ? "+" : ""}
+                {day.net.toFixed(0)} {currencySymbol}
+              </span>
+            )}
+          </div>
+          <div className="rounded-card bg-surface shadow-card px-3.5">
+            {day.trades.map(({ trade: t, instrument, pnl }) => (
+              <TradeItem
+                key={t.id}
+                trade={t}
+                instrument={instrument}
+                pnl={pnl}
+                currencySymbol={currencySymbol}
+                session={t.sessionId ? sessionById.get(t.sessionId) : undefined}
+                tags={t.tagIds.map((id) => tagById.get(id)).filter((tag): tag is NonNullable<typeof tag> => !!tag)}
+                onClick={() => setViewingTradeId(t.id)}
+              />
+            ))}
+          </div>
+        </div>
       ))}
+        </>
+      )}
+
+      {(() => {
+        // Looked up by id rather than held as an object so the sheet always
+        // reflects the current store — editing a trade and coming back must
+        // not show a stale snapshot from the moment it was opened.
+        const viewing = viewingTradeId ? enriched.find((e) => e.trade.id === viewingTradeId) : null;
+        if (!viewing) return null;
+        return (
+          <TradeDetailSheet
+            trade={viewing.trade}
+            instrument={viewing.instrument}
+            pnl={viewing.pnl}
+            currencySymbol={currencySymbol}
+            session={viewing.trade.sessionId ? sessionById.get(viewing.trade.sessionId) : undefined}
+            tags={viewing.trade.tagIds
+              .map((id) => tagById.get(id))
+              .filter((tag): tag is NonNullable<typeof tag> => !!tag)}
+            onEdit={() => {
+              setViewingTradeId(null);
+              openEditForm(viewing.trade);
+            }}
+            onClose={() => setViewingTradeId(null)}
+          />
+        );
+      })()}
 
       {formOpen && (
         <TradeForm
           initialDateKey={formatDateKey(new Date())}
           editingTrade={editingTrade}
+          draftValues={draftTrade ?? undefined}
           accounts={accounts}
           defaultAccountId={activeAccountId}
           onSave={handleSave}
@@ -328,7 +498,7 @@ export default function JournalPage() {
       )}
 
       {importOpen && <MT5ImportSheet accountId={activeAccountId} onClose={() => setImportOpen(false)} />}
-      {bybitOpen && <BybitConnectSheet accountId={activeAccountId} onClose={() => setBybitOpen(false)} />}
+      <WorkBubble onDraftTrade={openDraftForm} />
     </div>
   );
 }

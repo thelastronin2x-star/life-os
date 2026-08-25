@@ -1,5 +1,6 @@
 import { useFinanceStore } from "./finance-store";
 import { getCategoryBucketForMcc, getCategoryBucketForDescription } from "./mcc-categories";
+import { categoryMeta } from "./finance-categories";
 import { useMerchantRulesStore, normalizeMerchantKey } from "./merchant-rules-store";
 
 /** Resolves a transaction to a local budget category:
@@ -14,12 +15,13 @@ export function categoryIdForTransaction(mcc: number, description: string): stri
   const learned = useMerchantRulesStore.getState().getCategoryForMerchant(normalizeMerchantKey(description));
   if (learned) return learned;
 
-  const bucket = getCategoryBucketForMcc(mcc) ?? getCategoryBucketForDescription(description);
-  if (!bucket) return null;
+  const key = getCategoryBucketForMcc(mcc) ?? getCategoryBucketForDescription(description);
+  if (!key) return null;
   const state = useFinanceStore.getState();
-  const existing = state.budgetCategories.find((c) => c.name.toLowerCase() === bucket.name.toLowerCase());
+  const existing = state.budgetCategories.find((c) => c.icon === key);
   if (existing) return existing.id;
-  return state.addBudgetCategory({ name: bucket.name, icon: bucket.icon, color: bucket.color, limitsByAccount: {} });
+  const meta = categoryMeta(key);
+  return state.addBudgetCategory({ name: meta.name, icon: key, color: meta.color, limitsByAccount: {} });
 }
 
 /** One-time pass over already-imported "Некатегоризовано" expenses: MCC

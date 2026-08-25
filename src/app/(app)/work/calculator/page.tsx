@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
-import { Card } from "@/components/ui/Card";
 import { NumberInput } from "@/components/ui/NumberInput";
-import { CURRENCY_PAIRS, RISK_PRESETS } from "@/lib/currency-pairs";
+import { CURRENCY_PAIRS, RISK_PRESETS, PAIR_CATEGORY_LABELS, type PairCategory } from "@/lib/currency-pairs";
 import { CURRENCIES, useAppStore } from "@/lib/store";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 
@@ -19,6 +18,16 @@ export default function RiskCalculatorPage() {
   const [stopPips, setStopPips] = useState(25);
 
   const pair = CURRENCY_PAIRS.find((p) => p.symbol === pairSymbol) ?? CURRENCY_PAIRS[0];
+
+  const pairsByCategory = useMemo(() => {
+    const map = new Map<PairCategory, typeof CURRENCY_PAIRS>();
+    for (const p of CURRENCY_PAIRS) {
+      const list = map.get(p.category) ?? [];
+      list.push(p);
+      map.set(p.category, list);
+    }
+    return map;
+  }, []);
 
   const riskAmount = deposit * (riskPct / 100);
   const lotSize = useMemo(
@@ -41,10 +50,14 @@ export default function RiskCalculatorPage() {
         onChange={(e) => setPairSymbol(e.target.value)}
         className="mb-3 w-full rounded-input border border-border bg-surface-2 px-3.5 py-3 text-[14px] font-semibold text-text outline-none"
       >
-        {CURRENCY_PAIRS.map((p) => (
-          <option key={p.symbol} value={p.symbol}>
-            {p.symbol}
-          </option>
+        {Array.from(pairsByCategory.entries()).map(([category, pairs]) => (
+          <optgroup key={category} label={PAIR_CATEGORY_LABELS[category]}>
+            {pairs.map((p) => (
+              <option key={p.symbol} value={p.symbol}>
+                {p.symbol}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
 
@@ -98,33 +111,33 @@ export default function RiskCalculatorPage() {
         <span className="flex-shrink-0 text-[11px] text-text-faint">пунктів</span>
       </div>
 
-      <Card className="mb-4 border-sage/60 bg-gradient-to-br from-surface-2 to-surface">
+      <div className="mb-4 rounded-card bg-sage-soft p-4 shadow-card">
         <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-sage">
           Результат розрахунку
         </div>
-        <div className="flex items-center justify-between border-b border-border py-2">
-          <span className="text-[11.5px] text-text-dim">Ризик у грошах</span>
-          <span className="font-mono text-[14px] font-bold text-text">
+        <div className="flex items-center justify-between border-b border-sage/15 py-2">
+          <span className="text-[11.5px] text-sage/70">Ризик у грошах</span>
+          <span className="font-mono text-[14px] font-bold text-sage">
             {riskAmount.toFixed(0)} {currencySymbol}
           </span>
         </div>
-        <div className="flex items-center justify-between border-b border-border py-2">
-          <span className="text-[11.5px] text-text-dim">Вартість пункту</span>
-          <span className="font-mono text-[14px] font-bold text-text">
+        <div className="flex items-center justify-between border-b border-sage/15 py-2">
+          <span className="text-[11.5px] text-sage/70">Вартість пункту</span>
+          <span className="font-mono text-[14px] font-bold text-sage">
             {pair.pipValuePerLot.toFixed(1)} $
           </span>
         </div>
-        <div className="flex items-center justify-between border-b border-border py-2">
-          <span className="text-[11.5px] text-text-dim">Рекомендований лот</span>
+        <div className="flex items-center justify-between border-b border-sage/15 py-2">
+          <span className="text-[11.5px] text-sage/70">Рекомендований лот</span>
           <span className="font-mono text-[18px] font-bold text-sage">{lotSize.toFixed(2)} лот</span>
         </div>
         <div className="flex items-center justify-between py-2">
-          <span className="text-[11.5px] text-text-dim">При тейк-профіті 1:2</span>
-          <span className="font-mono text-[14px] font-bold text-sky">
+          <span className="text-[11.5px] text-sage/70">При тейк-профіті 1:2</span>
+          <span className="font-mono text-[14px] font-bold text-sage">
             +{potentialProfit.toFixed(0)} {currencySymbol}
           </span>
         </div>
-      </Card>
+      </div>
 
       <div className="mb-2 text-[11.5px] font-semibold uppercase tracking-wide text-text-dim">
         Швидкі пресети ризику
@@ -134,10 +147,8 @@ export default function RiskCalculatorPage() {
           <button
             key={preset.label}
             onClick={() => setRiskPct(preset.value)}
-            className={`flex-1 rounded-full border px-2 py-2 text-center text-[10.5px] font-medium ${
-              riskPct === preset.value
-                ? "border-sage bg-sage text-bg font-semibold"
-                : "border-border bg-surface text-text-dim"
+            className={`flex-1 rounded-btn px-2 py-2 text-center text-[10.5px] font-semibold ${
+              riskPct === preset.value ? "bg-text text-bg" : "bg-surface text-text-dim"
             }`}
           >
             {preset.label} {preset.value}%

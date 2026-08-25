@@ -6,7 +6,6 @@ import { useFinanceStore } from "./finance-store";
 import { usePropAccountsStore } from "./prop-accounts-store";
 import { usePersonalTradingAccountsStore } from "./personal-trading-accounts-store";
 import { useMonobankLinkStore } from "./monobank-store";
-import { useBybitSyncStore } from "./bybit-store";
 import { useAssistantStore } from "./assistant-store";
 import { useMerchantRulesStore } from "./merchant-rules-store";
 
@@ -22,6 +21,5 @@ export function deleteAllUserData(): void {
   usePersonalTradingAccountsStore.setState({ accounts: [] });
   useMonobankLinkStore.setState({ links: [] });
   useMerchantRulesStore.setState({ rules: {} });
-  useBybitSyncStore.setState({ lastSyncedAt: null });
   useAssistantStore.setState({ messages: [], reports: [], contextInsights: {} });
 }

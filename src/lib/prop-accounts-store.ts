@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { TradingCurrency } from "./personal-trading-accounts-store";
+
 export interface PropAccount {
   id: string;
   firm: string;
@@ -11,6 +13,9 @@ export interface PropAccount {
   profitTarget: number;
   drawdownPct: number;
   maxDrawdown: number;
+  /** See PersonalTradingAccount.currency — same reasoning, same USD default.
+   *  Prop challenges are sized in dollars essentially without exception. */
+  currency?: TradingCurrency;
 }
 
 function seedAccounts(): PropAccount[] {

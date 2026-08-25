@@ -25,10 +25,20 @@ export interface AssistantReport {
 }
 
 /** Contexts with their own floating bubble UI. */
-export type MiniContext = "calendar" | "work";
-/** Every source the Home card can pick an insight from — "finance" has no
- *  bubble of its own, it only ever feeds the Home card. */
-export type InsightSource = MiniContext | "finance";
+export type MiniContext = "calendar" | "health" | "work";
+/** Every source that generates its own cached insight. "finance" has no
+ *  bubble of its own (only ever feeds the old per-source Home pick, kept for
+ *  compatibility); "global" is Home's own cross-source insight, generated
+ *  from buildGlobalContext rather than picked from the other three.
+ *  "work-analytics" is its own source (not "work" — that one already belongs
+ *  to the Робота mini-bubble and shares its cache) for the AI Analytics
+ *  screen's longer, period-scoped narrative. "student" is the Student
+ *  profile's own Робота-tab assistant blurb — not folded into "work" since
+ *  the two profiles' Робота screens never render at once but do share the
+ *  underlying cache keyed by source, and a trader's insight bleeding into
+ *  the student screen (or vice versa) on a profile switch would be a real
+ *  bug, not just a wasted regeneration. */
+export type InsightSource = MiniContext | "finance" | "global" | "work-analytics" | "student";
 
 export interface ContextInsight {
   text: string;

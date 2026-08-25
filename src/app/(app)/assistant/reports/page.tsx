@@ -13,7 +13,7 @@ export default function AssistantReportsPage() {
     <div>
       <div className="pb-3.5 pt-2">
         <Link href="/assistant" className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+          <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
             ‹
           </span>
           Асистент
@@ -42,8 +42,8 @@ export default function AssistantReportsPage() {
             <div className="mb-1 flex items-center justify-between">
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[9.5px] font-semibold",
-                  r.type === "weekly" ? "bg-sky/15 text-sky" : "bg-gold/15 text-gold"
+                  "rounded-btn px-2 py-0.5 text-[9.5px] font-semibold",
+                  r.type === "weekly" ? "bg-sky-soft text-sky" : "bg-gold-soft text-gold"
                 )}
               >
                 {r.type === "weekly" ? "Тижневий" : "Місячний"}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { NumberInput } from "@/components/ui/NumberInput";
 import type { BudgetCategory, FinanceAccount, GoalColor } from "@/lib/finance-store";
-import { CATEGORY_ICON_OPTIONS } from "@/lib/category-icons";
+import { FINANCE_CATEGORY_KEYS, categoryMeta, CategoryIcon, type FinanceCategoryKey } from "@/lib/finance-categories";
 import { cn } from "@/lib/cn";
 
 const COLORS: GoalColor[] = ["sage", "sky", "gold", "clay", "rose"];
@@ -26,9 +26,9 @@ export function BudgetCategoryForm({
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
-  const [name, setName] = useState(editingCategory?.name ?? "");
-  const [icon, setIcon] = useState(editingCategory?.icon ?? CATEGORY_ICON_OPTIONS[0].id);
-  const [color, setColor] = useState<GoalColor>(editingCategory?.color ?? "sage");
+  const initialKey = (editingCategory?.icon as FinanceCategoryKey) ?? FINANCE_CATEGORY_KEYS[0];
+  const [categoryKey, setCategoryKey] = useState<FinanceCategoryKey>(initialKey);
+  const [color, setColor] = useState<GoalColor>(editingCategory?.color ?? categoryMeta(initialKey).color);
   const [limitsByAccount, setLimitsByAccount] = useState<Record<string, number>>(
     editingCategory?.limitsByAccount ?? {}
   );
@@ -52,8 +52,7 @@ export function BudgetCategoryForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
-    onSave({ name: name.trim(), icon, color, limitsByAccount });
+    onSave({ name: categoryMeta(categoryKey).name, icon: categoryKey, color, limitsByAccount });
   }
 
   return (
@@ -69,31 +68,34 @@ export function BudgetCategoryForm({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2.5">
-          <input
-            type="text"
-            placeholder="Назва (напр. Їжа)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full rounded-input border border-border bg-surface-2 px-3 py-2 text-[13px] text-text outline-none"
-          />
-
           <div>
-            <span className="mb-1.5 block text-[10.5px] font-semibold text-text-dim">Іконка</span>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_ICON_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setIcon(opt.id)}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-[10px] border",
-                    icon === opt.id ? "border-sage bg-sage/15 text-sage" : "border-border bg-surface-2 text-text-dim"
-                  )}
-                >
-                  <opt.Icon className="h-4 w-4" />
-                </button>
-              ))}
+            <span className="mb-1.5 block text-[10.5px] font-semibold text-text-dim">Категорія</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              {FINANCE_CATEGORY_KEYS.map((key) => {
+                const meta = categoryMeta(key);
+                const active = categoryKey === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setCategoryKey(key);
+                      // Only follow the category's default color while the
+                      // user hasn't already picked one for THIS category —
+                      // switching category shouldn't silently discard an
+                      // intentional color choice made a moment ago.
+                      if (!editingCategory || editingCategory.icon !== key) setColor(meta.color);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-card-sm border p-2 text-center",
+                      active ? "border-sage bg-sage/15" : "border-border bg-surface-2"
+                    )}
+                  >
+                    <CategoryIcon categoryKey={key} color={meta.color} className="h-8 w-8 rounded-full" />
+                    <span className="truncate text-[9px] font-medium text-text-dim">{meta.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

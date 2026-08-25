@@ -3,7 +3,8 @@
 import { useAssistantStore, type ReportType } from "./assistant-store";
 
 export type { ReportType };
-import { buildReportContext, callAssistantOnce } from "./assistant-context";
+import { buildReportContext } from "./assistant-context-report";
+import { callAssistantOnce } from "./assistant-client";
 import { formatDateKey } from "./calendar-utils";
 import type { Profile } from "./store";
 

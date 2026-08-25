@@ -1,7 +1,6 @@
 import type { Trade } from "@/lib/journal-store";
 import type { JournalInstrument, JournalSession, JournalTag } from "@/lib/journal-config-store";
 import type { TradePnL } from "@/lib/trade-calculations";
-import { formatDateKey } from "@/lib/calendar-utils";
 import { cn } from "@/lib/cn";
 
 interface TradeItemProps {
@@ -15,49 +14,67 @@ interface TradeItemProps {
 }
 
 /**
- * Compact row for a single trade — one line of identity + P&L, one line of
- * metadata underneath. Deliberately drops the old per-row entry/stop/take
- * boxes and per-tag pill backgrounds (that detail lives in the edit form);
- * a list of these is meant to be scanned at a glance, not re-read.
+ * One trade, one line. Reads left to right as: did I follow my plan → what did
+ * I trade → how well did it go (R) → how much money.
+ *
+ * The direction arrow that used to lead the row is gone. LONG/SHORT is already
+ * in the metadata line and it was competing for the leftmost, most-scanned
+ * position with the thing that actually matters when reviewing a month of
+ * trades: whether the trade should have been taken at all.
  */
 export function TradeItem({ trade: t, instrument, pnl, currencySymbol, session, tags, onClick }: TradeItemProps) {
-  const dateLabel = t.date === formatDateKey(new Date()) ? "Сьогодні" : t.date;
+  const r = pnl.rMultiple;
 
   return (
-    <div onClick={onClick} className="mb-2 rounded-card-sm bg-surface p-3 active:opacity-70">
-      <div className="flex items-center gap-2">
+    <div onClick={onClick} className="flex items-center gap-2.5 border-b border-border py-2.5 last:border-b-0 active:opacity-70">
+      {/* Undefined (not answered) renders as a muted dash rather than a
+          verdict — see Trade.followedPlan. */}
+      <div
+        className={cn(
+          "w-5 flex-shrink-0 text-center text-[14px] font-extrabold",
+          t.followedPlan === true && "text-sage",
+          t.followedPlan === false && "text-clay",
+          t.followedPlan === undefined && "text-text-faint opacity-40"
+        )}
+      >
+        {t.followedPlan === true ? "✓" : t.followedPlan === false ? "✕" : "·"}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="min-w-0 truncate text-[13px] font-extrabold text-text">{instrument?.symbol ?? "—"}</span>
+          {r !== null && (
+            <span
+              className={cn(
+                "flex-shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-extrabold",
+                r >= 0 ? "bg-sage-soft text-sage" : "bg-clay-soft text-clay"
+              )}
+            >
+              {r >= 0 ? "+" : "−"}
+              {Math.abs(r).toFixed(1)}R
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 truncate text-[11px] font-semibold text-text-faint">
+          {t.time} · {t.direction === "LONG" ? "long" : "short"}
+          {session && ` · ${session.name}`}
+          {tags.length > 0 && <span className="text-sky"> · {tags.map((tag) => tag.name).join(", ")}</span>}
+        </div>
+      </div>
+
+      {t.status === "open" ? (
+        <span className="flex-shrink-0 text-[11.5px] font-extrabold text-sky">відкрита</span>
+      ) : (
         <span
           className={cn(
-            "flex-shrink-0 rounded-full px-1.5 py-0.5 text-[8.5px] font-semibold",
-            t.direction === "LONG" ? "bg-sage/15 text-sage" : "bg-rose/15 text-rose"
+            "flex-shrink-0 font-mono text-[13.5px] font-extrabold tracking-tight",
+            (pnl.net ?? 0) >= 0 ? "text-sage" : "text-clay"
           )}
         >
-          {t.direction === "LONG" ? "Long" : "Short"}
+          {(pnl.net ?? 0) >= 0 ? "+" : ""}
+          {(pnl.net ?? 0).toFixed(0)} {currencySymbol}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text">
-          {instrument?.symbol ?? "—"}
-        </span>
-        {t.status === "open" ? (
-          <span className="flex-shrink-0 text-[11px] font-semibold text-sky">відкрита</span>
-        ) : (
-          <span
-            className={cn(
-              "flex-shrink-0 font-mono text-[13px] font-semibold",
-              (pnl.net ?? 0) > 0 ? "text-sage" : "text-clay"
-            )}
-          >
-            {(pnl.net ?? 0) > 0 ? "+" : ""}
-            {(pnl.net ?? 0).toFixed(2)} {currencySymbol}
-          </span>
-        )}
-      </div>
-      <div className="mt-1.5 truncate text-[10.5px] text-text-faint">
-        {dateLabel} · {t.time} · R:R {pnl.rrActual ?? pnl.rrPlanned}
-        {session && ` · ${session.name}`}
-        {tags.length > 0 && (
-          <span className="text-sky"> · {tags.map((tag) => `#${tag.name}`).join(" ")}</span>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -1,42 +1,64 @@
 "use client";
 
-import { AICard } from "./AICard";
+import { AICard, type AICardTone } from "./AICard";
 import { useAppStore, useHasHydrated } from "@/lib/store";
-import { useAssistantStore, type InsightSource } from "@/lib/assistant-store";
-import { useCalendarInsightSync, useFinanceInsightSync, useWorkInsightSync } from "@/lib/use-source-insight-sync";
+import { useCalendarInsightSync } from "@/lib/use-calendar-insight-sync";
+import { useWorkInsightSync } from "@/lib/use-work-insight-sync";
+import { useFinanceInsightSync } from "@/lib/use-finance-insight-sync";
+import { useGlobalInsightSync } from "@/lib/use-global-insight-sync";
 
-const SOURCE_LABEL: Record<InsightSource, string> = {
-  calendar: "з Календаря",
-  finance: "з Балансу",
-  work: "з Роботи",
-};
+const WARN_WORDS = ["перевищ", "ліміт", "заборг", "прострочен", "мінус", "втрат", "збиток", "просадк"];
+const POSITIVE_WORDS = ["+", "прибут", "зеконом", "у плюс", "рекорд", "win rate", "виконав"];
+
+/** Purely presentational — picks the AI-card tint from the already-generated
+ *  insight text. No new store field: the insight objects don't carry a
+ *  sentiment tag, and adding one would be a store-shape change this reskin
+ *  is explicitly not supposed to make. */
+function insightTone(text: string): AICardTone {
+  const lower = text.toLowerCase();
+  if (WARN_WORDS.some((w) => lower.includes(w))) return "warn";
+  if (POSITIVE_WORDS.some((w) => lower.includes(w))) return "positive";
+  return "neutral";
+}
 
 /**
- * Shows whichever of the three source insights (calendar/finance/work) was
- * generated most recently — it doesn't generate a combined insight of its
- * own. Mounting the three sync hooks here (in addition to their own
- * screens) means a source can freshen even for someone who only ever opens
- * Home and never visits Calendar/Робота directly.
+ * Home's own cross-source insight (see buildGlobalContext + GLOBAL_ASSISTANT_PROMPT)
+ * — not a pick among the three scoped assistants' insights anymore, a
+ * genuinely separate one generated from all four sections at once.
+ *
+ * The three scoped sync hooks stay mounted here too, purely so Calendar/
+ * Робота/Фінанси insights keep refreshing for someone who only ever opens
+ * Home — their own bubbles/badges read the same cached values.
  */
 export function HomeInsightCard() {
   const hydrated = useHasHydrated();
   const profile = useAppStore((s) => s.profile);
-  const { contextInsights } = useAssistantStore();
 
   useCalendarInsightSync();
   useWorkInsightSync(profile);
   useFinanceInsightSync();
+  const { cached: global, isFetching, streamingText } = useGlobalInsightSync(profile);
 
   if (!hydrated) return <AICard text="Готую інсайт…" />;
 
-  const entries = (Object.entries(contextInsights) as [InsightSource, (typeof contextInsights)[InsightSource]][])
-    .filter((entry): entry is [InsightSource, NonNullable<(typeof contextInsights)[InsightSource]>] => !!entry[1])
-    .sort((a, b) => new Date(b[1].generatedAt).getTime() - new Date(a[1].generatedAt).getTime());
+  const displayText = streamingText || global?.text;
+  if (!displayText) return <AICard text="Асистент ще збирає дані для інсайтів…" />;
 
-  const freshest = entries[0];
-
-  if (!freshest) return <AICard text="Асистент ще збирає дані для інсайтів…" />;
-
-  const [source, insight] = freshest;
-  return <AICard text={insight.text} sub={SOURCE_LABEL[source]} />;
+  return (
+    <AICard
+      text={
+        <>
+          {displayText}
+          {isFetching && (
+            <span className="ai-thinking-dots ml-1 inline-flex items-center gap-[3px] align-middle" aria-label="Асистент передумує">
+              <span className="ai-thinking-dot h-[4px] w-[4px] rounded-full bg-text-faint" />
+              <span className="ai-thinking-dot h-[4px] w-[4px] rounded-full bg-text-faint" />
+              <span className="ai-thinking-dot h-[4px] w-[4px] rounded-full bg-text-faint" />
+            </span>
+          )}
+        </>
+      }
+      tone={insightTone(displayText)}
+    />
+  );
 }

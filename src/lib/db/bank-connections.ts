@@ -1,7 +1,7 @@
 import "server-only";
 import { eq, and } from "drizzle-orm";
 import { db } from "./client";
-import { bankConnections, bankAccountLinks } from "./schema";
+import { bankConnections, bankAccountLinks, users } from "./schema";
 
 export interface BankConnectionRow {
   id: string;
@@ -15,6 +15,13 @@ export async function createBankConnection(params: {
   webhookSecretId: string;
 }): Promise<{ id: string }> {
   const id = crypto.randomUUID();
+  // bank_connections.user_id has a real FK to users.id, but nothing ever
+  // creates a users row in this no-real-auth model — params.userId is a
+  // fresh id minted right here at connect time. Without this insert first,
+  // the row below violates the FK and throws (silently swallowed by both
+  // callers' try/catch as "non-fatal"), so bank_connections has stayed
+  // empty and every downstream ledger/webhook DB write has been a no-op.
+  await db.insert(users).values({ id: params.userId }).onConflictDoNothing();
   await db.insert(bankConnections).values({ id, ...params });
   return { id };
 }

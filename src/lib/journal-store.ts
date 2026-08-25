@@ -10,7 +10,20 @@ export type TradeStatus = "open" | "closed";
  *  and first-class rather than inferred by sniffing `externalId`'s prefix
  *  each time a caller needs to know (that string-sniffing pattern is exactly
  *  what this field replaces). */
-export type TradeSource = "manual" | "mt5" | "bybit";
+export type TradeSource = "manual" | "mt5" | "bybit" | "binance" | "okx";
+
+export interface TradeSourceMeta {
+  leverage?: number;
+  fee?: number;
+  funding?: number;
+  marginMode?: string;
+  pnlRatio?: number;
+  entryValue?: number;
+  exitValue?: number;
+  closeReason?: string;
+  openedAt?: number; // unix ms — exact entry moment, beyond date+time
+  closedAt?: number; // unix ms
+}
 
 export interface Trade {
   id: string;
@@ -30,6 +43,24 @@ export interface Trade {
   tagIds: string[];
   sessionId: string | null;
   screenshots: string[]; // base64 data URLs
+  /** Free-form entry logic / reflection text. Optional — older trades and
+   *  every non-manual source (MT5 import, Bybit sync) simply never set it. */
+  notes?: string;
+  /** Did this trade follow the plan? Undefined means "not answered" — kept
+   *  distinct from `false` on purpose: imported trades and everything logged
+   *  before this existed have no answer, and counting them as violations
+   *  would invent a discipline problem out of missing data.
+   *
+   *  A single boolean, but it's the field that makes the journal worth
+   *  keeping: it's the only way to separate "I lost money" from "I broke my
+   *  own rules", and the second is the one you can actually fix. Tags could
+   *  express it, but a tag has to be picked from a list — this is one tap. */
+  followedPlan?: boolean;
+  /** Extra detail the source reported, shown on the trade screen. Every field
+   *  is optional because every exchange answers a different subset — Binance,
+   *  for instance, doesn't report historical leverage at all. Absent means
+   *  "not reported", which is why nothing here defaults to 0. */
+  meta?: TradeSourceMeta;
   /** Set for trades imported from a broker report (e.g. "mt5:<positionId>") —
    *  prevents duplicate imports when re-importing an overlapping report. */
   externalId?: string;

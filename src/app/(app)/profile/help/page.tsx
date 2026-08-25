@@ -7,7 +7,7 @@ export default function HelpPage() {
   return (
     <div>
       <Link href="/profile" className="mb-2 flex items-center gap-2 pt-2 text-[12.5px] text-text-dim">
-        <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+        <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
           ‹
         </span>
         Профіль

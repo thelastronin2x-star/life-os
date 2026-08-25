@@ -59,15 +59,15 @@ export function AccountForm({
 
           <div>
             <span className="mb-1.5 block text-[10.5px] font-semibold text-text-dim">Тип</span>
-            <div className="flex rounded-xl border border-border bg-surface p-1">
+            <div className="flex rounded-btn bg-surface-2 p-1">
               {ACCOUNT_TYPES.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setType(t.id)}
                   className={cn(
-                    "flex-1 rounded-lg py-2 text-center text-xs font-semibold",
-                    type === t.id ? "bg-surface-2 text-text" : "text-text-faint"
+                    "flex-1 rounded-btn py-2 text-center text-xs font-semibold",
+                    type === t.id ? "bg-surface text-text shadow-card" : "text-text-dim"
                   )}
                 >
                   {t.label}
@@ -86,7 +86,7 @@ export function AccountForm({
                     type="button"
                     onClick={() => setCurrencySymbol(sym)}
                     className={cn(
-                      "h-9 w-9 rounded-[10px] border text-[13px] font-semibold",
+                      "h-9 w-9 rounded-icon border text-[13px] font-semibold",
                       currencySymbol === sym
                         ? "border-sage bg-sage/15 text-sage"
                         : "border-border bg-surface-2 text-text-dim"

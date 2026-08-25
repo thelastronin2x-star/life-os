@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import type { SVGProps } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { BriefcaseIcon, TrendingUpIcon } from "@/components/icons";
+import { BriefcaseIcon, TrendingUpIcon, GraduationCapIcon } from "@/components/icons";
+import { DEFAULT_ENABLED_HEALTH_WIDGETS } from "@/lib/health-widget-config";
 
-export type Profile = "trader" | "it";
+export type Profile = "trader" | "it" | "student";
 export type Theme =
   | "soft-blocks"
   | "deep-forest"
@@ -34,6 +35,7 @@ export const PROFILES: {
 }[] = [
   { id: "trader", name: "Трейдер", Icon: TrendingUpIcon, desc: "Журнал угод, prop-акаунти" },
   { id: "it", name: "IT / Розробник", Icon: BriefcaseIcon, desc: "Спринти, фокус-час" },
+  { id: "student", name: "Студент", Icon: GraduationCapIcon, desc: "Флеш-картки, курси, дедлайни" },
 ];
 
 export const THEMES: { id: Theme; name: string; mode: ThemeMode; swatches: string[] }[] = [
@@ -85,7 +87,47 @@ interface GeneralSettings {
   dateFormat: DateFormat;
   currency: Currency;
   firstDayOfWeek: FirstDayOfWeek;
+  /** Which Здоров'я dashboard widgets show, and in what order — see
+   *  health-widget-config.ts. Replaces the old standalone `cycleEnabled`
+   *  boolean: Цикл is just one more entry in this same list now, not a
+   *  special case, extending the same "off until you opt in" principle to
+   *  every widget instead of only Цикл. */
+  enabledHealthWidgets: string[];
 }
+
+/** Every block the Home screen can render. "equity-curve"/"journal-link" only
+ *  ever render for the trader profile and "it-work" only for the IT profile —
+ *  see HomePage — so toggling one that doesn't apply to the current profile
+ *  has no visible effect rather than being hidden from the settings list,
+ *  which would make switching profiles silently lose the user's choice. */
+export type HomeWidgetId =
+  | "ai-card"
+  | "today"
+  | "week-balance"
+  | "weather"
+  | "equity-curve"
+  | "journal-link"
+  | "it-work";
+
+export interface HomeWidgetConfig {
+  id: HomeWidgetId;
+  visible: boolean;
+  order: number;
+}
+
+const DEFAULT_HOME_WIDGETS: HomeWidgetConfig[] = [
+  { id: "ai-card", visible: true, order: 0 },
+  { id: "today", visible: true, order: 1 },
+  { id: "week-balance", visible: true, order: 2 },
+  // Off by default, unlike every other widget: it's the only one that can ask
+  // for a device permission, and an unprompted location dialog on first open
+  // is the fastest way to get it denied for good. Added deliberately from the
+  // gallery instead.
+  { id: "weather", visible: false, order: 5 },
+  { id: "equity-curve", visible: true, order: 3 },
+  { id: "journal-link", visible: true, order: 4 },
+  { id: "it-work", visible: true, order: 3 },
+];
 
 interface AppState {
   onboarded: boolean;
@@ -95,6 +137,7 @@ interface AppState {
   avatarId: string;
   settings: GeneralSettings;
   hasSeenFirstLaunch: boolean;
+  homeWidgets: HomeWidgetConfig[];
   setProfile: (p: Profile) => void;
   setTheme: (t: Theme) => void;
   setNickname: (n: string) => void;
@@ -102,6 +145,12 @@ interface AppState {
   updateSettings: (patch: Partial<GeneralSettings>) => void;
   completeOnboarding: (p: Profile) => void;
   markFirstLaunchSeen: () => void;
+  toggleHomeWidget: (id: HomeWidgetId) => void;
+  addHomeWidget: (id: HomeWidgetId) => void;
+  /** Adds `id` to enabledHealthWidgets (appended at the end, so a
+   *  just-re-enabled widget shows up last) if absent, removes it if
+   *  present. */
+  toggleHealthWidget: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -118,8 +167,10 @@ export const useAppStore = create<AppState>()(
         dateFormat: "DMY",
         currency: "UAH",
         firstDayOfWeek: "monday",
+        enabledHealthWidgets: DEFAULT_ENABLED_HEALTH_WIDGETS,
       },
       hasSeenFirstLaunch: false,
+      homeWidgets: DEFAULT_HOME_WIDGETS,
       setProfile: (profile) => set({ profile }),
       setTheme: (theme) => set({ theme }),
       setNickname: (nickname) => set({ nickname }),
@@ -127,8 +178,63 @@ export const useAppStore = create<AppState>()(
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       completeOnboarding: (profile) => set({ profile, onboarded: true }),
       markFirstLaunchSeen: () => set({ hasSeenFirstLaunch: true }),
+      toggleHomeWidget: (id) =>
+        set((s) => ({
+          homeWidgets: s.homeWidgets.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w)),
+        })),
+      // Always appends to the end (max order + 1) rather than restoring
+      // whatever order it had before it was hidden — matches picking it from
+      // the gallery, where "added just now" should mean "shows up last".
+      addHomeWidget: (id) =>
+        set((s) => {
+          const maxOrder = Math.max(0, ...s.homeWidgets.map((w) => w.order));
+          return {
+            homeWidgets: s.homeWidgets.map((w) => (w.id === id ? { ...w, visible: true, order: maxOrder + 1 } : w)),
+          };
+        }),
+      toggleHealthWidget: (id) =>
+        set((s) => {
+          const enabled = s.settings.enabledHealthWidgets;
+          const next = enabled.includes(id) ? enabled.filter((w) => w !== id) : [...enabled, id];
+          return { settings: { ...s.settings, enabledHealthWidgets: next } };
+        }),
     }),
-    { name: "life-os-store" }
+    {
+      name: "life-os-store",
+      version: 2,
+      migrate: (persisted, version) => {
+        let state = persisted as AppState;
+
+        // Shipping a NEW widget has to reach people who already have a saved
+        // homeWidgets array — persisted state replaces the defaults wholesale,
+        // so without this the weather widget would exist in code and be
+        // invisible (and un-addable, since the gallery lists entries from this
+        // same array) for every existing install.
+        if (version < 1) {
+          const known = new Set(state.homeWidgets?.map((w) => w.id) ?? []);
+          const missing = DEFAULT_HOME_WIDGETS.filter((w) => !known.has(w.id));
+          state = { ...state, homeWidgets: [...(state.homeWidgets ?? []), ...missing] };
+        }
+
+        // v1 -> v2: the standalone cycleEnabled boolean becomes membership in
+        // enabledHealthWidgets (see "Здоров'я — bento-сітка + вибір
+        // віджетів" prompt) — anyone who'd already turned Цикл on keeps it
+        // on, folded into the same list as every other widget.
+        if (version < 2) {
+          const legacySettings = state.settings as (GeneralSettings & { cycleEnabled?: boolean }) | undefined;
+          const cycleWasOn = legacySettings?.cycleEnabled === true;
+          state = {
+            ...state,
+            settings: {
+              ...state.settings,
+              enabledHealthWidgets: [...DEFAULT_ENABLED_HEALTH_WIDGETS, ...(cycleWasOn ? ["cycle"] : [])],
+            },
+          };
+        }
+
+        return state;
+      },
+    }
   )
 );
 

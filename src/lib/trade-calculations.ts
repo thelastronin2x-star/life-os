@@ -6,6 +6,15 @@ export interface TradePnL {
   net: number | null;
   rrPlanned: string;
   rrActual: string | null;
+  /** Signed result in units of the risk taken: +2.1 means the trade made
+   *  2.1x what it stood to lose, −1 means it lost exactly the planned risk.
+   *
+   *  This is the number the journal ranks by, not the money. Money depends on
+   *  account size and lot, so "+295 $" says nothing without context and can't
+   *  be compared between a prop challenge and a personal Bybit account. R
+   *  strips both out and answers the only question that generalises: how well
+   *  was this trade taken? Null when there's no stop to measure against. */
+  rMultiple: number | null;
 }
 
 /** Planned R:R from entry/stop/take — always computable, regardless of status. */
@@ -20,7 +29,7 @@ export function computeTradePnL(trade: Trade, instrument: JournalInstrument | un
   const rrPlanned = computeRR(trade);
 
   if (trade.status === "open" || trade.closePrice == null || !instrument) {
-    return { gross: null, net: null, rrPlanned, rrActual: null };
+    return { gross: null, net: null, rrPlanned, rrActual: null, rMultiple: null };
   }
 
   const multiplier = getInstrumentMultiplier(instrument);
@@ -35,5 +44,9 @@ export function computeTradePnL(trade: Trade, instrument: JournalInstrument | un
   const risk = Math.abs(trade.entry - trade.stop);
   const rrActual = risk === 0 ? null : `1:${(Math.abs(trade.closePrice - trade.entry) / risk).toFixed(1)}`;
 
-  return { gross, net, rrPlanned, rrActual };
+  // Signed, unlike rrActual — which takes an absolute value and so reports a
+  // full-stop loss as "1:1.0", indistinguishable from a win of the same size.
+  const rMultiple = risk === 0 ? null : ((trade.closePrice - trade.entry) * directionSign) / risk;
+
+  return { gross, net, rrPlanned, rrActual, rMultiple };
 }

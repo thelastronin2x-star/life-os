@@ -120,14 +120,24 @@ export function computeFinanceScope(
   };
 }
 
-/** Total expenses in the current calendar week (Monday–Sunday), converted
- *  into `scope`'s currency exactly like every other sum under that scope —
- *  the one shared definition of "weekly expenses", so the Головна summary
- *  card and any other caller can never silently disagree with each other or
- *  with Фінанси/Аналітика about what "this week" means or what currency it's
- *  expressed in. */
-export function getWeekExpenseTotal(transactions: Transaction[], scope: FinanceScopeCalc): number {
+/** Total expenses in a calendar week (Monday–Sunday), converted into
+ *  `scope`'s currency exactly like every other sum under that scope — the one
+ *  shared definition of "weekly expenses", so the Головна summary card and any
+ *  other caller can never silently disagree with each other or with Фінанси/
+ *  Аналітика about what "this week" means or what currency it's expressed in.
+ *
+ *  `weekOffset` counts back from the current week: 0 is this week, -1 the one
+ *  before it. Comparing the two is the only way the weekly figure says
+ *  anything — 7 240 ₴ alone is a number, 7 240 against 9 530 is a direction —
+ *  and doing it through the same function guarantees both sides of that
+ *  comparison were built with identical scope, currency and week boundaries. */
+export function getWeekExpenseTotal(
+  transactions: Transaction[],
+  scope: FinanceScopeCalc,
+  weekOffset = 0
+): number {
   const weekStart = startOfWeek(new Date());
+  weekStart.setDate(weekStart.getDate() + weekOffset * 7);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   const startKey = formatDateKey(weekStart);

@@ -9,7 +9,8 @@ export const DEFAULT_DEBOUNCE_MS = 4 * 60 * 1000; // 4 minutes of quiet before a
  * changes (e.g. adding 10 calendar events back-to-back) produces one API
  * call once things go quiet, not one call per change. How long "quiet"
  * means is caller-supplied — each data source has its own natural cadence
- * (see use-source-insight-sync.ts), so this hook doesn't hardcode one.
+ * (see the per-domain use-*-insight-sync.ts files), so this hook doesn't
+ * hardcode one.
  *
  * `signature` should be the freshly-computed staleness signature for this
  * context; `enabled` should be true only while it actually differs from the

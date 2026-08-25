@@ -45,6 +45,11 @@ export interface FinanceScope {
    *  can't actually convert anything would just leave every foreign amount
    *  blank, which reads as data loss rather than "rates unavailable". */
   cycleDisplayCurrency: (ratesAvailable: boolean) => boolean;
+  /** Picks a specific currency, for the segmented ₴ / $ / € control. Cycling
+   *  is the wrong primitive there: tapping "€" while on "₴" has to land on
+   *  the euro, not on whatever happens to come next in the list. Same
+   *  rates guard and same return contract as cycleDisplayCurrency. */
+  selectDisplayCurrency: (currency: Currency, ratesAvailable: boolean) => boolean;
 }
 
 /** Resolves the persisted selection against the current account list — if
@@ -73,6 +78,16 @@ export function useFinanceScope(): FinanceScope {
     return true;
   }
 
+  function selectDisplayCurrency(currency: Currency, ratesAvailable: boolean): boolean {
+    // Selecting the currency it's already showing is a no-op that must still
+    // report success — otherwise tapping the active segment would surface the
+    // "rates unavailable" warning even though nothing needed converting.
+    if (currency === effectiveCurrency) return true;
+    if (!ratesAvailable) return false;
+    setDisplayCurrency(currency);
+    return true;
+  }
+
   return {
     selectedAccountId: danglingSelection ? null : selectedAccountId,
     selectedAccount,
@@ -80,5 +95,6 @@ export function useFinanceScope(): FinanceScope {
     displayCurrency: effectiveCurrency,
     displaySymbol: CURRENCIES.find((c) => c.id === effectiveCurrency)?.symbol ?? "₴",
     cycleDisplayCurrency,
+    selectDisplayCurrency,
   };
 }

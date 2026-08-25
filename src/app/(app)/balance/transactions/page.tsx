@@ -4,20 +4,65 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FinanceSubpageHeader } from "@/components/finance/FinanceSubpageHeader";
 import { TransactionForm } from "@/components/finance/TransactionForm";
-import { useFinanceStore, sortTransactionsDesc, getAccountBalance, type Transaction } from "@/lib/finance-store";
+import { BudgetCategoryForm } from "@/components/finance/BudgetCategoryForm";
+import { useFinanceStore, sortTransactionsDesc, getAccountBalance, type BudgetCategory, type Transaction } from "@/lib/finance-store";
 import { formatDateKey, formatTimeOfDay } from "@/lib/calendar-utils";
 import { SearchIcon, BankIcon, ShoppingBagIcon, TransferIcon } from "@/components/icons";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { categoryMeta } from "@/lib/finance-categories";
 import { formatCurrency } from "@/lib/currency-format";
 import { learnMerchantRule, recategorizeUncategorizedTransactions } from "@/lib/recategorize";
 import { useFinanceScope } from "@/lib/finance-scope-store";
+import { useLongPress } from "@/lib/use-long-press";
+import { cn } from "@/lib/cn";
+
+function Chip({
+  active,
+  gold,
+  children,
+  onClick,
+  onPointerDown,
+  onPointerUp,
+  onPointerLeave,
+  onPointerCancel,
+}: {
+  active: boolean;
+  gold?: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+  onPointerDown?: () => void;
+  onPointerUp?: () => void;
+  onPointerLeave?: () => void;
+  onPointerCancel?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+      onPointerCancel={onPointerCancel}
+      className={cn(
+        "flex-shrink-0 rounded-btn px-3 py-1.5 text-[11px] font-semibold",
+        active ? (gold ? "bg-gold-soft text-gold" : "bg-text text-bg") : gold ? "bg-gold-soft text-gold" : "bg-surface text-text-dim"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 function AllTransactionsInner() {
   const searchParams = useSearchParams();
-  const { transactions, budgetCategories, accounts, updateTransaction, removeTransaction } = useFinanceStore();
+  const { transactions, budgetCategories, accounts, updateTransaction, removeTransaction, updateBudgetCategory, removeBudgetCategory } =
+    useFinanceStore();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>(searchParams.get("category") ?? "all");
   const { selectedAccountId, selectedAccount, setSelectedAccountId } = useFinanceScope();
+  // Long-press a category chip to edit it — BudgetCategoryForm's only
+  // remaining entry point now that Огляд no longer has a category list of
+  // its own (see finance-manual-data-prompt.md's dashboard replacement).
+  const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
+  const categoryLongPress = useLongPress<BudgetCategory>((cat) => setEditingCategory(cat));
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null);
 
   const filteredAccount = selectedAccount;
@@ -107,7 +152,7 @@ function AllTransactionsInner() {
         }
       />
 
-      <div className="mb-2.5 flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2.5">
+      <div className="mb-2.5 flex items-center gap-2 rounded-btn bg-surface px-3.5 py-2.5">
         <SearchIcon className="h-4 w-4 text-text-faint" />
         <input
           value={search}
@@ -118,55 +163,39 @@ function AllTransactionsInner() {
       </div>
 
       <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
-        <button
-          onClick={() => setFilter("all")}
-          className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-medium ${
-            filter === "all" ? "border-sage bg-surface-2 text-sage font-semibold" : "border-border bg-surface text-text-dim"
-          }`}
-        >
+        <Chip active={filter === "all"} onClick={() => setFilter("all")}>
           Всі
-        </button>
+        </Chip>
         {sortedCategories.map((cat) => (
-          <button
+          <Chip
             key={cat.id}
-            onClick={() => setFilter(cat.id)}
-            className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-medium ${
-              filter === cat.id ? "border-sage bg-surface-2 text-sage font-semibold" : "border-border bg-surface text-text-dim"
-            }`}
+            active={filter === cat.id}
+            onClick={() => {
+              if (categoryLongPress.wasLongPress()) return;
+              setFilter(cat.id);
+            }}
+            onPointerDown={() => categoryLongPress.start(cat)}
+            onPointerUp={categoryLongPress.cancel}
+            onPointerLeave={categoryLongPress.cancel}
+            onPointerCancel={categoryLongPress.cancel}
           >
             {cat.name}
-          </button>
+          </Chip>
         ))}
-        <button
-          onClick={() => setFilter("uncategorized")}
-          className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-medium ${
-            filter === "uncategorized" ? "border-gold bg-surface-2 text-gold font-semibold" : "border-gold/40 bg-surface text-gold"
-          }`}
-        >
+        <Chip gold active={filter === "uncategorized"} onClick={() => setFilter("uncategorized")}>
           Некатегоризовано ✎
-        </button>
+        </Chip>
       </div>
 
       {accounts.length > 1 && (
         <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
-          <button
-            onClick={() => setSelectedAccountId(null)}
-            className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-medium ${
-              selectedAccountId === null ? "border-sky bg-surface-2 text-sky font-semibold" : "border-border bg-surface text-text-dim"
-            }`}
-          >
+          <Chip active={selectedAccountId === null} onClick={() => setSelectedAccountId(null)}>
             Усі рахунки
-          </button>
+          </Chip>
           {accounts.map((acc) => (
-            <button
-              key={acc.id}
-              onClick={() => setSelectedAccountId(acc.id)}
-              className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-medium ${
-                selectedAccountId === acc.id ? "border-sky bg-surface-2 text-sky font-semibold" : "border-border bg-surface text-text-dim"
-              }`}
-            >
+            <Chip key={acc.id} active={selectedAccountId === acc.id} onClick={() => setSelectedAccountId(acc.id)}>
               {acc.name}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
@@ -195,44 +224,51 @@ function AllTransactionsInner() {
             const otherAccountName = isTransfer
               ? accounts.find((a) => a.id === (transferIncoming ? t.accountId : t.transferAccountId))?.name
               : undefined;
-            const CatIcon = isTransfer ? TransferIcon : cat ? getCategoryIcon(cat.icon) : t.type === "income" ? BankIcon : ShoppingBagIcon;
+            const catMeta = cat ? categoryMeta(cat.icon) : null;
             const txnSymbol =
               accounts.find((a) => a.id === (transferIncoming ? t.transferAccountId : t.accountId))?.currencySymbol ?? "₴";
+            const rowColor = isTransfer ? "sky" : t.type === "income" ? "sage" : (cat?.color ?? "gold");
             return (
               <button
                 key={t.id}
                 onClick={() => setEditingTxn(t)}
                 className="mb-1.5 flex w-full items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3 text-left"
               >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-text-dim">
-                  <CatIcon className="h-4 w-4" />
+                <div
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon"
+                  style={{ background: `var(--${rowColor}-soft)`, color: `var(--${rowColor})` }}
+                >
+                  {isTransfer ? (
+                    <TransferIcon className="h-4 w-4" />
+                  ) : catMeta ? (
+                    <catMeta.Icon className="h-4 w-4" />
+                  ) : t.type === "income" ? (
+                    <BankIcon className="h-4 w-4" />
+                  ) : (
+                    <ShoppingBagIcon className="h-4 w-4" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[12.5px] font-medium text-text">{t.title}</div>
                   <div className="mt-0.5 flex items-center gap-1 text-[9.5px] text-text-faint">
                     {formatTimeOfDay(t.time) && <span className="font-mono">{formatTimeOfDay(t.time)}</span>}
                     {isTransfer ? (
-                      <span className="rounded-full border border-border px-1.5 py-0.5">
+                      <span>
                         Переказ {transferIncoming ? "←" : "→"}
                         {otherAccountName ? ` ${otherAccountName}` : ""}
                       </span>
                     ) : t.type === "income" ? (
-                      <span className="rounded-full border border-border px-1.5 py-0.5">Дохід</span>
+                      <span>Дохід</span>
                     ) : (
-                      <span
-                        className={`rounded-full border px-1.5 py-0.5 ${
-                          cat ? "border-border" : "border-gold text-gold"
-                        }`}
-                      >
-                        {cat?.name ?? "Некатегоризовано"} ✎
-                      </span>
+                      <span className={cat ? undefined : "text-gold"}>{cat?.name ?? "Некатегоризовано"} ✎</span>
                     )}
                   </div>
                 </div>
                 <div
-                  className={`font-mono text-[12px] font-semibold ${
+                  className={cn(
+                    "font-mono text-[12px] font-semibold",
                     isTransfer ? (transferIncoming ? "text-sage" : "text-text-dim") : t.type === "income" ? "text-sage" : "text-clay"
-                  }`}
+                  )}
                 >
                   {isTransfer ? (transferIncoming ? "+" : "→ ") : t.type === "income" ? "+" : "-"}
                   {formatCurrency(t.amount, txnSymbol)}
@@ -251,6 +287,23 @@ function AllTransactionsInner() {
           onSave={handleSave}
           onClose={closeForm}
           onDelete={handleDelete}
+        />
+      )}
+
+      {editingCategory && (
+        <BudgetCategoryForm
+          editingCategory={editingCategory}
+          accounts={accounts}
+          currentAccountId={selectedAccountId}
+          onSave={(data) => {
+            updateBudgetCategory(editingCategory.id, data);
+            setEditingCategory(null);
+          }}
+          onClose={() => setEditingCategory(null)}
+          onDelete={(id) => {
+            removeBudgetCategory(id);
+            setEditingCategory(null);
+          }}
         />
       )}
     </div>

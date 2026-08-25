@@ -48,13 +48,13 @@ export function TradingAccountForm({
           </button>
         </div>
 
-        <div className="mb-3 flex rounded-xl border border-border bg-surface p-1">
+        <div className="mb-3 flex rounded-btn bg-surface-2 p-1">
           <button
             type="button"
             onClick={() => setKind("personal")}
             className={cn(
-              "flex-1 rounded-lg py-2 text-center text-xs font-semibold",
-              kind === "personal" ? "bg-surface-2 text-text" : "text-text-faint"
+              "flex-1 rounded-btn py-2 text-center text-xs font-semibold",
+              kind === "personal" ? "bg-surface text-text shadow-card" : "text-text-dim"
             )}
           >
             Особистий
@@ -63,8 +63,8 @@ export function TradingAccountForm({
             type="button"
             onClick={() => setKind("prop")}
             className={cn(
-              "flex-1 rounded-lg py-2 text-center text-xs font-semibold",
-              kind === "prop" ? "bg-surface-2 text-text" : "text-text-faint"
+              "flex-1 rounded-btn py-2 text-center text-xs font-semibold",
+              kind === "prop" ? "bg-surface text-text shadow-card" : "text-text-dim"
             )}
           >
             Prop-firm

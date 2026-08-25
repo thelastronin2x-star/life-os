@@ -5,7 +5,7 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import type { BudgetCategory, FinanceAccount, Transaction, TxnType } from "@/lib/finance-store";
 import { useFinanceStore } from "@/lib/finance-store";
 import { formatDateKey } from "@/lib/calendar-utils";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { CategoryIcon } from "@/lib/finance-categories";
 import { CategoryPickerSheet } from "./CategoryPickerSheet";
 import { WalletIcon, CalendarDateIcon, RefreshIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
@@ -21,6 +21,7 @@ export function TransactionForm({
   categories,
   accounts,
   editingTxn,
+  initialType,
   onSave,
   onClose,
   onDelete,
@@ -28,13 +29,17 @@ export function TransactionForm({
   categories: BudgetCategory[];
   accounts: FinanceAccount[];
   editingTxn: Transaction | null;
+  /** Preselects the type for a brand-new transaction (e.g. the Фінанси tab's
+   *  "Поповнити"/"Переказ" quick actions) — ignored while editing, where the
+   *  transaction's own type always wins. */
+  initialType?: TxnType;
   onSave: (data: Omit<Transaction, "id">) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const addBudgetCategory = useFinanceStore((s) => s.addBudgetCategory);
 
-  const [type, setType] = useState<TxnType>(editingTxn?.type ?? "expense");
+  const [type, setType] = useState<TxnType>(editingTxn?.type ?? initialType ?? "expense");
   const [title, setTitle] = useState(editingTxn?.title ?? "");
   const [amount, setAmount] = useState(editingTxn?.amount ?? 0);
   // Only default to the first category for a BRAND NEW transaction. When
@@ -59,9 +64,13 @@ export function TransactionForm({
   const transferAccountSelectRef = useRef<HTMLSelectElement>(null);
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
-  const selectedCategoryIcon = selectedCategory
-    ? getCategoryIcon(selectedCategory.icon)({ className: "h-4 w-4" })
-    : <WalletIcon className="h-4 w-4" />;
+  const selectedCategoryIcon = selectedCategory ? (
+    <CategoryIcon categoryKey={selectedCategory.icon} color={selectedCategory.color} className="h-8 w-8 rounded-card-sm" />
+  ) : (
+    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-text-dim">
+      <WalletIcon className="h-4 w-4" />
+    </span>
+  );
   const selectedAccount = accounts.find((a) => a.id === accountId);
 
   const destinationAccounts = accounts.filter((a) => a.id !== accountId);
@@ -154,9 +163,7 @@ export function TransactionForm({
                 onClick={() => setCategoryPickerOpen(true)}
                 className="flex w-full items-center gap-3 border-b border-border py-3.5 text-left"
               >
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-text-dim">
-                  {selectedCategoryIcon}
-                </span>
+                {selectedCategoryIcon}
                 <span className="min-w-0 flex-1">
                   <span className="block text-[10px] uppercase tracking-wide text-text-faint">Категорія</span>
                   <span className="block text-[13.5px] font-medium text-text">

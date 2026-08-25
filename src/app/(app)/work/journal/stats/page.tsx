@@ -2,14 +2,27 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CURRENCIES, useAppStore } from "@/lib/store";
 import { useJournalStore, type Trade } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { useTradingAccounts } from "@/lib/trading-accounts";
 import { computeTradePnL } from "@/lib/trade-calculations";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
+import {
+  closedTradesWithNet,
+  computeHourlyPerformanceCurve,
+  computeLateHourCorrelation,
+  computePlanCorrelation,
+  computePostLossPauseCorrelation,
+  computeTagCombinations,
+  detectRevengeTrading,
+  type BinaryCorrelation,
+} from "@/lib/trade-insights";
+import { tradesInPeriod, type AnalyticsPeriod } from "@/lib/assistant-context-work-analytics";
+import { useWorkAnalyticsInsightSync } from "@/lib/use-work-analytics-insight-sync";
 import { cn } from "@/lib/cn";
+import { SparkleIcon, AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon } from "@/components/icons";
 
 interface GroupStat {
   key: string;
@@ -66,60 +79,115 @@ function GroupTable({ title, groups, currencySymbol }: { title: string; groups: 
   );
 }
 
+const PERIOD_TABS: { id: AnalyticsPeriod; label: string }[] = [
+  { id: "week", label: "Тиждень" },
+  { id: "month", label: "Місяць" },
+  { id: "quarter", label: "Квартал" },
+];
+
+function CorrelationCard({ title, correlation }: { title: string; correlation: BinaryCorrelation }) {
+  // The healthier side is whichever one the trader can choose to be on more
+  // often — "за планом" / "решта дня" / "довша пауза" — so it's always `a`
+  // here by construction of the trade-insights.ts functions, not something
+  // this component has to infer from the numbers.
+  const diff = correlation.aWinRate - correlation.bWinRate;
+  const positive = diff >= 0;
+  return (
+    <div className="mb-2 flex items-start gap-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div
+        className={cn(
+          "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm",
+          positive ? "bg-sage-soft text-sage" : "bg-clay-soft text-clay"
+        )}
+      >
+        {positive ? <TrendingUpIcon className="h-4 w-4" /> : <TrendingDownIcon className="h-4 w-4" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-mono text-[15px] text-text">
+          {correlation.aLabel}{" "}
+          <b className={positive ? "text-sage" : "text-clay"}>{correlation.aWinRate}%</b> проти {correlation.bLabel}{" "}
+          <b className={positive ? "text-clay" : "text-sage"}>{correlation.bWinRate}%</b>
+        </div>
+        <div className="mt-0.5 text-[11px] leading-relaxed text-text-faint">{title}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function JournalStatsPage() {
   const isTrader = useTraderOnlyGuard();
   const currencyId = useAppStore((s) => s.settings.currency);
-  const currencySymbol = CURRENCIES.find((c) => c.id === currencyId)?.symbol ?? "₴";
+  const appCurrencySymbol = CURRENCIES.find((c) => c.id === currencyId)?.symbol ?? "₴";
 
   const searchParams = useSearchParams();
   const accountId = searchParams.get("accountId");
   const accounts = useTradingAccounts();
   const account = accounts.find((a) => a.id === accountId) ?? null;
+  const currencySymbol = account?.currencySymbol ?? appCurrencySymbol;
+
+  const [period, setPeriod] = useState<AnalyticsPeriod>("month");
 
   const { trades: allTrades } = useJournalStore();
-  const trades = useMemo(
+  const accountTrades = useMemo(
     () => (accountId ? allTrades.filter((t) => t.accountId === accountId) : allTrades),
     [allTrades, accountId]
   );
+  const trades = useMemo(() => tradesInPeriod(accountTrades, period), [accountTrades, period]);
   const { instruments, tags, sessions } = useJournalConfigStore();
 
   const instrumentById = useMemo(() => new Map(instruments.map((i) => [i.id, i])), [instruments]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
 
-  const withPnl = useMemo(
-    () =>
-      trades.map((trade) => ({
-        trade,
-        net: computeTradePnL(trade, instrumentById.get(trade.instrumentId)).net,
-      })),
-    [trades, instrumentById]
-  );
+  const narrative = useWorkAnalyticsInsightSync(period);
+  const narrativeText = narrative.streamingText ?? narrative.cached?.text ?? "";
 
-  const closed = withPnl.filter((t) => t.net !== null);
-  const wins = closed.filter((t) => (t.net ?? 0) > 0);
-  const losses = closed.filter((t) => (t.net ?? 0) <= 0);
-  const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : 0;
-  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + (t.net ?? 0), 0) / wins.length : 0;
-  const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + (t.net ?? 0), 0) / losses.length : 0;
-  const grossWin = wins.reduce((s, t) => s + (t.net ?? 0), 0);
-  const grossLoss = Math.abs(losses.reduce((s, t) => s + (t.net ?? 0), 0));
+  const closed = closedTradesWithNet(trades, instrumentById);
+  const winRate = closed.length > 0 ? Math.round((closed.filter((x) => x.net > 0).length / closed.length) * 100) : 0;
+  const avgWin =
+    closed.filter((x) => x.net > 0).length > 0
+      ? closed.filter((x) => x.net > 0).reduce((s, x) => s + x.net, 0) / closed.filter((x) => x.net > 0).length
+      : 0;
+  const avgLoss =
+    closed.filter((x) => x.net <= 0).length > 0
+      ? closed.filter((x) => x.net <= 0).reduce((s, x) => s + x.net, 0) / closed.filter((x) => x.net <= 0).length
+      : 0;
+  const grossWin = closed.filter((x) => x.net > 0).reduce((s, x) => s + x.net, 0);
+  const grossLoss = Math.abs(closed.filter((x) => x.net <= 0).reduce((s, x) => s + x.net, 0));
   const profitFactor = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : grossWin > 0 ? "∞" : "—";
   const totalCommission = trades.reduce((s, t) => s + t.commission, 0);
   const totalSwap = trades.reduce((s, t) => s + t.swap, 0);
 
+  const planCorrelation = computePlanCorrelation(trades, instrumentById);
+  const lateHourCorrelation = computeLateHourCorrelation(trades, instrumentById);
+  const pauseCorrelation = computePostLossPauseCorrelation(trades, instrumentById);
+  const correlations = [
+    planCorrelation && { title: "Дотримання плану/чек-листа перед входом", correlation: planCorrelation },
+    lateHourCorrelation && { title: "Пізні угоди проти решти дня", correlation: lateHourCorrelation },
+    pauseCorrelation && { title: "Пауза після збиткової угоди перед наступною", correlation: pauseCorrelation },
+  ].filter((x): x is { title: string; correlation: BinaryCorrelation } => !!x);
+
+  const curve = computeHourlyPerformanceCurve(trades, instrumentById);
+  const maxCurveWinRate = Math.max(1, ...curve.map((c) => c.winRate ?? 0));
+
+  const tagCombos = computeTagCombinations(trades, instrumentById, tagById, 2);
+
+  // Revenge-trading pattern is checked over the account's whole history, not
+  // just the selected period — see detectRevengeTrading's own note.
+  const revenge = detectRevengeTrading(accountTrades, instrumentById);
+
   const byInstrument = buildGroups(
-    withPnl,
+    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
     (t) => [t.instrumentId],
     (key) => instrumentById.get(key)?.symbol ?? key
   );
   const byTag = buildGroups(
-    withPnl,
+    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
     (t) => t.tagIds,
     (key) => tagById.get(key)?.name ?? key
   );
   const bySession = buildGroups(
-    withPnl,
+    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
     (t) => (t.sessionId ? [t.sessionId] : []),
     (key) => sessionById.get(key)?.name ?? key
   );
@@ -129,16 +197,52 @@ export default function JournalStatsPage() {
   return (
     <div>
       <div className="pb-3.5 pt-2">
-        <Link href="/work/journal" className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-border bg-surface">
+        <Link
+          href={accountId ? `/work/journal` : "/work/journal"}
+          className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
             ‹
           </span>
           Журнал
         </Link>
-        <div className="font-heading text-lg font-semibold text-text">Статистика</div>
+        <div className="font-heading text-lg font-semibold text-text">AI Аналітика</div>
         <div className="mt-0.5 text-[11.5px] text-text-faint">
-          {account ? `${account.name} · ` : ""}Розбивка по тегах, інструментах, сесіях
+          {account ? `${account.name} · ` : ""}Глибокий розбір, не тільки цифри
         </div>
+      </div>
+
+      <div className="mb-3.5 flex rounded-btn bg-surface-2 p-[3px]">
+        {PERIOD_TABS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setPeriod(p.id)}
+            className={cn(
+              "flex-1 rounded-btn py-2 text-center text-[12px] font-semibold",
+              period === p.id ? "bg-bg text-text shadow-card" : "text-text-faint"
+            )}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-4 rounded-card p-4 text-white" style={{ background: "linear-gradient(135deg, #2a2620, #1f2018)" }}>
+        <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/60">
+          <SparkleIcon className="h-3.5 w-3.5" /> Розбір періоду
+        </div>
+        {narrativeText ? (
+          <p className="text-[13.5px] font-medium leading-relaxed text-white/95">{narrativeText}</p>
+        ) : (
+          <p className="text-[13.5px] font-medium leading-relaxed text-white/50">
+            {narrative.isFetching ? "Аналізую угоди…" : "Ще немає закритих угод за цей період для розбору."}
+          </p>
+        )}
+        {closed.length > 0 && (
+          <div className="mt-3.5 border-t border-white/10 pt-2.5 text-[10.5px] font-semibold text-white/45">
+            Згенеровано на основі {closed.length} угод за обраний період
+          </div>
+        )}
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-2">
@@ -164,9 +268,82 @@ export default function JournalStatsPage() {
         </div>
       </div>
 
+      {correlations.length > 0 && (
+        <>
+          <div className="mb-2 mt-1 text-[11px] font-bold uppercase tracking-wide text-text-faint">
+            Поведінкові кореляції
+          </div>
+          {correlations.map((c) => (
+            <CorrelationCard key={c.title} title={c.title} correlation={c.correlation} />
+          ))}
+        </>
+      )}
+
+      {curve.length > 1 && (
+        <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+          <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
+          <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, обраний період</div>
+          <div className="mt-3 flex h-[70px] items-end gap-1">
+            {curve.map((c) => (
+              <div key={c.hour} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+                <div
+                  className="w-full rounded-t-[3px]"
+                  style={{
+                    height: c.winRate !== null ? `${Math.max(6, (c.winRate / maxCurveWinRate) * 100)}%` : "2%",
+                    background: c.winRate === null ? "var(--surface-2)" : "var(--sky)",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
+            <span>{curve[0].hour}:00</span>
+            <span>{curve[curve.length - 1].hour}:00</span>
+          </div>
+        </div>
+      )}
+
+      {tagCombos.length > 0 && (
+        <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+          <div className="mb-2.5 text-[12px] font-semibold text-text">Найефективніші комбінації тегів</div>
+          {tagCombos.map((combo, i) => (
+            <div
+              key={combo.tagNames.join("+")}
+              className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0"
+            >
+              <span className="w-4 flex-shrink-0 font-mono text-[12px] text-text-faint">{i + 1}</span>
+              <div className="flex flex-1 flex-wrap gap-1.5">
+                {combo.tagNames.map((name) => (
+                  <span key={name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold text-text-dim">
+                    {name}
+                  </span>
+                ))}
+              </div>
+              <span className="flex-shrink-0 font-mono text-[12.5px] font-bold text-sage">{combo.winRate}% WR</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {revenge.count > 0 && (
+        <div className="mb-4 flex items-start gap-3 rounded-card border border-clay/25 bg-clay-soft p-3.5">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-clay">
+            <AlertTriangleIcon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[12.5px] font-bold text-clay">Патерн помстливого трейдингу</div>
+            <div className="mt-1 text-[11px] leading-relaxed text-text-dim">
+              {revenge.count} раз{revenge.count === 1 ? "" : "и"} за весь час обсяг наступної угоди після збитку був
+              помітно більшим за звичайний — схоже на спробу «відіграватися». Варто заздалегідь зафіксувати ліміт
+              розміру позиції на день.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
         <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
-          Витрати брокера (всього)
+          Витрати брокера (за період)
         </div>
         <div className="flex items-center justify-between py-1">
           <span className="text-[12px] text-text-dim">Комісія</span>
@@ -181,13 +358,14 @@ export default function JournalStatsPage() {
         </div>
       </div>
 
+      <div className="mb-2 mt-1 text-[11px] font-bold uppercase tracking-wide text-text-faint">Детальна розбивка</div>
       <GroupTable title="По інструменту" groups={byInstrument} currencySymbol={currencySymbol} />
       <GroupTable title="По тегу / сетапу" groups={byTag} currencySymbol={currencySymbol} />
       <GroupTable title="По сесії" groups={bySession} currencySymbol={currencySymbol} />
 
       {closed.length === 0 && (
         <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
-          Ще немає закритих угод для статистики
+          Ще немає закритих угод за цей період
         </div>
       )}
     </div>

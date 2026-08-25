@@ -14,6 +14,8 @@ export function describeRecurrence(recurrence: EventRecurrence | null): string {
       return "Вихідні (Сб, Нд)";
     case "weekly":
       return "Щотижня в цей день";
+    case "monthly":
+      return "Щомісяця в це число";
     case "custom": {
       const labels = [...recurrence.daysOfWeek].sort().map((d) => JS_WEEKDAY_LABELS[d]);
       return labels.length > 0 ? `Свої дні (${labels.join(", ")})` : "Свої дні";
@@ -27,6 +29,17 @@ export function describeRecurrence(recurrence: EventRecurrence | null): string {
  *  need to distinguish "which specific occurrence" should key off `date`
  *  alongside `id`, since only one occurrence of a given event can ever land
  *  on the same day. */
+/** Same day-of-month as `anchor`, clamped to the last day of a shorter month
+ *  (e.g. an anchor on the 31st becomes the 30th/28th/29th where that month
+ *  doesn't have a 31st) — the usual convention, rather than skipping the
+ *  month or overflowing into the next one. */
+function monthlyOccurrence(anchor: Date, monthsAhead: number): Date {
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth() + monthsAhead;
+  const lastDayOfTargetMonth = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(anchor.getDate(), lastDayOfTargetMonth));
+}
+
 export function expandRecurringEvents(item: CalendarItem, rangeStart: Date, rangeEnd: Date): CalendarItem[] {
   if (!item.recurrence) {
     const own = parseDateKey(item.date);
@@ -35,6 +48,31 @@ export function expandRecurringEvents(item: CalendarItem, rangeStart: Date, rang
 
   const { type, daysOfWeek, endCondition, excludedDates } = item.recurrence;
   const anchor = parseDateKey(item.date);
+
+  if (type === "monthly") {
+    const untilDate =
+      endCondition.type === "until" && typeof endCondition.value === "string"
+        ? parseDateKey(endCondition.value)
+        : null;
+    const maxCount =
+      endCondition.type === "count" && typeof endCondition.value === "number" ? endCondition.value : Infinity;
+    const excluded = new Set(excludedDates);
+    const results: CalendarItem[] = [];
+
+    // Hard cap (100 years of months) independent of maxCount — a safety net
+    // against an infinite loop, not a real limit anyone should ever hit.
+    for (let monthsAhead = 0; monthsAhead < 1200; monthsAhead++) {
+      if (monthsAhead >= maxCount) break;
+      const occurrence = monthlyOccurrence(anchor, monthsAhead);
+      if (occurrence > rangeEnd) break;
+      if (untilDate && occurrence > untilDate) break;
+      if (occurrence >= rangeStart) {
+        const key = formatDateKey(occurrence);
+        if (!excluded.has(key)) results.push({ ...item, date: key });
+      }
+    }
+    return results;
+  }
 
   const activeDays =
     type === "weekdays"
@@ -91,6 +129,8 @@ export function describeRecurrenceShort(recurrence: EventRecurrence | null): str
       return "Сб–Нд";
     case "weekly":
       return "Щотижня";
+    case "monthly":
+      return "Щомісяця";
     case "custom":
       return "Свої дні";
   }
