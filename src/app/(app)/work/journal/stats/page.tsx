@@ -21,6 +21,17 @@ import {
 } from "@/lib/trade-insights";
 import { tradesInPeriod, type AnalyticsPeriod } from "@/lib/assistant-context-work-analytics";
 import { useWorkAnalyticsInsightSync } from "@/lib/use-work-analytics-insight-sync";
+import {
+  extractRMultiples,
+  estimateAverageRiskPercent,
+  computeKellyCriterion,
+  tradesNeededForKelly,
+  computeRiskOfRuin,
+  computeMonteCarloProjection,
+  computeSetupEdge,
+} from "@/lib/trade-risk-analytics";
+import { smoothPath } from "@/lib/smooth-path";
+import { useContinuousChartTooltip, useDiscreteChartTooltip, ChartTooltipBubble } from "@/components/ui/ChartTooltip";
 import { cn } from "@/lib/cn";
 import { SparkleIcon, AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon } from "@/components/icons";
 
@@ -114,6 +125,162 @@ function CorrelationCard({ title, correlation }: { title: string; correlation: B
   );
 }
 
+const RUIN_ARC_LENGTH = 204; // matches the path's own geometry below (radius 65 semicircle)
+
+function ruinColor(pct: number): string {
+  if (pct < 15) return "var(--sage)";
+  if (pct < 40) return "var(--gold)";
+  return "var(--clay)";
+}
+
+function RiskOfRuinGauge({ result }: { result: NonNullable<ReturnType<typeof computeRiskOfRuin>> }) {
+  const offset = RUIN_ARC_LENGTH * (1 - Math.min(100, result.ruinProbabilityPercent) / 100);
+  const color = ruinColor(result.ruinProbabilityPercent);
+  return (
+    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div className="text-[12px] font-semibold text-text">Ризик розорення</div>
+      <div className="mt-0.5 text-[10.5px] text-text-faint">Ймовірність втратити 50%+ депозиту при поточній стратегії ризику</div>
+      <div className="relative mx-auto mb-1.5 mt-3 h-[80px] w-[150px]">
+        <svg width="150" height="80" viewBox="0 0 150 80">
+          <path d="M10,75 A65,65 0 0,1 140,75" fill="none" stroke="var(--surface-2)" strokeWidth="12" strokeLinecap="round" />
+          <path
+            d="M10,75 A65,65 0 0,1 140,75"
+            fill="none"
+            stroke={color}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={`${RUIN_ARC_LENGTH} ${RUIN_ARC_LENGTH}`}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <div className="font-display absolute inset-x-0 bottom-0 text-center text-[24px]" style={{ color }}>
+          {result.ruinProbabilityPercent}%
+        </div>
+      </div>
+      <div className="mt-1.5 text-center text-[10.5px] leading-relaxed text-text-faint">
+        При ризику <b className="text-text">{result.currentRiskPercent.toFixed(1)}% на угоду</b> — {result.ruinProbabilityPercent < 15 ? "низький" : result.ruinProbabilityPercent < 40 ? "помітний" : "високий"} ризик. При збільшенні до{" "}
+        <b className="text-text">{result.higherRiskPercent.toFixed(1)}%</b> ризик зростає до{" "}
+        <b style={{ color: ruinColor(result.ruinProbabilityAtHigherRisk) }}>{result.ruinProbabilityAtHigherRisk}%</b>.
+      </div>
+      <div className="mt-2 text-center text-[9.5px] text-text-faint">
+        Оцінка ризику приблизна — розрахована з R-множників угод, окремого поля &quot;ризик %&quot; в журналі немає
+      </div>
+    </div>
+  );
+}
+
+function KellyCriterionCard({
+  kelly,
+  currentRiskPercent,
+  neededTrades,
+}: {
+  kelly: NonNullable<ReturnType<typeof computeKellyCriterion>> | null;
+  currentRiskPercent: number | null;
+  neededTrades: number;
+}) {
+  return (
+    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div className="text-[12px] font-semibold text-text">Kelly Criterion — оптимальний ризик</div>
+      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Розраховано з твоєї реальної статистики</div>
+      {kelly && currentRiskPercent !== null ? (
+        <>
+          <div className="flex gap-2.5">
+            <div className="flex-1 rounded-card-sm bg-surface-2 p-3 text-center">
+              <div className="text-[8.5px] font-bold uppercase text-text-faint">Ти ризикуєш</div>
+              <div className="font-display mt-1.5 text-[17px] text-text">{currentRiskPercent.toFixed(1)}%</div>
+            </div>
+            <div className="flex-1 rounded-card-sm bg-sage-soft p-3 text-center">
+              <div className="text-[8.5px] font-bold uppercase text-text-faint">Оптимально (Kelly/2)</div>
+              <div className="font-display mt-1.5 text-[17px] text-sage">{(kelly.halfKelly * 100).toFixed(1)}%</div>
+            </div>
+          </div>
+          <div className="mt-2.5 text-[10.5px] leading-relaxed text-text-faint">
+            {kelly.halfKelly * 100 > currentRiskPercent
+              ? "Твій edge дозволяє трохи більший ризик без шкоди довгостроковому результату — але підвищувати варто поступово."
+              : "Твій поточний ризик уже вищий за консервативну Kelly-оцінку — варто розглянути зменшення."}
+          </div>
+        </>
+      ) : (
+        <div className="rounded-card-sm bg-surface-2 py-6 text-center text-[11.5px] text-text-faint">
+          Потрібно ще {neededTrades} угод для розрахунку Kelly Criterion
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonteCarloCard({ projection, currencySymbol }: { projection: NonNullable<ReturnType<typeof computeMonteCarloProjection>>; currencySymbol: string }) {
+  const width = 320;
+  const height = 90;
+  const allValues = projection.flatMap((p) => [p.low, p.high]);
+  const min = Math.min(0, ...allValues);
+  const max = Math.max(0, ...allValues);
+  const range = max - min || 1;
+
+  const toY = (v: number) => height - ((v - min) / range) * height;
+  const toX = (i: number) => (i / (projection.length - 1 || 1)) * width;
+
+  const highPoints = projection.map((p, i) => ({ x: toX(i), y: toY(p.high) }));
+  const lowPoints = projection.map((p, i) => ({ x: toX(i), y: toY(p.low) }));
+  const bandPath = `${smoothPath(highPoints)} ${smoothPath([...lowPoints].reverse()).replace(/^M/, "L")} Z`;
+
+  const tooltipValues = projection.map(
+    (p) => `${p.low >= 0 ? "+" : ""}${p.low.toFixed(0)}${currencySymbol} – ${p.high >= 0 ? "+" : ""}${p.high.toFixed(0)}${currencySymbol}`
+  );
+  const { containerRef, tooltip, handlers } = useContinuousChartTooltip(tooltipValues);
+
+  return (
+    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div className="text-[12px] font-semibold text-text">Monte Carlo · 1000 симуляцій наступного місяця</div>
+      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Тримай палець на області, щоб побачити ймовірний діапазон</div>
+      <div ref={containerRef} className="relative" {...handlers}>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          <path d={bandPath} fill="var(--sage)" fillOpacity="0.16" />
+          <path d={smoothPath(highPoints)} fill="none" stroke="var(--sage)" strokeWidth="2" strokeLinecap="round" />
+          <path d={smoothPath(lowPoints)} fill="none" stroke="var(--sage)" strokeWidth="1.2" strokeOpacity="0.5" strokeLinecap="round" />
+        </svg>
+        <ChartTooltipBubble tooltip={tooltip} />
+      </div>
+      <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
+        {projection.map((p) => (
+          <span key={p.week}>Тиждень {p.week}</span>
+        ))}
+      </div>
+      <div className="mt-2 text-center text-[9.5px] text-text-faint">Діапазон імовірних результатів, не прогноз одного числа</div>
+    </div>
+  );
+}
+
+function SetupEdgeCard({ edges }: { edges: NonNullable<ReturnType<typeof computeSetupEdge>> }) {
+  const maxWinRate = Math.max(1, ...edges.map((e) => e.winRate));
+  const { containerRef, tooltip, bind } = useDiscreteChartTooltip();
+  const lowSampleEdge = edges.find((e) => e.lowSample);
+
+  return (
+    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div className="text-[12px] font-semibold text-text">Аналіз переваги сетапу</div>
+      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Win rate по тегах — тримай палець на стовпчику</div>
+      <div ref={containerRef} className="relative flex h-[80px] items-end gap-1.5">
+        {edges.map((e) => (
+          <div
+            key={e.tagName}
+            {...bind(`${e.tagName}: ${e.winRate}%`)}
+            className="flex-1 rounded-t-[5px]"
+            style={{ height: `${Math.max(6, (e.winRate / maxWinRate) * 100)}%`, background: e.lowSample ? "var(--gold)" : "var(--sage)" }}
+          />
+        ))}
+        <ChartTooltipBubble tooltip={tooltip} />
+      </div>
+      {lowSampleEdge && (
+        <div className="mt-2.5 rounded-card-sm bg-gold-soft p-2.5 text-[10.5px] font-semibold text-text-dim">
+          «{lowSampleEdge.tagName}» має лише {lowSampleEdge.count} угод — замало для впевненого висновку. Потрібно ще ~
+          {Math.max(1, 20 - lowSampleEdge.count)}.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function JournalStatsPage() {
   const isTrader = useTraderOnlyGuard();
   const currencyId = useAppStore((s) => s.settings.currency);
@@ -126,6 +293,7 @@ export default function JournalStatsPage() {
   const currencySymbol = account?.currencySymbol ?? appCurrencySymbol;
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
+  const { containerRef: curveContainerRef, tooltip: curveTooltipState, bind: curveBind } = useDiscreteChartTooltip();
 
   const { trades: allTrades } = useJournalStore();
   const accountTrades = useMemo(
@@ -171,6 +339,27 @@ export default function JournalStatsPage() {
   const maxCurveWinRate = Math.max(1, ...curve.map((c) => c.winRate ?? 0));
 
   const tagCombos = computeTagCombinations(trades, instrumentById, tagById, 2);
+
+  // Risk of Ruin / Kelly / Monte Carlo all need a capital figure to turn
+  // R-multiples into a risk %, so they're scoped to a single selected
+  // account (accountId present) rather than an "all accounts" mix of
+  // different sizes, where a % would mean nothing. For a prop account
+  // there's no simple "balance" (see PropAccountView) — maxDrawdown (the
+  // challenge's actual capital-at-risk ceiling) is the more meaningful
+  // denominator there than any notional account size would be.
+  const riskCapitalBase = account ? (account.kind === "personal" ? account.balance : account.maxDrawdown) : null;
+  const rMultiples = extractRMultiples(accountTrades, instrumentById);
+  const currentRiskPercent = riskCapitalBase ? estimateAverageRiskPercent(accountTrades, instrumentById, riskCapitalBase) : null;
+  const kelly = computeKellyCriterion(rMultiples);
+  const kellyNeeded = tradesNeededForKelly(rMultiples);
+  const riskOfRuin = currentRiskPercent !== null ? computeRiskOfRuin(rMultiples, currentRiskPercent) : null;
+
+  const PERIOD_WEEKS: Record<AnalyticsPeriod, number> = { week: 1, month: 4.345, quarter: 13.04 };
+  const tradesPerWeek = closed.length / PERIOD_WEEKS[period];
+  const riskAmountPerTrade = riskCapitalBase && currentRiskPercent !== null ? (riskCapitalBase * currentRiskPercent) / 100 : 0;
+  const monteCarlo = computeMonteCarloProjection(rMultiples, riskAmountPerTrade, tradesPerWeek);
+
+  const setupEdges = computeSetupEdge(trades, instrumentById, tagById);
 
   // Revenge-trading pattern is checked over the account's whole history, not
   // just the selected period — see detectRevengeTrading's own note.
@@ -282,11 +471,12 @@ export default function JournalStatsPage() {
       {curve.length > 1 && (
         <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
           <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
-          <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, обраний період</div>
-          <div className="mt-3 flex h-[70px] items-end gap-1">
+          <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на стовпчику</div>
+          <div ref={curveContainerRef} className="relative mt-3 flex h-[70px] items-end gap-1">
             {curve.map((c) => (
               <div key={c.hour} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
                 <div
+                  {...curveBind(c.winRate !== null ? `${c.hour}:00 — ${c.winRate}% win rate` : `${c.hour}:00 — немає угод`)}
                   className="w-full rounded-t-[3px]"
                   style={{
                     height: c.winRate !== null ? `${Math.max(6, (c.winRate / maxCurveWinRate) * 100)}%` : "2%",
@@ -295,6 +485,7 @@ export default function JournalStatsPage() {
                 />
               </div>
             ))}
+            <ChartTooltipBubble tooltip={curveTooltipState} />
           </div>
           <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
             <span>{curve[0].hour}:00</span>
@@ -302,6 +493,14 @@ export default function JournalStatsPage() {
           </div>
         </div>
       )}
+
+      {riskOfRuin && <RiskOfRuinGauge result={riskOfRuin} />}
+
+      {account && <KellyCriterionCard kelly={kelly} currentRiskPercent={currentRiskPercent} neededTrades={kellyNeeded} />}
+
+      {monteCarlo && <MonteCarloCard projection={monteCarlo} currencySymbol={currencySymbol} />}
+
+      {setupEdges.length > 0 && <SetupEdgeCard edges={setupEdges} />}
 
       {tagCombos.length > 0 && (
         <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
