@@ -2,6 +2,7 @@
 
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { MarketNewsModule } from "@/components/work/MarketNewsModule";
+import { MacroCalendarModule } from "@/components/work/MacroCalendarModule";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 
 export default function NewsPage() {
@@ -12,6 +13,7 @@ export default function NewsPage() {
     <div>
       <WorkSubpageHeader title="Новини ринку" subtitle="Що рухає твої ринки — переклад українською, без переходу на сторонні сайти" />
       <MarketNewsModule />
+      <MacroCalendarModule />
     </div>
   );
 }

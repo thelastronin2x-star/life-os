@@ -283,6 +283,25 @@ export const newsTrackedTickers = pgTable("news_tracked_tickers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Upcoming US/EU/JP macro releases (see src/lib/macro/) — same
+ *  cache-table shape as newsItems: a daily cron (api/macro/refresh)
+ *  upserts from BusinessQuant (US) and FXMacroData (EUR, JPY); the client
+ *  only ever reads this table, never the providers directly. */
+export const macroEvents = pgTable("macro_events", {
+  id: text("id").primaryKey(),
+  region: text("region").notNull(), // "US" | "EU" | "JP"
+  currency: text("currency").notNull(), // "USD" | "EUR" | "JPY"
+  title: text("title").notNull(),
+  importance: text("importance").notNull(), // "high" | "medium" | "low"
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+  previous: text("previous"),
+  actual: text("actual"),
+  sourceUrl: text("source_url"),
+  affectedMarkets: jsonb("affected_markets").notNull().$type<string[]>(),
+  provider: text("provider").notNull(), // "businessquant" | "fxmacrodata"
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 /** "Команди" — cross-device team feature (chat, shared XP, small group
  *  projects) for the трейдер/студент profiles. The app has no accounts
  *  system anywhere else (see device-session.ts) — a team is deliberately a

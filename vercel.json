@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reconcile-balances",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/macro/refresh",
+      "schedule": "0 4 * * *"
     }
   ]
 }
