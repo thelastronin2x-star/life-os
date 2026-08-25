@@ -1,4 +1,4 @@
-import { pgTable, text, integer, bigint, bigserial, boolean, timestamp, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, bigint, bigserial, boolean, timestamp, uniqueIndex, jsonb, doublePrecision } from "drizzle-orm/pg-core";
 
 /** Minimum entities for the server becoming the source of truth for
  *  transactions (see monobank-server-ledger-prompt.md, Stage 2). No auth,
@@ -282,3 +282,148 @@ export const newsTrackedTickers = pgTable("news_tracked_tickers", {
   tickers: jsonb("tickers").notNull().$type<string[]>().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/** "Команди" — cross-device team feature (chat, shared XP, small group
+ *  projects) for the трейдер/студент profiles. The app has no accounts
+ *  system anywhere else (see device-session.ts) — a team is deliberately a
+ *  lightweight "room" identified by its own id, which doubles as the invite
+ *  code: whoever is given the code can join under any display name they
+ *  type in. Not a security boundary (nothing sensitive is exposed beyond
+ *  what members choose to post), just enough friction that joining
+ *  requires having actually been given the code. */
+export const teams = pgTable("teams", {
+  id: text("id").primaryKey(), // the invite code itself, e.g. "K7QX9M"
+  name: text("name").notNull(),
+  profile: text("profile").notNull(), // "trader" | "student" | "it" — drives copy only, same schema
+  rivalTeamId: text("rival_team_id"), // opposing team for "товариський виклик" — one-directional, no join table needed
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => teams.id),
+    deviceId: text("device_id").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull().default("member"), // "admin" | "member" — creator is admin
+    joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("team_members_team_device_idx").on(table.teamId, table.deviceId)]
+);
+
+/** "Час команди" — team chat. Denormalizes displayName at send time (not
+ *  joined from teamMembers on read) so a later name change or departure
+ *  never rewrites history that already happened under the old name. */
+export const teamMessages = pgTable("team_messages", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id),
+  deviceId: text("device_id").notNull(),
+  displayName: text("display_name").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** "Стрічка команди" — auto-generated, one row per real action (join a
+ *  trade closed, a study session logged, a project part updated, a note
+ *  posted), never hand-typed. Written alongside a teamXpEvents row by the
+ *  same award call for anything that earns XP; see teams/db.ts. */
+export const teamActivity = pgTable("team_activity", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id),
+  deviceId: text("device_id").notNull(),
+  displayName: text("display_name").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Logged as individual events rather than an incrementing counter column —
+ *  ratings need both an all-time total and a "this week" total, and summing
+ *  events on read (small per-team volume) avoids a second write path that
+ *  could drift from the log. */
+export const teamXpEvents = pgTable("team_xp_events", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id),
+  deviceId: text("device_id").notNull(),
+  amount: integer("amount").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** "Спільні проєкти" — one flexible table for every kind rather than one
+ *  table per kind: `data` carries kind-specific shape (`session`:
+ *  {weekday, time}; `parts_project`: {parts: [{id,name,assigneeDeviceId,
+ *  assigneeName,status}]}); `note` and `shared_deck` keep their content in
+ *  the two child tables below instead, since those need indexed per-row
+ *  queries (entries list, per-member card reviews) that jsonb wouldn't
+ *  serve well. */
+export const teamProjects = pgTable("team_projects", {
+  id: text("id").primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id),
+  kind: text("kind").notNull(), // "note" | "session" | "parts_project" | "shared_deck"
+  name: text("name").notNull(),
+  status: text("status"), // short human status line shown in the project list
+  data: jsonb("data").notNull().$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Chronological additions to a "note" project (e.g. a trader's shared
+ *  weekly-strategy doc) — same shape as teamActivity but scoped to one
+ *  project instead of the whole team. */
+export const teamProjectEntries = pgTable("team_project_entries", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => teamProjects.id),
+  deviceId: text("device_id").notNull(),
+  displayName: text("display_name").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Cards in a "shared_deck" project — one deck shared by the whole team;
+ *  any member can add a card, but each member reviews (and gets scheduled)
+ *  independently — see teamDeckReviews. */
+export const teamDeckCards = pgTable("team_deck_cards", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => teamProjects.id),
+  front: text("front").notNull(),
+  back: text("back").notNull(),
+  addedByDeviceId: text("added_by_device_id").notNull(),
+  addedByName: text("added_by_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Per-(card, device) SM-2 state — same algorithm and field shapes as the
+ *  personal flashcard deck in student-store.ts (src/lib/sm2.ts), just
+ *  persisted server-side since a shared deck has no single "owning" device.
+ *  `dueDate` is a plain YYYY-MM-DD key, matching student-store's dateKey
+ *  convention, not a timestamp — spaced repetition here is day-granularity. */
+export const teamDeckReviews = pgTable(
+  "team_deck_reviews",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    cardId: text("card_id")
+      .notNull()
+      .references(() => teamDeckCards.id),
+    deviceId: text("device_id").notNull(),
+    repetitions: integer("repetitions").notNull().default(0),
+    easeFactor: doublePrecision("ease_factor").notNull().default(2.5),
+    intervalDays: integer("interval_days").notNull().default(0),
+    dueDate: text("due_date").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("team_deck_reviews_card_device_idx").on(table.cardId, table.deviceId)]
+);

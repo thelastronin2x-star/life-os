@@ -25,6 +25,7 @@ import { FlashcardReviewSheet } from "./FlashcardReviewSheet";
 import { AssignmentSheet } from "./AssignmentSheet";
 import { TutorChatSheet } from "./TutorChatSheet";
 import { QuizGeneratorSheet } from "./QuizGeneratorSheet";
+import { TeamsTeaser } from "@/components/teams/TeamsTeaser";
 import { PickerSheet } from "@/components/ui/PickerSheet";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { cn } from "@/lib/cn";
@@ -40,28 +41,11 @@ import {
   LayersIcon,
   CalendarDateIcon,
   GraduationCapIcon,
-  ConstructionIcon,
 } from "@/components/icons";
 
 function heatColor(intensity: number): string {
   if (intensity === 0) return "var(--surface-2)";
   return `color-mix(in srgb, var(--sage) ${Math.round(intensity * 78)}%, var(--surface-2))`;
-}
-
-function ComingSoonCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-card border border-border bg-surface p-3.5">
-      <div className="flex items-start gap-3">
-        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-text-faint">
-          <ConstructionIcon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[12.5px] font-bold text-text">{title}</div>
-          <div className="mt-0.5 text-[11px] leading-relaxed text-text-faint">{description}</div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export function StudentWork() {
@@ -370,18 +354,7 @@ export function StudentWork() {
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Ритм разом</div>
       <div className="mb-3.5">
-        <ComingSoonCard
-          title="Живі сесії з друзями — скоро"
-          description="Спільне навчання в реальному часі потребує акаунтів і синхронізації між пристроями, яких ще немає в застосунку."
-        />
-      </div>
-
-      <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Груповий проєкт</div>
-      <div className="mb-3.5">
-        <ComingSoonCard
-          title="Дошка групового проєкту — скоро"
-          description="Статус учасників у реальному часі також потребує акаунтів кількох людей — з'явиться разом із живими сесіями."
-        />
+        <TeamsTeaser />
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Найближчі дедлайни</div>

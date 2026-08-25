@@ -25,6 +25,7 @@ import { formatDateKey } from "@/lib/calendar-utils";
 import { TradeForm } from "./TradeForm";
 import { TradeItem } from "./TradeItem";
 import { NewsTeaser } from "./NewsTeaser";
+import { TeamsTeaser } from "@/components/teams/TeamsTeaser";
 import {
   FireIcon,
   SparkleIcon,
@@ -643,6 +644,8 @@ export function TraderWork() {
       <div className="mt-4">
         <NewsTeaser />
       </div>
+
+      <TeamsTeaser />
 
       <div className="mt-4">
         <AnalyticsCarousel

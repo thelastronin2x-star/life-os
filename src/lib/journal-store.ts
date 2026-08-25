@@ -136,7 +136,17 @@ export const useJournalStore = create<JournalState>()(
           return { trades: [{ ...t, id: crypto.randomUUID(), source: t.source ?? "manual" }, ...s.trades] };
         }),
       updateTrade: (id, patch) =>
-        set((s) => ({ trades: s.trades.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+        set((s) => {
+          // Fire-and-forget team XP award (see api/teams/xp/trade-closed) —
+          // same "sync a derived signal to the server from inside the store
+          // action" pattern already used by news-preferences-store's
+          // syncTickers. No-ops server-side if this device isn't on a team,
+          // so it's safe to fire unconditionally on every close.
+          if (patch.status === "closed" && s.trades.find((t) => t.id === id)?.status !== "closed") {
+            fetch("/api/teams/xp/trade-closed", { method: "POST" }).catch(() => undefined);
+          }
+          return { trades: s.trades.map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+        }),
       removeTrade: (id) => set((s) => ({ trades: s.trades.filter((t) => t.id !== id) })),
     }),
     {

@@ -157,7 +157,15 @@ export const useStudentStore = create<StudentState>()(
           }),
         })),
 
-      logStudySession: (session) =>
+      logStudySession: (session) => {
+        // Fire-and-forget team XP award (see api/teams/xp/study-session) —
+        // mirrors the personal XP formula below so team and personal XP
+        // stay comparable. No-ops server-side if this device isn't on a team.
+        fetch("/api/teams/xp/study-session", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cardsReviewed: session.cardsReviewed, minutes: session.minutes }),
+        }).catch(() => undefined);
         set((s) => ({
           studySessions: [
             ...s.studySessions,
@@ -167,7 +175,8 @@ export const useStudentStore = create<StudentState>()(
               xpEarned: session.cardsReviewed * XP_PER_CARD + session.minutes * XP_PER_MINUTE,
             },
           ],
-        })),
+        }));
+      },
 
       addAssignment: (a) =>
         set((s) => ({ assignments: [...s.assignments, { ...a, id: crypto.randomUUID(), done: false }] })),
