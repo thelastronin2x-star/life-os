@@ -57,7 +57,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('life-os-store');if(raw){var d=JSON.parse(raw).state;if(d){document.documentElement.setAttribute('data-theme',d.theme||'soft-blocks');document.documentElement.setAttribute('data-profile',d.profile||'trader');}}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('life-os-store');if(raw){var d=JSON.parse(raw).state;if(d){var theme=d.theme||'soft-blocks';var lightThemes=['soft-blocks','cloud','cloud-rose','cloud-sky'];document.documentElement.setAttribute('data-theme',theme);document.documentElement.setAttribute('data-theme-mode',lightThemes.indexOf(theme)>=0?'light':'dark');document.documentElement.setAttribute('data-profile',d.profile||'trader');}}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -68,6 +68,7 @@ export default function RootLayout({
     <html
       lang="uk"
       data-theme="soft-blocks"
+      data-theme-mode="light"
       data-profile="trader"
       suppressHydrationWarning
       className={`${onest.variable} ${unbounded.variable} ${jetbrainsMono.variable}`}

@@ -634,3 +634,11 @@ export function CheckCircleIcon(props: SVGProps<SVGSVGElement>) {
     </Base>
   );
 }
+
+export function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </Base>
+  );
+}
