@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useJournalStore, type Trade } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { useTradingAccounts, type TradingAccountView } from "@/lib/trading-accounts";
@@ -20,7 +20,6 @@ import {
 import { useAppStore } from "@/lib/store";
 import { useAssistantStore } from "@/lib/assistant-store";
 import { useWorkInsightSync } from "@/lib/use-work-insight-sync";
-import { useWorkFocusStore, FOCUS_DEFAULT_MINUTES } from "@/lib/work-focus-store";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { TradeForm } from "./TradeForm";
 import { TradeItem } from "./TradeItem";
@@ -33,9 +32,6 @@ import {
   CalculatorIcon,
   CalendarDateIcon,
   NotebookIcon,
-  PlayIcon,
-  PauseIcon,
-  CheckCircleIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
@@ -73,100 +69,6 @@ function AssistantBlock() {
   );
 }
 
-const FOCUS_RING_RADIUS = 15;
-const FOCUS_RING_CIRCUMFERENCE = 2 * Math.PI * FOCUS_RING_RADIUS;
-
-const FOCUS_STATUS_LABEL: Record<string, string> = {
-  idle: "Фокус-таймер",
-  running: "Фокус-сесія",
-  paused: "На паузі",
-  completed: "Сесія завершена",
-};
-
-function FocusTile() {
-  const { status, endsAt, durationMs, pausedRemainingMs, start, pause, resume, stop, complete } = useWorkFocusStore();
-  const [now, setNow] = useState(() => Date.now());
-  const [justStarted, setJustStarted] = useState(false);
-
-  useEffect(() => {
-    if (status !== "running") return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [status]);
-
-  useEffect(() => {
-    if (status === "running" && endsAt !== null && now >= endsAt) complete();
-  }, [status, endsAt, now, complete]);
-
-  // The completed confirmation is transient — it clears itself back to idle
-  // rather than requiring another tap to dismiss.
-  useEffect(() => {
-    if (status !== "completed") return;
-    const id = setTimeout(() => stop(), 2500);
-    return () => clearTimeout(id);
-  }, [status, stop]);
-
-  const remainingMs =
-    status === "running" && endsAt !== null
-      ? Math.max(0, endsAt - now)
-      : status === "paused" && pausedRemainingMs !== null
-        ? pausedRemainingMs
-        : status === "completed"
-          ? 0
-          : durationMs;
-
-  const remainingMin = Math.floor(remainingMs / 60000);
-  const remainingSec = Math.floor((remainingMs % 60000) / 1000);
-  const pct = status === "idle" ? 0 : Math.min(100, Math.round(((durationMs - remainingMs) / durationMs) * 100));
-  const dashOffset = FOCUS_RING_CIRCUMFERENCE * (1 - pct / 100);
-
-  function handleToggle() {
-    const willStartOrResume = status === "idle" || status === "paused";
-    if (status === "running") pause();
-    else if (status === "paused") resume();
-    else if (status === "completed") stop();
-    else start(FOCUS_DEFAULT_MINUTES * 60 * 1000);
-
-    if (willStartOrResume) {
-      setJustStarted(true);
-      setTimeout(() => setJustStarted(false), 1000);
-    }
-  }
-
-  return (
-    <button onClick={handleToggle} className="rounded-card border border-border bg-surface p-3.5 text-left">
-      <div className="relative flex h-9 w-9 items-center justify-center">
-        {justStarted && <span className="pulse-ring absolute inset-0" />}
-        <svg width="36" height="36" viewBox="0 0 36 36" className="absolute inset-0">
-          <circle cx="18" cy="18" r={FOCUS_RING_RADIUS} fill="none" stroke="var(--surface-2)" strokeWidth="3" />
-          <circle
-            cx="18"
-            cy="18"
-            r={FOCUS_RING_RADIUS}
-            fill="none"
-            stroke="var(--sky)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray={FOCUS_RING_CIRCUMFERENCE}
-            strokeDashoffset={dashOffset}
-            transform="rotate(-90 18 18)"
-          />
-        </svg>
-        {status === "completed" ? (
-          <CheckCircleIcon className="h-4 w-4 text-sage" />
-        ) : status === "running" ? (
-          <PauseIcon className="h-3.5 w-3.5 text-text-dim" />
-        ) : (
-          <PlayIcon className="h-3.5 w-3.5 text-text-dim" />
-        )}
-      </div>
-      <div className="mt-2 font-mono text-[15px] font-extrabold text-text">
-        {status === "completed" ? "Готово" : `${remainingMin}:${String(remainingSec).padStart(2, "0")}`}
-      </div>
-      <div className="mt-0.5 text-[10.5px] text-text-faint">{FOCUS_STATUS_LABEL[status]}</div>
-    </button>
-  );
-}
 
 function RHistogramInsight(buckets: RBucket[]): string {
   const total = buckets.reduce((s, b) => s + b.count, 0);
@@ -746,7 +648,6 @@ export function TraderWork() {
           <div className="mt-2 text-[12.5px] font-semibold text-text">Ризик-калькулятор</div>
           <div className="mt-0.5 text-[10.5px] text-text-faint">Розмір позиції під ризик</div>
         </Link>
-        <FocusTile />
       </div>
 
       {tradeFormOpen && (

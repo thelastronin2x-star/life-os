@@ -609,32 +609,6 @@ export function LayersIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function PlayIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Base {...props} strokeLinejoin="round" fill="currentColor" stroke="none">
-      <path d="M7 4.5v15l13-7.5-13-7.5z" />
-    </Base>
-  );
-}
-
-export function PauseIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Base {...props} fill="currentColor" stroke="none">
-      <rect x="6" y="4.5" width="4.5" height="15" rx="1" />
-      <rect x="13.5" y="4.5" width="4.5" height="15" rx="1" />
-    </Base>
-  );
-}
-
-export function CheckCircleIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Base {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M8 12.5l2.5 2.5 5.5-5.5" />
-    </Base>
-  );
-}
-
 export function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Base {...props}>
