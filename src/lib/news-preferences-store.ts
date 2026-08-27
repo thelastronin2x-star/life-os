@@ -25,7 +25,7 @@ interface NewsPreferencesState {
 
 /** Which markets/tickers the trader cares about — read by MarketNewsModule
  *  to filter /api/news, and synced to newsTrackedTickers (see
- *  api/news/tickers/route.ts) so the hourly refresh cron — which has no
+ *  api/news/tickers/route.ts) so the daily refresh cron — which has no
  *  access to this localStorage — knows which extra tickers to fetch. */
 export const useNewsPreferencesStore = create<NewsPreferencesState>()(
   persist(

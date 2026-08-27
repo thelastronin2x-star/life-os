@@ -13,8 +13,8 @@ export interface NewsFeedState {
 /** Reads the server-side cache (never calls Alpha Vantage directly — see
  *  api/news/route.ts) filtered by the trader's own market/ticker
  *  preferences. Re-fetches whenever that selection changes, not on every
- *  render or screen focus — the underlying cache only changes once an
- *  hour anyway (the cron in api/news/refresh/route.ts), so anything more
+ *  render or screen focus — the underlying cache only changes once a day
+ *  anyway (the cron in api/news/refresh/route.ts), so anything more
  *  frequent would just be extra requests for the same answer. */
 export function useNewsFeed(): NewsFeedState {
   const markets = useNewsPreferencesStore((s) => s.markets);
