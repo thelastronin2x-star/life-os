@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { PlusIcon } from "@/components/icons";
-import type { TradingAccountView } from "@/lib/trading-accounts";
+import { PlusIcon, PencilIcon } from "@/components/icons";
+import type { TradingAccountView, PersonalAccountView } from "@/lib/trading-accounts";
 
 const AVATAR_COLORS = ["sage", "gold", "sky", "rose", "clay"] as const;
 
@@ -25,6 +25,7 @@ export function AccountSelector({
   selectedId,
   onSelect,
   onAdd,
+  onEdit,
   currencySymbol,
   syncStatusByAccountId,
   variant = "default",
@@ -33,6 +34,9 @@ export function AccountSelector({
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
+  /** Only offered for personal accounts — prop accounts already have a full
+   *  edit/delete screen at /work/prop-accounts. */
+  onEdit?: (account: PersonalAccountView) => void;
   currencySymbol: string;
   /** Recency of each account's last trade activity — a real, derived signal
    *  (no live MT5 sync exists, imports are manual file uploads), reused as
@@ -56,11 +60,10 @@ export function AccountSelector({
             ? `${acc.balance.toFixed(0)} ${currencySymbol}`
             : `${acc.netPnL >= 0 ? "+" : ""}${acc.netPnL.toFixed(0)} ${currencySymbol}`;
         return (
-          <button
+          <div
             key={acc.id}
-            onClick={() => onSelect(acc.id)}
             className={cn(
-              "flex flex-shrink-0 items-center gap-2 rounded-full border-[1.5px] py-2 pl-2 pr-3.5",
+              "flex flex-shrink-0 items-center gap-2 rounded-full border-[1.5px] py-2 pl-2 pr-2",
               inset
                 ? active
                   ? "border-transparent bg-white/20"
@@ -70,30 +73,43 @@ export function AccountSelector({
                   : "border-transparent bg-surface"
             )}
           >
-            <div className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center">
-              <div
-                className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold"
-                style={{
-                  background: `var(--${color}-soft)`,
-                  color: `var(--${color})`,
-                }}
+            <button onClick={() => onSelect(acc.id)} className="flex items-center gap-2">
+              <div className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center">
+                <div
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold"
+                  style={{
+                    background: `var(--${color}-soft)`,
+                    color: `var(--${color})`,
+                  }}
+                >
+                  {initials(acc.name)}
+                </div>
+                {syncStatus && (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-bg"
+                    style={{ background: SYNC_DOT_COLOR[syncStatus], borderColor: inset ? "transparent" : undefined }}
+                  />
+                )}
+              </div>
+              <div className="text-left">
+                <div className={cn("text-[11.5px] font-semibold", inset ? "text-white" : "text-text")}>{acc.name}</div>
+                <div className={cn("font-mono text-[9.5px]", inset ? "text-white/60" : "text-text-faint")}>
+                  {valueLabel}
+                </div>
+              </div>
+            </button>
+            {onEdit && acc.kind === "personal" && (
+              <button
+                onClick={() => onEdit(acc)}
+                className={cn(
+                  "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full",
+                  inset ? "text-white/50" : "text-text-faint"
+                )}
               >
-                {initials(acc.name)}
-              </div>
-              {syncStatus && (
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-bg"
-                  style={{ background: SYNC_DOT_COLOR[syncStatus], borderColor: inset ? "transparent" : undefined }}
-                />
-              )}
-            </div>
-            <div className="text-left">
-              <div className={cn("text-[11.5px] font-semibold", inset ? "text-white" : "text-text")}>{acc.name}</div>
-              <div className={cn("font-mono text-[9.5px]", inset ? "text-white/60" : "text-text-faint")}>
-                {valueLabel}
-              </div>
-            </div>
-          </button>
+                <PencilIcon className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         );
       })}
       <button

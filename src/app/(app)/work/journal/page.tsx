@@ -12,7 +12,7 @@ import { MT5ImportSheet } from "@/components/work/MT5ImportSheet";
 import { JournalCalendarView, type DayNet } from "@/components/work/JournalCalendarView";
 import { useJournalStore, type Trade } from "@/lib/journal-store";
 import { useJournalConfigStore, type JournalInstrument, type JournalSession, type JournalTag } from "@/lib/journal-config-store";
-import { useTradingAccounts } from "@/lib/trading-accounts";
+import { useTradingAccounts, type PersonalAccountView } from "@/lib/trading-accounts";
 import { usePersonalTradingAccountsStore } from "@/lib/personal-trading-accounts-store";
 import { usePropAccountsStore } from "@/lib/prop-accounts-store";
 import { computeTradePnL, type TradePnL } from "@/lib/trade-calculations";
@@ -103,11 +103,16 @@ export default function JournalPage() {
   const { trades, addTrade, updateTrade, removeTrade } = useJournalStore();
   const { instruments, tags, sessions } = useJournalConfigStore();
   const accounts = useTradingAccounts();
-  const { addAccount: addPersonalAccount } = usePersonalTradingAccountsStore();
+  const {
+    addAccount: addPersonalAccount,
+    updateAccount: updatePersonalAccount,
+    removeAccount: removePersonalAccount,
+  } = usePersonalTradingAccountsStore();
   const { addAccount: addPropAccount } = usePropAccountsStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [editingAccount, setEditingAccount] = useState<PersonalAccountView | null>(null);
   // Tapping a row opens the read view; editing is one deliberate step further.
   // Looking at a trade is much more frequent than changing one, and a form
   // full of inputs is a poor way to read.
@@ -271,10 +276,35 @@ export default function JournalPage() {
     return d.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" });
   }
 
+  function closeAccountForm() {
+    setAccountFormOpen(false);
+    setEditingAccount(null);
+  }
+
+  function openEditAccountForm(account: PersonalAccountView) {
+    setEditingAccount(account);
+    setAccountFormOpen(true);
+  }
+
   function handleAddPersonalAccount(data: Parameters<typeof addPersonalAccount>[0]) {
     const id = addPersonalAccount(data);
     setSelectedAccountId(id);
-    setAccountFormOpen(false);
+    closeAccountForm();
+  }
+
+  function handleUpdatePersonalAccount(data: Parameters<typeof addPersonalAccount>[0]) {
+    if (!editingAccount) return;
+    updatePersonalAccount(editingAccount.id, data);
+    closeAccountForm();
+  }
+
+  function handleDeleteAccount(id: string) {
+    removePersonalAccount(id);
+    // Falling back to whichever account ends up first keeps the screen on a
+    // real account instead of a now-deleted id — same reasoning as the
+    // finance module's own removeAccount (see finance-scope.ts).
+    if (selectedAccountId === id) setSelectedAccountId(null);
+    closeAccountForm();
   }
 
   function handleAddPropAccount(data: Parameters<typeof addPropAccount>[0]) {
@@ -282,7 +312,7 @@ export default function JournalPage() {
     const latest = usePropAccountsStore.getState().accounts;
     const created = latest[latest.length - 1];
     if (created) setSelectedAccountId(created.id);
-    setAccountFormOpen(false);
+    closeAccountForm();
   }
 
   function openAddForm() {
@@ -413,6 +443,7 @@ export default function JournalPage() {
                   selectedId={activeAccountId}
                   onSelect={setSelectedAccountId}
                   onAdd={() => setAccountFormOpen(true)}
+                  onEdit={openEditAccountForm}
                   currencySymbol={currencySymbol}
                   syncStatusByAccountId={syncStatusByAccountId}
                   variant="inset"
@@ -627,9 +658,11 @@ export default function JournalPage() {
 
       {accountFormOpen && (
         <TradingAccountForm
-          onSavePersonal={handleAddPersonalAccount}
+          editingAccount={editingAccount}
+          onSavePersonal={editingAccount ? handleUpdatePersonalAccount : handleAddPersonalAccount}
           onSaveProp={handleAddPropAccount}
-          onClose={() => setAccountFormOpen(false)}
+          onClose={closeAccountForm}
+          onDelete={editingAccount ? handleDeleteAccount : undefined}
         />
       )}
 
