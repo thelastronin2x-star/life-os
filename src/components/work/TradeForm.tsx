@@ -5,6 +5,8 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import type { Trade, TradeDirection, TradeStatus } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { computeTradePnL } from "@/lib/trade-calculations";
+import { getContractMultiplier, type CurrencyPair } from "@/lib/currency-pairs";
+import { InstrumentPickerSheet } from "./InstrumentPickerSheet";
 import type { TradingAccountView } from "@/lib/trading-accounts";
 import { cn } from "@/lib/cn";
 import {
@@ -89,10 +91,10 @@ export function TradeForm({
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
-  const { instruments, tags, sessions, addTag } = useJournalConfigStore();
+  const { instruments, tags, sessions, addTag, addInstrument } = useJournalConfigStore();
+  const [instrumentPickerOpen, setInstrumentPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const accountSelectRef = useRef<HTMLSelectElement>(null);
-  const instrumentSelectRef = useRef<HTMLSelectElement>(null);
   const sessionSelectRef = useRef<HTMLSelectElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const timeInputRef = useRef<HTMLInputElement>(null);
@@ -160,6 +162,25 @@ export function TradeForm({
     if (!files) return;
     const encoded = await Promise.all(Array.from(files).map(fileToBase64));
     setScreenshots((prev) => [...prev, ...encoded]);
+  }
+
+  function selectExistingInstrument(id: string) {
+    setInstrumentId(id);
+    setInstrumentPickerOpen(false);
+  }
+
+  function selectCatalogPair(pair: CurrencyPair) {
+    const assetType = pair.symbol.startsWith("XAU") || pair.symbol.startsWith("XAG") ? "metals" : pair.category === "forex" ? "forex" : pair.category === "indices" ? "indices" : "custom";
+    const id = addInstrument({ symbol: pair.symbol, assetType, contractMultiplier: getContractMultiplier(pair) });
+    setInstrumentId(id);
+    setInstrumentPickerOpen(false);
+  }
+
+  function selectCustomInstrument(symbol: string) {
+    if (!symbol) return;
+    const id = addInstrument({ symbol, assetType: "custom", contractMultiplier: 1 });
+    setInstrumentId(id);
+    setInstrumentPickerOpen(false);
   }
 
   const instrument = instruments.find((i) => i.id === instrumentId);
@@ -334,24 +355,8 @@ export function TradeForm({
           <FormRow
             icon={<TrendingUpIcon className="h-4 w-4" />}
             label="Інструмент"
-            value={
-              <span className="relative">
-                {instrument?.symbol ?? "Обрати"}
-                <select
-                  ref={instrumentSelectRef}
-                  value={instrumentId}
-                  onChange={(e) => setInstrumentId(e.target.value)}
-                  className="absolute inset-0 -m-3.5 cursor-pointer opacity-0"
-                  style={{ width: "calc(100% + 44px)", height: "calc(100% + 28px)" }}
-                >
-                  {instruments.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.symbol}
-                    </option>
-                  ))}
-                </select>
-              </span>
-            }
+            value={instrument?.symbol ?? "Обрати"}
+            onToggle={() => setInstrumentPickerOpen(true)}
           />
 
           <FormRow
@@ -632,6 +637,16 @@ export function TradeForm({
           )}
         </form>
       </div>
+
+      {instrumentPickerOpen && (
+        <InstrumentPickerSheet
+          instruments={instruments}
+          onSelectExisting={selectExistingInstrument}
+          onSelectPair={selectCatalogPair}
+          onSelectCustom={selectCustomInstrument}
+          onClose={() => setInstrumentPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

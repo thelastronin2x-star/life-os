@@ -355,9 +355,16 @@ export default function JournalPage() {
           fixed warm/cream --balance-* tokens, never the swapping theme
           tokens used everywhere else on this screen — see globals.css. */}
       <div
-        className="-mx-4 -mt-6 px-4 pb-4 md:-mx-8 md:-mt-8 md:px-8"
+        className="-mx-4 px-4 pb-4 md:-mx-8 md:px-8"
         style={{
           background: "linear-gradient(160deg, var(--balance-grad-from), var(--balance-grad-to))",
+          // NavShell's <main> sets its real top padding via this exact same
+          // inline expression (not the pt-6/md:pt-8 classes, which an inline
+          // style always wins over regardless of breakpoint) — cancelling
+          // only the static 1.5rem half of it left a gap exactly
+          // env(safe-area-inset-top) tall under the status bar on notch
+          // devices, since that half was never touched by a plain -mt-6.
+          marginTop: "calc(-1.5rem - env(safe-area-inset-top))",
           paddingTop: "calc(1.5rem + env(safe-area-inset-top))",
         }}
       >

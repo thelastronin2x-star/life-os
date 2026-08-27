@@ -1,12 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useJournalStore, type Trade } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { useTradingAccounts, type TradingAccountView } from "@/lib/trading-accounts";
 import { computeTradePnL } from "@/lib/trade-calculations";
-import { computeDisciplineStreak, computeSessionHeatmap, computeRiskStability, WEEKDAY_LABELS } from "@/lib/trade-insights";
+import {
+  computeDisciplineStreak,
+  computeSessionHeatmap,
+  computeRMultipleBuckets,
+  computeResultStreakStrip,
+  computeRiskStability,
+  computeMonthVsLastMonth,
+  computeExtremePoints,
+  WEEKDAY_LABELS,
+  type RBucket,
+} from "@/lib/trade-insights";
 import { useAppStore } from "@/lib/store";
 import { useAssistantStore } from "@/lib/assistant-store";
 import { useWorkInsightSync } from "@/lib/use-work-insight-sync";
@@ -132,47 +142,291 @@ function BalanceCard({
   );
 }
 
-function HeatmapCard({
+function RHistogramInsight(buckets: RBucket[]): string {
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  if (total === 0) return "Ще немає закритих угод для аналізу розподілу R.";
+  const top = buckets.reduce((best, b) => (b.count > best.count ? b : best), buckets[0]);
+  const verdict =
+    top.label === "+1R" || top.label === "+2R" || top.label === "+3R"
+      ? "Це узгоджується з виставленими тейками."
+      : top.label.startsWith("-")
+        ? "Більшість угод закривається по стопу — варто переглянути точку входу або розмір стопу."
+        : "Багато угод закривається біля беззбитку — можливо, варто переглядати трейлінг раніше.";
+  return `Найчастіше угоди закриваються біля ${top.label} (${top.count} з ${total}). ${verdict}`;
+}
+
+/** Session×weekday heatmap (page 1, static — no click-to-inspect) plus the
+ *  rest of the analytics pages already designed for this screen earlier —
+ *  a horizontal swipe carousel, not a vertical stack, since these are five
+ *  independent "one glance" readouts rather than a single continuous report. */
+function AnalyticsCarousel({
   trades,
   instrumentById,
   sessions,
+  currencySymbol,
 }: {
   trades: Trade[];
   instrumentById: Map<string, ReturnType<typeof useJournalConfigStore.getState>["instruments"][number]>;
   sessions: ReturnType<typeof useJournalConfigStore.getState>["sessions"];
+  currencySymbol: string;
 }) {
+  const [page, setPage] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const heatmap = useMemo(() => computeSessionHeatmap(trades, instrumentById, sessions), [trades, instrumentById, sessions]);
   const maxAbs = useMemo(
     () => Math.max(1, ...heatmap.flatMap((r) => r.cells.map((c) => Math.abs(c.avgPnl ?? 0)))),
     [heatmap]
   );
+  const rBuckets = useMemo(() => computeRMultipleBuckets(trades, instrumentById), [trades, instrumentById]);
+  const maxCount = useMemo(() => Math.max(1, ...rBuckets.map((b) => b.count)), [rBuckets]);
+  const rInsightText = useMemo(() => RHistogramInsight(rBuckets), [rBuckets]);
+  const streak = useMemo(() => computeResultStreakStrip(trades, instrumentById), [trades, instrumentById]);
+  const riskStability = useMemo(() => computeRiskStability(trades, instrumentById), [trades, instrumentById]);
+  const maxLot = useMemo(() => Math.max(0.01, ...riskStability.points.map((p) => p.lot)), [riskStability]);
+  const monthComparison = useMemo(() => computeMonthVsLastMonth(trades, instrumentById), [trades, instrumentById]);
+  const maxMonthNet = Math.max(1, Math.abs(monthComparison.current.net), Math.abs(monthComparison.previous.net));
+  const extremes = useMemo(() => computeExtremePoints(trades, instrumentById), [trades, instrumentById]);
+
+  function handleScroll() {
+    const el = containerRef.current;
+    if (!el || el.clientWidth === 0) return;
+    setPage(Math.round(el.scrollLeft / el.clientWidth));
+  }
 
   return (
-    <div className="mb-4 rounded-card border border-border bg-surface p-[18px] shadow-card">
-      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
-        Теплокарта результативності
-      </div>
-      <div className="space-y-1">
-        <div className="flex items-center gap-1 pl-[46px]">
-          {WEEKDAY_LABELS.map((l) => (
-            <div key={l} className="flex-1 text-center text-[9px] font-semibold text-text-faint">
-              {l}
+    <div className="mb-4">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto rounded-card border border-border bg-surface shadow-card"
+      >
+        <div className="w-full flex-shrink-0 snap-start p-[18px]">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Теплокарта результативності
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 pl-[46px]">
+              {WEEKDAY_LABELS.map((l) => (
+                <div key={l} className="flex-1 text-center text-[9px] font-semibold text-text-faint">
+                  {l}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {heatmap.map((row) => (
-          <div key={row.sessionId} className="flex items-center gap-1">
-            <div className="w-[46px] flex-shrink-0 truncate text-[9.5px] font-semibold text-text-dim">
-              {row.sessionName}
-            </div>
-            {row.cells.map((cell) => (
-              <div
-                key={cell.weekday}
-                className="aspect-square flex-1 rounded-[6px]"
-                style={{ background: heatColor(cell.avgPnl, maxAbs) }}
-              />
+            {heatmap.map((row) => (
+              <div key={row.sessionId} className="flex items-center gap-1">
+                <div className="w-[46px] flex-shrink-0 truncate text-[9.5px] font-semibold text-text-dim">
+                  {row.sessionName}
+                </div>
+                {row.cells.map((cell) => (
+                  <div
+                    key={cell.weekday}
+                    className={cn("aspect-square flex-1 rounded-[6px]", cell.avgPnl === null && "well-pressed")}
+                    style={cell.avgPnl !== null ? { background: heatColor(cell.avgPnl, maxAbs) } : undefined}
+                  />
+                ))}
+              </div>
             ))}
           </div>
+        </div>
+
+        <div className="w-full flex-shrink-0 snap-start p-3.5">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Розподіл угод за R
+          </div>
+          <div className="flex h-[92px] items-end gap-2">
+            {rBuckets.map((b) => (
+              <div key={b.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+                <div
+                  className="w-full rounded-t-[4px]"
+                  style={{
+                    height: `${b.count > 0 ? Math.max(6, (b.count / maxCount) * 100) : 0}%`,
+                    background: b.label.startsWith("-") ? "var(--clay)" : b.label === "0R" ? "var(--surface-2)" : "var(--sage)",
+                  }}
+                />
+                <span className="text-[9px] font-semibold text-text-faint">{b.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] leading-relaxed text-text-dim">{rInsightText}</p>
+        </div>
+
+        <div className="w-full flex-shrink-0 snap-start p-3.5">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Смуга результатів
+          </div>
+          {streak.results.length === 0 ? (
+            <div className="py-6 text-center text-[11px] text-text-faint">Ще немає закритих угод</div>
+          ) : (
+            <>
+              <div className="flex gap-1">
+                {streak.results.map((r, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex aspect-square flex-1 items-center justify-center rounded-[5px] text-[9px] font-extrabold",
+                      r === "W" && "bg-sage text-bg",
+                      r === "L" && "bg-clay text-bg",
+                      r === "B" && "bg-surface-2 text-text-faint"
+                    )}
+                  >
+                    {r}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-text-dim">
+                {streak.wins} перемог, {streak.losses} поразок
+                {streak.breakeven > 0 ? `, ${streak.breakeven} у нуль` : ""} з останніх {streak.results.length} угод.
+                {streak.current && streak.current.count > 1 && (
+                  <>
+                    {" "}
+                    Поточна серія: <b className="text-text">{streak.current.count}</b>{" "}
+                    {streak.current.type === "W" ? "перемог" : streak.current.type === "L" ? "поразок" : "у нуль"} поспіль.
+                  </>
+                )}
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="w-full flex-shrink-0 snap-start p-3.5">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Стабільність ризику
+          </div>
+          {riskStability.points.length === 0 ? (
+            <div className="py-6 text-center text-[11px] text-text-faint">Ще немає закритих угод</div>
+          ) : (
+            <>
+              <div className="flex h-[92px] items-end gap-[3px]">
+                {riskStability.points.map((p, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-t-[3px]"
+                    style={{
+                      height: `${Math.max(6, (p.lot / maxLot) * 100)}%`,
+                      background: p.isOutlier ? "var(--clay)" : "var(--sage)",
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-text-dim">
+                Середній лот — <b className="text-text">{riskStability.avgLot.toFixed(2)}</b>
+                {riskStability.outlierCount > 0
+                  ? `, ${riskStability.outlierCount} угод${riskStability.outlierCount === 1 ? "а" : ""} перевищили норму більш ніж удвічі — саме вони найбільше вплинули на волатильність результату.`
+                  : ", жодна угода помітно не вибивалась із норми."}
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="w-full flex-shrink-0 snap-start p-3.5">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Цей місяць проти минулого
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="w-16 flex-shrink-0 text-[10.5px] font-semibold text-text-faint">Net P&L</span>
+              <div className="h-4 flex-1 overflow-hidden rounded-full bg-surface-2">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, (Math.abs(monthComparison.current.net) / maxMonthNet) * 100)}%`,
+                    background: monthComparison.current.net >= 0 ? "var(--sage)" : "var(--clay)",
+                  }}
+                />
+              </div>
+              <span
+                className={cn(
+                  "w-16 flex-shrink-0 text-right font-mono text-[11px] font-bold",
+                  monthComparison.current.net >= 0 ? "text-sage" : "text-clay"
+                )}
+              >
+                {monthComparison.current.net >= 0 ? "+" : ""}
+                {monthComparison.current.net.toFixed(0)} {currencySymbol}
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="w-16 flex-shrink-0 text-[10.5px] font-semibold text-text-faint">Минулий</span>
+              <div className="h-4 flex-1 overflow-hidden rounded-full bg-surface-2">
+                <div
+                  className="h-full rounded-full bg-border"
+                  style={{ width: `${Math.min(100, (Math.abs(monthComparison.previous.net) / maxMonthNet) * 100)}%` }}
+                />
+              </div>
+              <span className="w-16 flex-shrink-0 text-right font-mono text-[11px] font-semibold text-text-faint">
+                {monthComparison.previous.net >= 0 ? "+" : ""}
+                {monthComparison.previous.net.toFixed(0)} {currencySymbol}
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="w-16 flex-shrink-0 text-[10.5px] font-semibold text-text-faint">Win rate</span>
+              <div className="h-4 flex-1 overflow-hidden rounded-full bg-surface-2">
+                <div
+                  className="h-full rounded-full bg-sky"
+                  style={{ width: `${monthComparison.current.winRate}%` }}
+                />
+              </div>
+              <span className="w-16 flex-shrink-0 text-right font-mono text-[11px] font-bold text-text">
+                {monthComparison.current.winRate}%
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="w-16 flex-shrink-0 text-[10.5px] font-semibold text-text-faint">Минулий</span>
+              <div className="h-4 flex-1 overflow-hidden rounded-full bg-surface-2">
+                <div className="h-full rounded-full bg-border" style={{ width: `${monthComparison.previous.winRate}%` }} />
+              </div>
+              <span className="w-16 flex-shrink-0 text-right font-mono text-[11px] font-semibold text-text-faint">
+                {monthComparison.previous.winRate}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full flex-shrink-0 snap-start p-3.5">
+          <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
+            Крайні точки періоду
+          </div>
+          {!extremes.best && !extremes.worst ? (
+            <div className="py-6 text-center text-[11px] text-text-faint">Ще немає закритих угод</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { label: "Найкраща", x: extremes.best, tone: "sage" as const },
+                  { label: "Найгірша", x: extremes.worst, tone: "clay" as const },
+                ]
+              ).map(({ label, x, tone }) => (
+                <div key={label} className="rounded-card-sm bg-surface-2 p-2.5">
+                  <div className={cn("text-[9px] font-bold uppercase tracking-wide", tone === "sage" ? "text-sage" : "text-clay")}>
+                    {label}
+                  </div>
+                  {x ? (
+                    <>
+                      <div className="mt-1 text-[12.5px] font-bold text-text">
+                        {instrumentById.get(x.trade.instrumentId)?.symbol ?? x.trade.sourceSymbol ?? "—"}
+                      </div>
+                      <div className={cn("mt-0.5 font-mono text-[13.5px] font-extrabold", tone === "sage" ? "text-sage" : "text-clay")}>
+                        {x.net >= 0 ? "+" : ""}
+                        {x.net.toFixed(0)} {currencySymbol}
+                      </div>
+                      <div className="mt-0.5 text-[9.5px] text-text-faint">
+                        {x.trade.direction === "LONG" ? "Long" : "Short"} · {x.trade.date}
+                        {x.rMultiple !== null && ` · ${x.rMultiple >= 0 ? "+" : ""}${x.rMultiple.toFixed(1)}R`}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-1 text-[11px] text-text-faint">—</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 flex justify-center gap-1.5">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <span key={i} className={cn("h-1.5 w-1.5 rounded-full", page === i ? "bg-text" : "bg-border")} />
         ))}
       </div>
     </div>
@@ -227,11 +481,11 @@ function AccountSwitcherSheet({
   );
 }
 
-/** Icon in a small muted square — the module-tile icon treatment shared by
+/** Icon in a small pressed well — the module-tile icon treatment shared by
  *  Журнал угод / Калькулятор / Новини / Команда below. */
 function IconWell({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
+    <span className="well-pressed flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
       {children}
     </span>
   );
@@ -365,7 +619,7 @@ export function TraderWork() {
         />
       )}
 
-      <HeatmapCard trades={trades} instrumentById={instrumentById} sessions={sessions} />
+      <AnalyticsCarousel trades={trades} instrumentById={instrumentById} sessions={sessions} currencySymbol={symbol} />
 
       <div className="mb-4 flex rounded-card border border-border bg-surface shadow-card">
         <button onClick={openNewTrade} className="flex flex-1 flex-col items-center gap-1.5 py-3.5">
@@ -387,7 +641,8 @@ export function TraderWork() {
           <IconWell>
             <NotebookIcon className="h-[18px] w-[18px]" />
           </IconWell>
-          <div className={cn("font-display mt-2 text-[20px] font-bold", allTimeNet >= 0 ? "text-sage" : "text-clay")}>
+          <div className="mt-2 text-[12.5px] font-semibold text-text">Журнал угод</div>
+          <div className={cn("font-display mt-0.5 text-[20px] font-bold", allTimeNet >= 0 ? "text-sage" : "text-clay")}>
             {allTimeNet >= 0 ? "+" : ""}
             {allTimeNet.toFixed(0)} {symbol}
           </div>

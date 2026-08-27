@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
-/* Deep Forest — default theme */
+/* Deep Forest — default theme.
+
+   Base tokens below (bg, surface, surface-2, text, border) are shared by
+   every dark theme, not just this one — themes used to each carry their own
+   full
+   base, so switching Deep Forest → Obsidian Violet recolored the entire
+   screen (background included) instead of just its accents. Now the base
+   stays one shared dark-neutral canvas and only --sage/--clay/--gold/--sky/
+   --rose differ per [data-theme="..."] block below. --border keeps a hint
+   of each theme's own accent (a color-mix against --sage) so a theme still
+   reads as itself in card edges/shadows without recoloring the canvas. */
 :root {
-  --bg: #0e1210;
-  --surface: #161c19;
-  --surface-2: #1d2420;
-  --border: #232b27;
-  --text: #e8ece9;
-  --text-dim: #8fa096;
-  --text-faint: #5a6660;
+  --bg: #141210;
+  --surface: #1a1713;
+  --surface-2: #211d18;
+  --border: color-mix(in srgb, var(--sage) 6%, #2a2620);
+  --text: #e8e4dc;
+  --text-dim: #8a8378;
+  --text-faint: #6b6459;
 
   --sage: #8fbf9f;
   --clay: #c98d7a;
@@ -47,14 +57,6 @@
 }
 
 [data-theme="obsidian-violet"] {
-  --bg: #0d0d10;
-  --surface: #17171c;
-  --surface-2: #1d1d24;
-  --border: #28282f;
-  --text: #ededf0;
-  --text-dim: #96969f;
-  --text-faint: #5c5c66;
-
   --sage: #8b7cff;
   --clay: #ff8a65;
   --gold: #f2c572;
@@ -63,14 +65,6 @@
 }
 
 [data-theme="midnight-ice"] {
-  --bg: #0a0e14;
-  --surface: #121824;
-  --surface-2: #161d2b;
-  --border: #1e2733;
-  --text: #e7ecf2;
-  --text-dim: #7c8aa0;
-  --text-faint: #4a5568;
-
   --sage: #6fc6e0;
   --clay: #e0a96f;
   --gold: #8c9bb5;
@@ -79,14 +73,6 @@
 }
 
 [data-theme="charcoal-amber"] {
-  --bg: #111110;
-  --surface: #1a1917;
-  --surface-2: #201f1c;
-  --border: #2a2925;
-  --text: #edebe6;
-  --text-dim: #8c8478;
-  --text-faint: #5c5850;
-
   --sage: #7a9e8e;
   --clay: #b5654f;
   --gold: #e0a959;
@@ -95,14 +81,6 @@
 }
 
 [data-theme="slate-rose"] {
-  --bg: #111318;
-  --surface: #181b21;
-  --surface-2: #1e212b;
-  --border: #262a33;
-  --text: #eaeaf0;
-  --text-dim: #8b8f99;
-  --text-faint: #5a5e68;
-
   --sage: #d98fa3;
   --clay: #b9a288;
   --gold: #8fbfa0;
@@ -111,14 +89,6 @@
 }
 
 [data-theme="ink-indigo"] {
-  --bg: #0b0d16;
-  --surface: #141729;
-  --surface-2: #191d33;
-  --border: #232640;
-  --text: #e6e7f2;
-  --text-dim: #7c80a0;
-  --text-faint: #4a4e66;
-
   --sage: #8b93e8;
   --clay: #d488ae;
   --gold: #e8a96f;
@@ -127,14 +97,6 @@
 }
 
 [data-theme="stone-rust"] {
-  --bg: #15130f;
-  --surface: #1d1a14;
-  --surface-2: #221f18;
-  --border: #2e2a22;
-  --text: #efe9df;
-  --text-dim: #948b7a;
-  --text-faint: #5c564a;
-
   --sage: #9caf88;
   --clay: #c97b4a;
   --gold: #c4a35a;
@@ -143,14 +105,6 @@
 }
 
 [data-theme="plum-noir"] {
-  --bg: #160e14;
-  --surface: #1e1420;
-  --surface-2: #241a28;
-  --border: #2e2029;
-  --text: #f0e6ec;
-  --text-dim: #9a8895;
-  --text-faint: #5c4f58;
-
   --sage: #c9a0d9;
   --clay: #d97f8e;
   --gold: #e0b15c;
@@ -276,6 +230,27 @@
 [data-theme-mode="light"] {
   --balance-grad-from: #ede4d0;
   --balance-grad-to: #e0d5ba;
+}
+
+/* Neumorphic "pressed well" for small icon badges (Робота module tiles,
+   heatmap empty cells) — mode-relative, not per-theme: now that every dark
+   theme shares one base (see Deep Forest block above), one dark-mode pair
+   and one light-mode pair of highlight/shadow tints is enough to read
+   correctly everywhere, instead of hand-tuning rgba per theme. */
+:root {
+  --well-highlight: rgba(255, 255, 255, 0.03);
+  --well-shadow: rgba(0, 0, 0, 0.55);
+}
+
+[data-theme-mode="light"] {
+  --well-highlight: rgba(255, 255, 255, 0.8);
+  --well-shadow: rgba(60, 52, 40, 0.16);
+}
+
+.well-pressed {
+  box-shadow:
+    inset -3px -3px 8px var(--well-highlight),
+    inset 3px 3px 9px var(--well-shadow);
 }
 
 /* Per-profession accent — layered on top of whichever theme is active */
