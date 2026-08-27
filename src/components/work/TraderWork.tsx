@@ -54,7 +54,7 @@ function AssistantBlock() {
   const insight = useAssistantStore((s) => s.contextInsights.work);
 
   return (
-    <div className="mb-4 rounded-card border border-border bg-surface p-4 shadow-card">
+    <div className="card-raised mb-4 rounded-card bg-surface p-4">
       <div className="mb-1.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wide text-sage">
           <SparkleIcon className="h-3.5 w-3.5" />
@@ -99,10 +99,12 @@ function BalanceCard({
   const balanceValue = active.kind === "personal" ? active.balance : active.netPnL;
 
   return (
-    <button
-      onClick={onOpenSwitcher}
-      className="relative block w-full overflow-hidden rounded-card border border-border bg-surface p-[22px] text-left shadow-card"
-    >
+    <div className="card-raised rounded-card bg-surface">
+      {/* Shadow lives on this wrapper, not the button below — an element
+          with overflow-hidden (needed here to clip the decorative SVG to
+          the rounded corners) also clips its own box-shadow, so the two
+          can't share one node. */}
+      <button onClick={onOpenSwitcher} className="relative block w-full overflow-hidden rounded-card p-[22px] text-left">
       {chartPath && (
         <svg
           className="pointer-events-none absolute inset-x-0 bottom-0 h-full w-full"
@@ -138,7 +140,8 @@ function BalanceCard({
           </div>
         )}
       </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -196,10 +199,13 @@ function AnalyticsCarousel({
 
   return (
     <div className="mb-4">
+      {/* Shadow on this wrapper, scrolling (and its overflow-x clip) on the
+          child below — same reason as BalanceCard's split above. */}
+      <div className="card-raised rounded-card bg-surface">
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto rounded-card border border-border bg-surface shadow-card"
+        className="flex snap-x snap-mandatory overflow-x-auto rounded-card"
       >
         <div className="w-full flex-shrink-0 snap-start p-[18px]">
           <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
@@ -423,6 +429,7 @@ function AnalyticsCarousel({
           )}
         </div>
       </div>
+      </div>
 
       <div className="mt-2 flex justify-center gap-1.5">
         {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -571,7 +578,7 @@ export function TraderWork() {
     return (
       <div>
         <div className="mb-4 pt-1 text-[19px] font-extrabold tracking-tight text-text">Робота</div>
-        <div className="rounded-card border border-border bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
           Ще немає торгових рахунків
           <Link href="/work/prop-accounts" className="mt-3 block text-[12.5px] font-extrabold text-sage">
             Додати рахунок
@@ -621,7 +628,7 @@ export function TraderWork() {
 
       <AnalyticsCarousel trades={trades} instrumentById={instrumentById} sessions={sessions} currencySymbol={symbol} />
 
-      <div className="mb-4 flex rounded-card border border-border bg-surface shadow-card">
+      <div className="card-raised mb-4 flex rounded-card bg-surface">
         <button onClick={openNewTrade} className="flex flex-1 flex-col items-center gap-1.5 py-3.5">
           <PlusIcon className="h-[18px] w-[18px] text-text-dim" />
           <span className="text-[11px] font-semibold text-text">Угода</span>
@@ -637,7 +644,7 @@ export function TraderWork() {
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-2">
-        <Link href="/work/journal" className="col-span-2 rounded-card border border-border bg-surface p-3.5 shadow-card">
+        <Link href="/work/journal" className="card-raised col-span-2 rounded-card bg-surface p-3.5">
           <IconWell>
             <NotebookIcon className="h-[18px] w-[18px]" />
           </IconWell>
@@ -651,7 +658,7 @@ export function TraderWork() {
           </div>
         </Link>
 
-        <Link href="/work/calculator" className="rounded-card border border-border bg-surface p-3.5 shadow-card">
+        <Link href="/work/calculator" className="card-raised rounded-card bg-surface p-3.5">
           <IconWell>
             <CalculatorIcon className="h-[18px] w-[18px]" />
           </IconWell>
@@ -661,7 +668,7 @@ export function TraderWork() {
           </div>
         </Link>
 
-        <Link href="/work/news" className="rounded-card border border-border bg-surface p-3.5 shadow-card">
+        <Link href="/work/news" className="card-raised rounded-card bg-surface p-3.5">
           <IconWell>
             <NewspaperIcon className="h-[18px] w-[18px]" />
           </IconWell>
@@ -672,7 +679,7 @@ export function TraderWork() {
         </Link>
       </div>
 
-      <Link href="/work/teams" className="flex items-center gap-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <Link href="/work/teams" className="card-raised flex items-center gap-3 rounded-card bg-surface p-3.5">
         <IconWell>
           <UsersIcon className="h-4 w-4" />
         </IconWell>

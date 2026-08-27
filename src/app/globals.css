@@ -253,6 +253,16 @@
     inset 3px 3px 9px var(--well-shadow);
 }
 
+/* Neumorphic "raised" card — the outer-widget counterpart to .well-pressed
+ *  above, same two tokens at the larger offset/blur the original Робота
+ *  reference design (.raised) specified. No border: depth reads from shadow
+ *  alone, so a hairline border would just compete with it. */
+.card-raised {
+  box-shadow:
+    -6px -6px 14px var(--well-highlight),
+    6px 6px 16px var(--well-shadow);
+}
+
 /* Per-profession accent — layered on top of whichever theme is active */
 [data-profile="trader"] {
   --accent: var(--sage);
