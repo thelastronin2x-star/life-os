@@ -1,11 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Space_Grotesk } from "next/font/google";
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { CURRENCY_PAIRS, RISK_PRESETS, PAIR_CATEGORY_LABELS, type PairCategory } from "@/lib/currency-pairs";
 import { CURRENCIES, useAppStore } from "@/lib/store";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
+
+// Scoped to this screen only — every digit here (input values, risk-scale
+// labels, the result card) reads Space Grotesk instead of the app-wide
+// number face. The CSS variable is local to whatever wraps `variable`
+// below, not the global --font-* tokens every other screen's numbers use.
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-space-grotesk",
+});
+const numFont = { fontFamily: "var(--font-space-grotesk)" };
 
 export default function RiskCalculatorPage() {
   const isTrader = useTraderOnlyGuard();
@@ -39,7 +51,7 @@ export default function RiskCalculatorPage() {
   if (!isTrader) return null;
 
   return (
-    <div>
+    <div className={spaceGrotesk.variable}>
       <WorkSubpageHeader title="Ризик-калькулятор" subtitle="Автоматичний розрахунок лота" />
 
       <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-text-dim">
@@ -68,7 +80,8 @@ export default function RiskCalculatorPage() {
         <NumberInput
           value={deposit}
           onChange={setDeposit}
-          className="w-full bg-transparent font-mono text-[14px] font-semibold text-text outline-none"
+          style={numFont}
+          className="w-full bg-transparent text-[14px] font-semibold text-text outline-none"
         />
         <span className="flex-shrink-0 text-[11px] text-text-faint">{currencySymbol}</span>
       </div>
@@ -80,7 +93,8 @@ export default function RiskCalculatorPage() {
         <NumberInput
           value={riskPct}
           onChange={setRiskPct}
-          className="w-16 bg-transparent font-mono text-[14px] font-semibold text-text outline-none"
+          style={numFont}
+          className="w-16 bg-transparent text-[14px] font-semibold text-text outline-none"
         />
         <span className="flex-shrink-0 text-[11px] text-text-faint">% від депозиту</span>
       </div>
@@ -93,7 +107,7 @@ export default function RiskCalculatorPage() {
         onChange={(e) => setRiskPct(Number(e.target.value))}
         className="mb-1 w-full accent-[var(--sage)]"
       />
-      <div className="mb-3.5 flex justify-between text-[9.5px] text-text-faint">
+      <div className="mb-3.5 flex justify-between text-[9.5px] font-semibold text-text-faint" style={numFont}>
         <span>0.5%</span>
         <span>2%</span>
         <span>5%</span>
@@ -106,7 +120,8 @@ export default function RiskCalculatorPage() {
         <NumberInput
           value={stopPips}
           onChange={setStopPips}
-          className="w-16 bg-transparent font-mono text-[14px] font-semibold text-text outline-none"
+          style={numFont}
+          className="w-16 bg-transparent text-[14px] font-semibold text-text outline-none"
         />
         <span className="flex-shrink-0 text-[11px] text-text-faint">пунктів</span>
       </div>
@@ -117,23 +132,25 @@ export default function RiskCalculatorPage() {
         </div>
         <div className="flex items-center justify-between border-b border-sage/15 py-2">
           <span className="text-[11.5px] text-sage/70">Ризик у грошах</span>
-          <span className="font-mono text-[14px] font-bold text-sage">
+          <span className="text-[14px] font-bold text-sage" style={numFont}>
             {riskAmount.toFixed(0)} {currencySymbol}
           </span>
         </div>
         <div className="flex items-center justify-between border-b border-sage/15 py-2">
           <span className="text-[11.5px] text-sage/70">Вартість пункту</span>
-          <span className="font-mono text-[14px] font-bold text-sage">
+          <span className="text-[14px] font-bold text-sage" style={numFont}>
             {pair.pipValuePerLot.toFixed(1)} $
           </span>
         </div>
         <div className="flex items-center justify-between border-b border-sage/15 py-2">
           <span className="text-[11.5px] text-sage/70">Рекомендований лот</span>
-          <span className="font-mono text-[18px] font-bold text-sage">{lotSize.toFixed(2)} лот</span>
+          <span className="text-[18px] font-bold text-sage" style={numFont}>
+            {lotSize.toFixed(2)} лот
+          </span>
         </div>
         <div className="flex items-center justify-between py-2">
           <span className="text-[11.5px] text-sage/70">При тейк-профіті 1:2</span>
-          <span className="font-mono text-[14px] font-bold text-sage">
+          <span className="text-[14px] font-bold text-sage" style={numFont}>
             +{potentialProfit.toFixed(0)} {currencySymbol}
           </span>
         </div>

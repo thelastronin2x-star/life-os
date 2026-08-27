@@ -9,6 +9,7 @@ interface NumberInputProps {
   onChange: (n: number) => void;
   className?: string;
   placeholder?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -36,7 +37,7 @@ interface NumberInputProps {
  * skips re-syncing from `value` while the field itself has focus, so it
  * doesn't fight the user's own keystrokes.
  */
-export function NumberInput({ value, onChange, className, placeholder }: NumberInputProps) {
+export function NumberInput({ value, onChange, className, placeholder, style }: NumberInputProps) {
   const [text, setText] = useState(() => String(value));
   const [invalid, setInvalid] = useState(false);
   const focused = useRef(false);
@@ -84,6 +85,7 @@ export function NumberInput({ value, onChange, className, placeholder }: NumberI
       onChange={(e) => handleChange(e.target.value)}
       onBlur={handleBlur}
       className={cn(className, invalid && "border-rose text-rose")}
+      style={style}
     />
   );
 }
