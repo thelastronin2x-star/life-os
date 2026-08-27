@@ -96,6 +96,21 @@ const PERIOD_TABS: { id: AnalyticsPeriod; label: string }[] = [
   { id: "quarter", label: "Квартал" },
 ];
 
+const PERIOD_LABEL_GENITIVE: Record<AnalyticsPeriod, string> = {
+  week: "тижня",
+  month: "місяця",
+  quarter: "кварталу",
+};
+
+const PERIOD_DAYS: Record<AnalyticsPeriod, number> = { week: 7, month: 30, quarter: 90 };
+
+/** Shared small-caps section heading used above every analytics card on
+ *  this screen — same style repeated before each section per the reference
+ *  design, not a one-off. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="mb-[10px] mt-[18px] text-[11px] font-bold uppercase tracking-wide text-text-faint">{children}</div>;
+}
+
 function CorrelationCard({ title, correlation }: { title: string; correlation: BinaryCorrelation }) {
   // The healthier side is whichever one the trader can choose to be on more
   // often — "за планом" / "решта дня" / "довша пауза" — so it's always `a`
@@ -138,8 +153,7 @@ function RiskOfRuinGauge({ result }: { result: NonNullable<ReturnType<typeof com
   const color = ruinColor(result.ruinProbabilityPercent);
   return (
     <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-      <div className="text-[12px] font-semibold text-text">Ризик розорення</div>
-      <div className="mt-0.5 text-[10.5px] text-text-faint">Ймовірність втратити 50%+ депозиту при поточній стратегії ризику</div>
+      <div className="text-[10.5px] text-text-faint">Ймовірність втратити 50%+ депозиту при поточній стратегії ризику</div>
       <div className="relative mx-auto mb-1.5 mt-3 h-[80px] w-[150px]">
         <svg width="150" height="80" viewBox="0 0 150 80">
           <path d="M10,75 A65,65 0 0,1 140,75" fill="none" stroke="var(--surface-2)" strokeWidth="12" strokeLinecap="round" />
@@ -173,15 +187,18 @@ function KellyCriterionCard({
   kelly,
   currentRiskPercent,
   neededTrades,
+  sampleSize,
 }: {
   kelly: NonNullable<ReturnType<typeof computeKellyCriterion>> | null;
   currentRiskPercent: number | null;
   neededTrades: number;
+  sampleSize: number;
 }) {
   return (
     <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-      <div className="text-[12px] font-semibold text-text">Kelly Criterion — оптимальний ризик</div>
-      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Розраховано з твоєї реальної статистики</div>
+      <div className="mb-3 text-[10.5px] text-text-faint">
+        Розраховано з твоєї реальної статистики за {sampleSize} угод
+      </div>
       {kelly && currentRiskPercent !== null ? (
         <>
           <div className="flex gap-2.5">
@@ -231,8 +248,7 @@ function MonteCarloCard({ projection, currencySymbol }: { projection: NonNullabl
 
   return (
     <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-      <div className="text-[12px] font-semibold text-text">Monte Carlo · 1000 симуляцій наступного місяця</div>
-      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Тримай палець на області, щоб побачити ймовірний діапазон</div>
+      <div className="mb-3 text-[10.5px] text-text-faint">Тримай палець на області, щоб побачити ймовірний діапазон</div>
       <div ref={containerRef} className="relative" {...handlers}>
         <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
           <path d={bandPath} fill="var(--sage)" fillOpacity="0.16" />
@@ -258,8 +274,7 @@ function SetupEdgeCard({ edges }: { edges: NonNullable<ReturnType<typeof compute
 
   return (
     <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-      <div className="text-[12px] font-semibold text-text">Аналіз переваги сетапу</div>
-      <div className="mt-0.5 mb-3 text-[10.5px] text-text-faint">Win rate по тегах — тримай палець на стовпчику</div>
+      <div className="mb-3 text-[10.5px] text-text-faint">Win rate по сетапах — тримай палець на стовпчику</div>
       <div ref={containerRef} className="relative flex h-[80px] items-end gap-1.5">
         {edges.map((e) => (
           <div
@@ -338,7 +353,7 @@ export default function JournalStatsPage() {
   const curve = computeHourlyPerformanceCurve(trades, instrumentById);
   const maxCurveWinRate = Math.max(1, ...curve.map((c) => c.winRate ?? 0));
 
-  const tagCombos = computeTagCombinations(trades, instrumentById, tagById, 2);
+  const tagCombos = computeTagCombinations(trades, instrumentById, tagById, 5);
 
   // Risk of Ruin / Kelly / Monte Carlo all need a capital figure to turn
   // R-multiples into a risk %, so they're scoped to a single selected
@@ -386,14 +401,11 @@ export default function JournalStatsPage() {
   return (
     <div>
       <div className="pb-3.5 pt-2">
-        <Link
-          href={accountId ? `/work/journal` : "/work/journal"}
-          className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim"
-        >
+        <Link href="/work" className="mb-2 flex items-center gap-2 text-[12.5px] text-text-dim">
           <span className="flex h-7 w-7 items-center justify-center rounded-icon border border-border bg-surface">
             ‹
           </span>
-          Журнал
+          Робота
         </Link>
         <div className="font-heading text-lg font-semibold text-text">AI Аналітика</div>
         <div className="mt-0.5 text-[11.5px] text-text-faint">
@@ -418,7 +430,7 @@ export default function JournalStatsPage() {
 
       <div className="mb-4 rounded-card p-4 text-white" style={{ background: "linear-gradient(135deg, #2a2620, #1f2018)" }}>
         <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/60">
-          <SparkleIcon className="h-3.5 w-3.5" /> Розбір періоду
+          <SparkleIcon className="h-3.5 w-3.5" /> Розбір {PERIOD_LABEL_GENITIVE[period]}
         </div>
         {narrativeText ? (
           <p className="text-[13.5px] font-medium leading-relaxed text-white/95">{narrativeText}</p>
@@ -429,7 +441,7 @@ export default function JournalStatsPage() {
         )}
         {closed.length > 0 && (
           <div className="mt-3.5 border-t border-white/10 pt-2.5 text-[10.5px] font-semibold text-white/45">
-            Згенеровано на основі {closed.length} угод за обраний період
+            Згенеровано на основі {closed.length} угод за останні {PERIOD_DAYS[period]} днів
           </div>
         )}
       </div>
@@ -459,9 +471,7 @@ export default function JournalStatsPage() {
 
       {correlations.length > 0 && (
         <>
-          <div className="mb-2 mt-1 text-[11px] font-bold uppercase tracking-wide text-text-faint">
-            Поведінкові кореляції
-          </div>
+          <SectionLabel>Поведінкові кореляції</SectionLabel>
           {correlations.map((c) => (
             <CorrelationCard key={c.title} title={c.title} correlation={c.correlation} />
           ))}
@@ -469,63 +479,95 @@ export default function JournalStatsPage() {
       )}
 
       {curve.length > 1 && (
-        <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-          <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
-          <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на стовпчику</div>
-          <div ref={curveContainerRef} className="relative mt-3 flex h-[70px] items-end gap-1">
-            {curve.map((c) => (
-              <div key={c.hour} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-                <div
-                  {...curveBind(c.winRate !== null ? `${c.hour}:00 — ${c.winRate}% win rate` : `${c.hour}:00 — немає угод`)}
-                  className="w-full rounded-t-[3px]"
-                  style={{
-                    height: c.winRate !== null ? `${Math.max(6, (c.winRate / maxCurveWinRate) * 100)}%` : "2%",
-                    background: c.winRate === null ? "var(--surface-2)" : "var(--sky)",
-                  }}
-                />
-              </div>
-            ))}
-            <ChartTooltipBubble tooltip={curveTooltipState} />
+        <>
+          <SectionLabel>Крива результативності за часом сесії</SectionLabel>
+          <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+            <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
+            <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на стовпчику</div>
+            <div ref={curveContainerRef} className="relative mt-3 flex h-[70px] items-end gap-1">
+              {curve.map((c) => (
+                <div key={c.hour} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+                  <div
+                    {...curveBind(c.winRate !== null ? `${c.hour}:00 — ${c.winRate}% win rate` : `${c.hour}:00 — немає угод`)}
+                    className="w-full rounded-t-[3px]"
+                    style={{
+                      height: c.winRate !== null ? `${Math.max(6, (c.winRate / maxCurveWinRate) * 100)}%` : "2%",
+                      background: c.winRate === null ? "var(--surface-2)" : "var(--sky)",
+                    }}
+                  />
+                </div>
+              ))}
+              <ChartTooltipBubble tooltip={curveTooltipState} />
+            </div>
+            <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
+              <span>{curve[0].hour}:00</span>
+              <span>{curve[curve.length - 1].hour}:00</span>
+            </div>
           </div>
-          <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
-            <span>{curve[0].hour}:00</span>
-            <span>{curve[curve.length - 1].hour}:00</span>
-          </div>
-        </div>
+        </>
       )}
 
-      {riskOfRuin && <RiskOfRuinGauge result={riskOfRuin} />}
+      {riskOfRuin && (
+        <>
+          <SectionLabel>Ризик розорення</SectionLabel>
+          <RiskOfRuinGauge result={riskOfRuin} />
+        </>
+      )}
 
-      {account && <KellyCriterionCard kelly={kelly} currentRiskPercent={currentRiskPercent} neededTrades={kellyNeeded} />}
+      {account && (
+        <>
+          <SectionLabel>Kelly Criterion — оптимальний ризик</SectionLabel>
+          <KellyCriterionCard
+            kelly={kelly}
+            currentRiskPercent={currentRiskPercent}
+            neededTrades={kellyNeeded}
+            sampleSize={rMultiples.length}
+          />
+        </>
+      )}
 
-      {monteCarlo && <MonteCarloCard projection={monteCarlo} currencySymbol={currencySymbol} />}
+      {monteCarlo && (
+        <>
+          <SectionLabel>Monte Carlo · 1000 симуляцій наступного місяця</SectionLabel>
+          <MonteCarloCard projection={monteCarlo} currencySymbol={currencySymbol} />
+        </>
+      )}
 
-      {setupEdges.length > 0 && <SetupEdgeCard edges={setupEdges} />}
+      {setupEdges.length > 0 && (
+        <>
+          <SectionLabel>Аналіз переваги сетапу</SectionLabel>
+          <SetupEdgeCard edges={setupEdges} />
+        </>
+      )}
 
       {tagCombos.length > 0 && (
-        <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
-          <div className="mb-2.5 text-[12px] font-semibold text-text">Найефективніші комбінації тегів</div>
-          {tagCombos.map((combo, i) => (
-            <div
-              key={combo.tagNames.join("+")}
-              className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0"
-            >
-              <span className="w-4 flex-shrink-0 font-mono text-[12px] text-text-faint">{i + 1}</span>
-              <div className="flex flex-1 flex-wrap gap-1.5">
-                {combo.tagNames.map((name) => (
-                  <span key={name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold text-text-dim">
-                    {name}
-                  </span>
-                ))}
+        <>
+          <SectionLabel>Найефективніші комбінації сетапів</SectionLabel>
+          <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+            {tagCombos.map((combo, i) => (
+              <div
+                key={combo.tagNames.join("+")}
+                className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0"
+              >
+                <span className="w-4 flex-shrink-0 font-mono text-[12px] text-text-faint">{i + 1}</span>
+                <div className="flex flex-1 flex-wrap gap-1.5">
+                  {combo.tagNames.map((name) => (
+                    <span key={name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold text-text-dim">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+                <span className="flex-shrink-0 font-mono text-[12.5px] font-bold text-sage">{combo.winRate}% WR</span>
               </div>
-              <span className="flex-shrink-0 font-mono text-[12.5px] font-bold text-sage">{combo.winRate}% WR</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {revenge.count > 0 && (
-        <div className="mb-4 flex items-start gap-3 rounded-card border border-clay/25 bg-clay-soft p-3.5">
+        <>
+          <SectionLabel>Попередження</SectionLabel>
+          <div className="mb-4 flex items-start gap-3 rounded-card border border-clay/25 bg-clay-soft p-3.5">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-clay">
             <AlertTriangleIcon className="h-4 w-4" />
           </div>
@@ -537,7 +579,8 @@ export default function JournalStatsPage() {
               розміру позиції на день.
             </div>
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
@@ -557,7 +600,7 @@ export default function JournalStatsPage() {
         </div>
       </div>
 
-      <div className="mb-2 mt-1 text-[11px] font-bold uppercase tracking-wide text-text-faint">Детальна розбивка</div>
+      <SectionLabel>Детальна розбивка</SectionLabel>
       <GroupTable title="По інструменту" groups={byInstrument} currencySymbol={currencySymbol} />
       <GroupTable title="По тегу / сетапу" groups={byTag} currencySymbol={currencySymbol} />
       <GroupTable title="По сесії" groups={bySession} currencySymbol={currencySymbol} />
