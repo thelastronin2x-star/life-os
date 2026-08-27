@@ -278,40 +278,6 @@
   --balance-grad-to: #e0d5ba;
 }
 
-/* Робота hub (trader) — fixed dark neumorphism palette, same theme-invariant
-   principle as --balance- and --health- tokens above: this screen's own
-   constant look regardless of the app's selected accent theme or light/dark
-   mode. Cards share the exact screen tone; elevation reads purely from
-   shadow. */
-:root {
-  --robota-bg: #141210;
-  --robota-text: #e8e4dc;
-  --robota-text-dim: #8a8378;
-  --robota-text-faint: #6b6459;
-  --robota-text-assistant: #a39a89;
-  --robota-sage: #8fa583;
-  --robota-sage-bright: #a8c39a;
-  --robota-clay: #a56656;
-  --robota-gold: #c9a45f;
-  --robota-icon-muted: #c7c0ac;
-  --robota-chevron: #4a453e;
-  --robota-pressed-bg: #0f0e0c;
-}
-
-.robota-raised {
-  background: var(--robota-bg);
-  box-shadow:
-    -6px -6px 14px rgba(255, 255, 255, 0.03),
-    6px 6px 16px rgba(0, 0, 0, 0.6);
-}
-
-.robota-pressed {
-  background: var(--robota-pressed-bg);
-  box-shadow:
-    inset -4px -4px 10px rgba(255, 255, 255, 0.025),
-    inset 4px 4px 12px rgba(0, 0, 0, 0.55);
-}
-
 /* Per-profession accent — layered on top of whichever theme is active */
 [data-profile="trader"] {
   --accent: var(--sage);

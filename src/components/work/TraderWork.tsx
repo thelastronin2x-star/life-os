@@ -28,15 +28,14 @@ import {
 import { cn } from "@/lib/cn";
 
 /** Beige(neutral) → green(profit) / red(loss) heat cell, blended over the
- *  fixed robota-pressed tone rather than a swapping theme token — this
- *  screen's palette is deliberately constant regardless of the app's
- *  selected theme (see globals.css --robota-*). */
+ *  theme's own neutral surface tone rather than a hardcoded hex — a cell
+ *  with no trades yet stays exactly that neutral, undiluted. */
 function heatColor(avgPnl: number | null, maxAbs: number): string {
-  if (avgPnl === null || maxAbs === 0) return "var(--robota-pressed-bg)";
+  if (avgPnl === null || maxAbs === 0) return "var(--surface-2)";
   const t = Math.max(-1, Math.min(1, avgPnl / maxAbs));
-  const hue = t >= 0 ? "var(--robota-sage)" : "var(--robota-clay)";
-  const pct = Math.round(Math.abs(t) * 100);
-  return `color-mix(in srgb, ${hue} ${pct}%, var(--robota-pressed-bg))`;
+  const pct = Math.round(Math.abs(t) * 78);
+  const hue = t >= 0 ? "var(--sage)" : "var(--clay)";
+  return `color-mix(in srgb, ${hue} ${pct}%, var(--surface-2))`;
 }
 
 function AssistantBlock() {
@@ -45,17 +44,17 @@ function AssistantBlock() {
   const insight = useAssistantStore((s) => s.contextInsights.work);
 
   return (
-    <div className="robota-raised mb-4 rounded-card p-4">
+    <div className="mb-4 rounded-card border border-border bg-surface p-4 shadow-card">
       <div className="mb-1.5 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wide" style={{ color: "var(--robota-sage)" }}>
+        <div className="flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wide text-sage">
           <SparkleIcon className="h-3.5 w-3.5" />
           Асистент
         </div>
-        <Link href="/assistant" className="text-[11px] font-semibold" style={{ color: "var(--robota-sage)" }}>
+        <Link href="/assistant" className="text-[11px] font-semibold text-sage">
           Повний чат →
         </Link>
       </div>
-      <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--robota-text-assistant)" }}>
+      <p className="text-[12.5px] leading-relaxed text-text-dim">
         {insight?.text ?? "Асистент ще збирає дані про твої угоди…"}
       </p>
     </div>
@@ -92,7 +91,7 @@ function BalanceCard({
   return (
     <button
       onClick={onOpenSwitcher}
-      className="robota-raised relative block w-full overflow-hidden rounded-card p-[22px] text-left"
+      className="relative block w-full overflow-hidden rounded-card border border-border bg-surface p-[22px] text-left shadow-card"
     >
       {chartPath && (
         <svg
@@ -102,28 +101,28 @@ function BalanceCard({
         >
           <defs>
             <linearGradient id="robotaBalanceFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--robota-sage)" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="var(--robota-sage)" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--sage)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="var(--sage)" stopOpacity="0" />
             </linearGradient>
           </defs>
           <path d={chartPath.area} fill="url(#robotaBalanceFill)" />
-          <path d={chartPath.line} fill="none" stroke="var(--robota-sage)" strokeWidth={1.5} strokeOpacity={0.45} vectorEffect="non-scaling-stroke" />
+          <path d={chartPath.line} fill="none" stroke="var(--sage)" strokeWidth={1.5} strokeOpacity={0.4} vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       <div className="relative z-10">
-        <span className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: "var(--robota-text-dim)" }}>
+        <span className="flex items-center gap-1 text-[12px] font-semibold text-text-dim">
           Загальний баланс · {active.kind === "prop" ? `${active.name} · ${active.phase}` : active.name}
           <span className="text-[9px]">⌄</span>
         </span>
-        <div className="font-display mt-1.5 text-[40px] font-bold leading-none" style={{ color: "var(--robota-text)" }}>
+        <div className="font-display mt-1.5 text-[40px] font-bold leading-none text-text">
           {balanceValue.toFixed(0)} {symbol}
         </div>
         <div
           className="mt-2 h-[3px] w-[38px] rounded-full"
-          style={{ background: "linear-gradient(90deg, var(--robota-sage), transparent)" }}
+          style={{ background: "linear-gradient(90deg, var(--sage), transparent)" }}
         />
         {todayPnl !== 0 && (
-          <div className="mt-2 text-[12.5px] font-semibold" style={{ color: "var(--robota-sage)" }}>
+          <div className={cn("mt-2 text-[12.5px] font-semibold", todayPnl >= 0 ? "text-sage" : "text-clay")}>
             {todayPnl >= 0 ? "+" : ""}
             {todayPnl.toFixed(0)} {symbol} сьогодні
           </div>
@@ -149,28 +148,28 @@ function HeatmapCard({
   );
 
   return (
-    <div className="robota-raised mb-4 rounded-card p-[18px]">
-      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--robota-text-faint)" }}>
+    <div className="mb-4 rounded-card border border-border bg-surface p-[18px] shadow-card">
+      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
         Теплокарта результативності
       </div>
       <div className="space-y-1">
         <div className="flex items-center gap-1 pl-[46px]">
           {WEEKDAY_LABELS.map((l) => (
-            <div key={l} className="flex-1 text-center text-[9px] font-semibold" style={{ color: "var(--robota-text-faint)" }}>
+            <div key={l} className="flex-1 text-center text-[9px] font-semibold text-text-faint">
               {l}
             </div>
           ))}
         </div>
         {heatmap.map((row) => (
           <div key={row.sessionId} className="flex items-center gap-1">
-            <div className="w-[46px] flex-shrink-0 truncate text-[9.5px] font-semibold" style={{ color: "var(--robota-text-dim)" }}>
+            <div className="w-[46px] flex-shrink-0 truncate text-[9.5px] font-semibold text-text-dim">
               {row.sessionName}
             </div>
             {row.cells.map((cell) => (
               <div
                 key={cell.weekday}
-                className={cn("aspect-square flex-1 rounded-[6px]", cell.avgPnl === null && "robota-pressed")}
-                style={cell.avgPnl !== null ? { background: heatColor(cell.avgPnl, maxAbs) } : undefined}
+                className="aspect-square flex-1 rounded-[6px]"
+                style={{ background: heatColor(cell.avgPnl, maxAbs) }}
               />
             ))}
           </div>
@@ -228,11 +227,11 @@ function AccountSwitcherSheet({
   );
 }
 
-/** Icon in a small "вдавлена лунка" (pressed well) — the module-tile icon
- *  treatment shared by Журнал угод / Калькулятор / Новини / Команда below. */
+/** Icon in a small muted square — the module-tile icon treatment shared by
+ *  Журнал угод / Калькулятор / Новини / Команда below. */
 function IconWell({ children }: { children: React.ReactNode }) {
   return (
-    <span className="robota-pressed flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon" style={{ color: "var(--robota-icon-muted)" }}>
+    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
       {children}
     </span>
   );
@@ -314,18 +313,13 @@ export function TraderWork() {
     closeTradeForm();
   }
 
-  const screenBleed = "robota-screen -mx-4 -mt-6 px-4 pb-4 md:-mx-8 md:-mt-8 md:px-8";
-  const screenStyle = { background: "var(--robota-bg)", paddingTop: "calc(1.5rem + env(safe-area-inset-top))" };
-
   if (accounts.length === 0) {
     return (
-      <div className={screenBleed} style={screenStyle}>
-        <div className="mb-4 text-[23px] font-extrabold tracking-tight" style={{ color: "var(--robota-text)" }}>
-          Робота
-        </div>
-        <div className="robota-raised rounded-card py-10 text-center text-[12px] font-semibold" style={{ color: "var(--robota-text-faint)" }}>
+      <div>
+        <div className="mb-4 pt-1 text-[19px] font-extrabold tracking-tight text-text">Робота</div>
+        <div className="rounded-card border border-border bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
           Ще немає торгових рахунків
-          <Link href="/work/prop-accounts" className="mt-3 block text-[12.5px] font-extrabold" style={{ color: "var(--robota-sage)" }}>
+          <Link href="/work/prop-accounts" className="mt-3 block text-[12.5px] font-extrabold text-sage">
             Додати рахунок
           </Link>
         </div>
@@ -334,16 +328,11 @@ export function TraderWork() {
   }
 
   return (
-    <div className={screenBleed} style={screenStyle}>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-[23px] font-extrabold tracking-tight" style={{ color: "var(--robota-text)" }}>
-          Робота
-        </h1>
+    <div>
+      <div className="mb-4 flex items-center justify-between px-0.5 pt-1">
+        <h1 className="text-[19px] font-extrabold tracking-tight text-text">Робота</h1>
         {streak > 0 && (
-          <div
-            className="robota-pressed flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ color: "var(--robota-gold)" }}
-          >
+          <div className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-gold">
             <FireIcon className="h-3.5 w-3.5" />
             {streak} днів
           </div>
@@ -378,81 +367,65 @@ export function TraderWork() {
 
       <HeatmapCard trades={trades} instrumentById={instrumentById} sessions={sessions} />
 
-      <div className="robota-raised mb-4 flex rounded-card">
+      <div className="mb-4 flex rounded-card border border-border bg-surface shadow-card">
         <button onClick={openNewTrade} className="flex flex-1 flex-col items-center gap-1.5 py-3.5">
-          <PlusIcon className="h-[18px] w-[18px]" style={{ color: "var(--robota-icon-muted)" }} />
-          <span className="text-[11px] font-semibold" style={{ color: "var(--robota-text)" }}>
-            Угода
-          </span>
+          <PlusIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-semibold text-text">Угода</span>
         </button>
         <Link href="/work/calculator" className="flex flex-1 flex-col items-center gap-1.5 py-3.5">
-          <CalculatorIcon className="h-[18px] w-[18px]" style={{ color: "var(--robota-icon-muted)" }} />
-          <span className="text-[11px] font-semibold" style={{ color: "var(--robota-text)" }}>
-            Ризик
-          </span>
+          <CalculatorIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-semibold text-text">Ризик</span>
         </Link>
         <Link href="/work/economic-calendar" className="flex flex-1 flex-col items-center gap-1.5 py-3.5">
-          <CalendarDateIcon className="h-[18px] w-[18px]" style={{ color: "var(--robota-icon-muted)" }} />
-          <span className="text-[11px] font-semibold" style={{ color: "var(--robota-text)" }}>
-            Календар
-          </span>
+          <CalendarDateIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-semibold text-text">Календар</span>
         </Link>
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-2">
-        <Link href="/work/journal" className="robota-raised col-span-2 rounded-card p-3.5">
+        <Link href="/work/journal" className="col-span-2 rounded-card border border-border bg-surface p-3.5 shadow-card">
           <IconWell>
             <NotebookIcon className="h-[18px] w-[18px]" />
           </IconWell>
-          <div className="font-display mt-2 text-[20px] font-bold" style={{ color: "var(--robota-sage-bright)" }}>
+          <div className={cn("font-display mt-2 text-[20px] font-bold", allTimeNet >= 0 ? "text-sage" : "text-clay")}>
             {allTimeNet >= 0 ? "+" : ""}
             {allTimeNet.toFixed(0)} {symbol}
           </div>
-          <div className="mt-0.5 truncate text-[10.5px]" style={{ color: "var(--robota-text-faint)" }}>
+          <div className="mt-0.5 truncate text-[10.5px] text-text-faint">
             {allClosed.length} угод{allClosed.length === 1 ? "а" : ""} · win rate {allWinRate}%
           </div>
         </Link>
 
-        <Link href="/work/calculator" className="robota-raised rounded-card p-3.5">
+        <Link href="/work/calculator" className="rounded-card border border-border bg-surface p-3.5 shadow-card">
           <IconWell>
             <CalculatorIcon className="h-[18px] w-[18px]" />
           </IconWell>
-          <div className="mt-2 text-[12.5px] font-semibold" style={{ color: "var(--robota-text)" }}>
-            Калькулятор позиції
-          </div>
-          <div className="mt-0.5 text-[10.5px]" style={{ color: "var(--robota-text-faint)" }}>
+          <div className="mt-2 text-[12.5px] font-semibold text-text">Калькулятор позиції</div>
+          <div className="mt-0.5 text-[10.5px] text-text-faint">
             Розмір під ризик · {avgLot.toFixed(2)} станд. лот
           </div>
         </Link>
 
-        <Link href="/work/news" className="robota-raised rounded-card p-3.5">
+        <Link href="/work/news" className="rounded-card border border-border bg-surface p-3.5 shadow-card">
           <IconWell>
             <NewspaperIcon className="h-[18px] w-[18px]" />
           </IconWell>
-          <div className="mt-2 text-[12.5px] font-semibold" style={{ color: "var(--robota-text)" }}>
-            Новини
-          </div>
-          <div className="mt-0.5 truncate text-[10.5px]" style={{ color: "var(--robota-text-faint)" }}>
+          <div className="mt-2 text-[12.5px] font-semibold text-text">Новини</div>
+          <div className="mt-0.5 truncate text-[10.5px] text-text-faint">
             {newsFocus?.headline ?? "Поки немає новин"}
           </div>
         </Link>
       </div>
 
-      <Link href="/work/teams" className="robota-raised flex items-center gap-3 rounded-card p-3.5">
+      <Link href="/work/teams" className="flex items-center gap-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
         <IconWell>
           <UsersIcon className="h-4 w-4" />
         </IconWell>
         <span className="min-w-0 flex-1">
-          <span className="block text-[12.5px] font-bold" style={{ color: "var(--robota-text)" }}>
-            Команда
-          </span>
-          <span className="mt-0.5 block text-[10.5px]" style={{ color: "var(--robota-text-faint)" }}>
-            Чат, спільні проєкти
-          </span>
+          <span className="block text-[12.5px] font-bold text-text">Команда</span>
+          <span className="mt-0.5 block text-[10.5px] text-text-faint">Чат, спільні проєкти</span>
         </span>
-        <span className="flex-shrink-0 text-[13px]" style={{ color: "var(--robota-chevron)" }}>
-          ›
-        </span>
+        <span className="flex-shrink-0 text-[13px] text-text-faint">›</span>
       </Link>
 
       {tradeFormOpen && (
