@@ -5,7 +5,6 @@ import { Space_Grotesk } from "next/font/google";
 import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { CURRENCY_PAIRS, RISK_PRESETS, PAIR_CATEGORY_LABELS, type PairCategory } from "@/lib/currency-pairs";
-import { CURRENCIES, useAppStore } from "@/lib/store";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 
 // Scoped to this screen only — every digit here (input values, risk-scale
@@ -21,8 +20,12 @@ const numFont = { fontFamily: "var(--font-space-grotesk)" };
 
 export default function RiskCalculatorPage() {
   const isTrader = useTraderOnlyGuard();
-  const currencyId = useAppStore((s) => s.settings.currency);
-  const currencySymbol = CURRENCIES.find((c) => c.id === currencyId)?.symbol ?? "₴";
+  // Always USD, not the app's general display currency: pipValuePerLot below
+  // is a fixed USD-per-pip table (see currency-pairs.ts), so mixing it with
+  // e.g. UAH deposit would silently produce a wrong lot size — the pip value
+  // and the deposit have to share one currency for the division to mean
+  // anything.
+  const currencySymbol = "$";
 
   const [pairSymbol, setPairSymbol] = useState(CURRENCY_PAIRS[0].symbol);
   const [deposit, setDeposit] = useState(10000);
@@ -139,7 +142,7 @@ export default function RiskCalculatorPage() {
         <div className="flex items-center justify-between border-b border-sage/15 py-2">
           <span className="text-[11.5px] text-sage/70">Вартість пункту</span>
           <span className="text-[14px] font-bold text-sage" style={numFont}>
-            {pair.pipValuePerLot.toFixed(1)} $
+            {pair.pipValuePerLot.toFixed(1)} {currencySymbol}
           </span>
         </div>
         <div className="flex items-center justify-between border-b border-sage/15 py-2">
