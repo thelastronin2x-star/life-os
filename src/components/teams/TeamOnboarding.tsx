@@ -52,7 +52,7 @@ export function TeamOnboarding({ profile, createTeam, joinTeam }: Props) {
         </button>
       </div>
 
-      <div className="rounded-card border border-border bg-surface p-4">
+      <div className="card-raised rounded-card bg-surface p-4">
         {mode === "create" ? (
           <>
             <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-text-faint">Назва команди</div>

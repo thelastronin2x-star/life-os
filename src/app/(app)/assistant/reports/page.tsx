@@ -25,7 +25,7 @@ export default function AssistantReportsPage() {
       </div>
 
       {reports.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Звітів ще немає — з&apos;являться автоматично щотижня/щомісяця, або натисни
           «Звіт зараз» у чаті асистента
         </div>
@@ -37,7 +37,7 @@ export default function AssistantReportsPage() {
           <button
             key={r.id}
             onClick={() => setExpandedId(expanded ? null : r.id)}
-            className="mb-2.5 block w-full rounded-card-sm bg-surface shadow-card p-3.5 text-left"
+            className="card-raised mb-2.5 block w-full rounded-card-sm bg-surface p-3.5 text-left"
           >
             <div className="mb-1 flex items-center justify-between">
               <span

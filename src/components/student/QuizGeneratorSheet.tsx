@@ -52,7 +52,7 @@ export function QuizGeneratorSheet({ course, onClose }: { course: Course; onClos
         </div>
 
         {!course.notes.trim() ? (
-          <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+          <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
             У цього предмета ще немає конспектів — додай їх у бібліотеці предметів.
           </div>
         ) : (
@@ -74,7 +74,7 @@ export function QuizGeneratorSheet({ course, onClose }: { course: Course; onClos
 
             {error && <div className="text-center text-[11.5px] text-clay">Не вдалося згенерувати тест. Спробуй ще раз.</div>}
             {quiz && (
-              <div className="whitespace-pre-wrap rounded-card border border-border bg-surface p-3.5 text-[12.5px] leading-relaxed text-text">
+              <div className="card-raised whitespace-pre-wrap rounded-card bg-surface p-3.5 text-[12.5px] leading-relaxed text-text">
                 {quiz}
               </div>
             )}

@@ -25,7 +25,7 @@ export default function HabitsDetailPage() {
     <div>
       <HealthSubpageHeader title="Звички" subtitle="Розвиваю й обмежую — різна механіка" />
 
-      <div className="rounded-card border border-border bg-surface p-5 shadow-card">
+      <div className="card-raised rounded-card bg-surface p-5">
         <div className="mb-2.5 flex items-center gap-2.5">
           <span className="text-[11.5px] font-bold text-text-faint">Розвиваю (стрік)</span>
           <span className="h-px flex-1 bg-border" />

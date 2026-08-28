@@ -40,7 +40,7 @@ export default function HomeAddWidgetPage() {
       <div className="mb-4 pt-2 font-heading text-lg font-semibold text-text">Додати віджет</div>
 
       {hidden.length === 0 ? (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Усі віджети вже додано на Головну
         </div>
       ) : (
@@ -48,7 +48,7 @@ export default function HomeAddWidgetPage() {
           {hidden.map((w) => {
             const meta = WIDGET_META[w.id];
             return (
-              <div key={w.id} className="relative rounded-card-sm bg-surface shadow-card p-3.5">
+              <div key={w.id} className="card-raised relative rounded-card-sm bg-surface p-3.5">
                 <div className="mb-2.5 text-[12px] font-bold text-text">{meta.title}</div>
                 <div
                   className="flex h-[52px] items-center justify-center rounded-icon"

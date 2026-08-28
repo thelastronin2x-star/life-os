@@ -90,7 +90,7 @@ function TimelineCard({
   onDelete: (item: CalendarItem) => void;
 }) {
   return (
-    <button onClick={() => onEdit(item)} className="mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left">
+    <button onClick={() => onEdit(item)} className="card-raised mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left">
       {item.kind === "event" && item.time && (
         <span className="flex-shrink-0 rounded-btn bg-surface-2 px-2 py-1 font-mono text-[11px] font-bold text-text-dim">
           {item.time}
@@ -218,7 +218,7 @@ export function DayAgenda({
           href={event.htmlLink}
           target="_blank"
           rel="noreferrer"
-          className={cn("mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left")}
+          className={cn("card-raised mb-2 flex w-full items-start gap-3 rounded-card-sm bg-surface p-3 text-left")}
         >
           <span className="flex-shrink-0 rounded-btn bg-surface-2 px-2 py-1 font-mono text-[11px] font-bold text-text-dim">
             {event.allDay ? "увесь" : new Date(event.start).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}

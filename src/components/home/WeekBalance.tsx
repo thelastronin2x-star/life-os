@@ -80,7 +80,7 @@ export function WeekBalance({
   return (
     <div
       className={cn(
-        "grid items-start rounded-card border border-border bg-surface px-4 py-3 shadow-card",
+        "card-raised grid items-start rounded-card bg-surface px-4 py-3",
         trading ? "grid-cols-[1fr_1px_1fr] gap-3.5" : "grid-cols-1"
       )}
     >

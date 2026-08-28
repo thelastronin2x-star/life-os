@@ -147,13 +147,13 @@ export default function StudentLibraryPage() {
           </div>
 
           {courses.length === 0 && (
-            <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Ще немає предметів
             </div>
           )}
 
           {courses.map((c) => (
-            <div key={c.id} className="mb-2.5 rounded-card bg-surface shadow-card p-3.5">
+            <div key={c.id} className="card-raised mb-2.5 rounded-card bg-surface p-3.5">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[13.5px] font-bold text-text">{c.name}</span>
                 <div className="flex gap-2">
@@ -200,7 +200,7 @@ export default function StudentLibraryPage() {
       {section === "cards" && (
         <div>
           {courses.length === 0 ? (
-            <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Спочатку додай предмет у вкладці «Предмети»
             </div>
           ) : (
@@ -230,7 +230,7 @@ export default function StudentLibraryPage() {
                 </div>
               )}
 
-              <div className="mb-3 rounded-card bg-surface shadow-card p-3.5">
+              <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
                 <input
                   type="text"
                   value={deckName}
@@ -258,7 +258,7 @@ export default function StudentLibraryPage() {
               </div>
 
               {cardsForCourse.map((f) => (
-                <div key={f.id} className="mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3">
+                <div key={f.id} className="card-raised mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface p-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[12px] font-semibold text-text">{f.front}</div>
                     <div className="truncate text-[10.5px] text-text-faint">
@@ -278,12 +278,12 @@ export default function StudentLibraryPage() {
       {section === "schedule" && (
         <div>
           {courses.length === 0 ? (
-            <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Спочатку додай предмет у вкладці «Предмети»
             </div>
           ) : (
             <>
-              <div className="mb-3 rounded-card bg-surface shadow-card p-3.5">
+              <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
                 <select
                   value={scheduleCourseId || courses[0]?.id}
                   onChange={(e) => setScheduleCourseId(e.target.value)}
@@ -320,7 +320,7 @@ export default function StudentLibraryPage() {
               </div>
 
               {sortedSchedule.map((s) => (
-                <div key={s.id} className="mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3">
+                <div key={s.id} className="card-raised mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface p-3">
                   <span className="w-9 flex-shrink-0 text-[11px] font-bold text-text-faint">{WEEKDAY_LABELS[s.weekday]}</span>
                   <span className="flex-1 text-[12.5px] font-semibold text-text">{courseName(s.courseId)}</span>
                   <span className="font-mono text-[11.5px] text-text-faint">{s.time}</span>
@@ -337,12 +337,12 @@ export default function StudentLibraryPage() {
       {section === "grades" && (
         <div>
           {courses.length === 0 ? (
-            <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Спочатку додай предмет у вкладці «Предмети»
             </div>
           ) : (
             <>
-              <div className="mb-3 flex gap-2 rounded-card bg-surface shadow-card p-3.5">
+              <div className="card-raised mb-3 flex gap-2 rounded-card bg-surface p-3.5">
                 <select
                   value={gradeCourseId || courses[0]?.id}
                   onChange={(e) => setGradeCourseId(e.target.value)}
@@ -369,7 +369,7 @@ export default function StudentLibraryPage() {
               </div>
 
               {sortedGrades.map((g) => (
-                <div key={g.id} className="mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3">
+                <div key={g.id} className="card-raised mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface p-3">
                   <span className="flex-1 text-[12.5px] font-semibold text-text">{courseName(g.courseId)}</span>
                   <span className="font-mono text-[13px] font-bold text-gold">{g.value}</span>
                   <span className="text-[10.5px] text-text-faint">{g.date}</span>

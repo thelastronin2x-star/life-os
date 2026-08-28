@@ -37,7 +37,7 @@ function AccountRow({ account, link, sync, loadOlderHistory, refreshHistory, syn
   const [selectedLocalId, setSelectedLocalId] = useState(freeAccounts[0]?.id ?? "");
 
   return (
-    <div className="mb-2.5 rounded-card-sm bg-surface shadow-card p-3.5">
+    <div className="card-raised mb-2.5 rounded-card-sm bg-surface p-3.5">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[13px] font-semibold text-text">{labelFor(account)}</div>
         <div className="font-mono text-[13px] font-semibold text-text">
@@ -208,7 +208,7 @@ export default function MonobankPage() {
           {error && <div className="mb-2.5 text-[11px] text-rose">{error}</div>}
 
           {corpEnabled && (
-            <div className="mb-2.5 rounded-card-sm bg-surface shadow-card p-3.5">
+            <div className="card-raised mb-2.5 rounded-card-sm bg-surface p-3.5">
               <div className="mb-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
                 <BankIcon className="h-4 w-4 text-text-dim" /> Підключити одним тапом
               </div>
@@ -230,7 +230,7 @@ export default function MonobankPage() {
             </div>
           )}
 
-          <form onSubmit={handleConnect} className="rounded-card-sm bg-surface shadow-card p-3.5">
+          <form onSubmit={handleConnect} className="card-raised rounded-card-sm bg-surface p-3.5">
             <div className="mb-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
               <BankIcon className="h-4 w-4 text-text-dim" /> Підключити токен
             </div>
@@ -290,7 +290,7 @@ export default function MonobankPage() {
             </div>
           )}
           {monoAccounts.length === 0 && (
-            <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Рахунків не знайдено
             </div>
           )}
@@ -307,7 +307,7 @@ export default function MonobankPage() {
             />
           ))}
 
-          <div className="mb-2.5 mt-2 rounded-card-sm bg-surface shadow-card p-3.5">
+          <div className="card-raised mb-2.5 mt-2 rounded-card-sm bg-surface p-3.5">
             <div className="mb-1.5 flex items-center gap-2 text-[12.5px] font-semibold text-text">
               <UploadIcon className="h-4 w-4 text-text-dim" /> Перенести історію на сервер
             </div>

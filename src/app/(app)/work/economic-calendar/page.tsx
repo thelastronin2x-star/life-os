@@ -120,19 +120,19 @@ export default function EconomicCalendarPage() {
       <WorkSubpageHeader title="Економічний календар" subtitle="Релізи цього тижня" />
 
       {status === "not-configured" && (
-        <div className="mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
           <SatelliteOffIcon className="h-4 w-4 flex-shrink-0" />
           Джерело даних ще не підключено — поки що тут порожньо
         </div>
       )}
       {status === "no-credits" && (
-        <div className="mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
           <SatelliteOffIcon className="h-4 w-4 flex-shrink-0" />
           На рахунку JBlanked закінчились кредити — поповни на jblanked.com/api/billing
         </div>
       )}
       {status === "error" && (
-        <div className="mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised mb-3 flex items-center justify-center gap-1.5 rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
           <SatelliteOffIcon className="h-4 w-4 flex-shrink-0" />
           Не вдалося завантажити календар, спробуй пізніше
         </div>
@@ -168,11 +168,11 @@ export default function EconomicCalendarPage() {
         <>
           <SectionTitle>Сьогодні</SectionTitle>
           {groups.today.length === 0 ? (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
               Немає релізів сьогодні
             </div>
           ) : (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card px-3">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface px-3">
               {groups.today.map((e, i) => (
                 <EventRow key={e.id} event={e} isLast={i === groups.today.length - 1} />
               ))}
@@ -181,11 +181,11 @@ export default function EconomicCalendarPage() {
 
           <SectionTitle>Завтра</SectionTitle>
           {groups.tomorrow.length === 0 ? (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
               Немає релізів завтра
             </div>
           ) : (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card px-3">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface px-3">
               {groups.tomorrow.map((e, i) => (
                 <EventRow key={e.id} event={e} isLast={i === groups.tomorrow.length - 1} />
               ))}
@@ -195,7 +195,7 @@ export default function EconomicCalendarPage() {
           {groups.week.length > 0 && (
             <>
               <SectionTitle>Цього тижня</SectionTitle>
-              <div className="mb-2 rounded-card-sm bg-surface shadow-card px-3">
+              <div className="card-raised mb-2 rounded-card-sm bg-surface px-3">
                 {groups.week.map((e, i) => (
                   <EventRow key={e.id} event={e} isLast={i === groups.week.length - 1} />
                 ))}

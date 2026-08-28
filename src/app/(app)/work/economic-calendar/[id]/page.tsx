@@ -53,7 +53,7 @@ export default function EconomicEventDetailPage() {
       )}
 
       {status !== "loading" && !event && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Подію не знайдено — можливо, тиждень уже змінився
         </div>
       )}

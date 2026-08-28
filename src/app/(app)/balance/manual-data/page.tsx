@@ -221,7 +221,7 @@ function DebtRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-card-sm border border-border bg-surface p-3">
+    <div className="card-raised rounded-card-sm bg-surface p-3">
       <div className="mb-2 flex items-center gap-2">
         <input
           type="text"
@@ -314,7 +314,7 @@ function InvestmentRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-card-sm border border-border bg-surface p-3">
+    <div className="card-raised flex items-center gap-2 rounded-card-sm bg-surface p-3">
       <input
         type="text"
         placeholder="Тип (напр. Акції, ОВДП)"
@@ -345,7 +345,7 @@ function InsuranceStep() {
         return (
           <div
             key={type}
-            className="flex items-center justify-between rounded-card-sm border border-border bg-surface px-3.5 py-3"
+            className="card-raised flex items-center justify-between rounded-card-sm bg-surface px-3.5 py-3"
           >
             <span className="text-[13px] font-medium text-text">{INSURANCE_LABELS[type]}</span>
             <ToggleSwitch on={policy?.hasPolicy ?? false} onToggle={() => setInsurancePolicy(type, !(policy?.hasPolicy ?? false))} />

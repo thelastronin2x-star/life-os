@@ -436,7 +436,7 @@ function FinanceOverviewInner() {
                   e.stopPropagation();
                   openEditGoal(g);
                 }}
-                className="block w-full rounded-card-sm border border-border bg-surface p-3 text-left"
+                className="card-raised block w-full rounded-card-sm bg-surface p-3 text-left"
               >
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="truncate text-[12.5px] font-semibold text-text">{g.name}</span>
@@ -533,7 +533,7 @@ function FinanceOverviewInner() {
           картку inline. */}
       <button
         onClick={() => setQuizModalOpen(true)}
-        className="mb-2.5 block w-full rounded-card border border-border bg-surface p-4 text-left"
+        className="card-raised mb-2.5 block w-full rounded-card bg-surface p-4 text-left"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

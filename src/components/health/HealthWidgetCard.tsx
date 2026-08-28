@@ -35,7 +35,7 @@ export function HealthWidgetCard({ href, icon, iconAccent, title, meta, children
     // No bottom margin here — the bento grid in health/page.tsx spaces
     // cards via its own `gap`, not per-card margins (this card also sits
     // inside a grid-item wrapper div there, not directly as the grid child).
-    <div className={cn("relative h-full rounded-card-sm border border-border bg-surface p-3.5", className)}>
+    <div className={cn("card-raised relative h-full rounded-card-sm bg-surface p-3.5", className)}>
       <Link href={href} className="absolute inset-0 z-0" aria-label={title} />
       <div className="relative z-10 pointer-events-none">
         <div className="mb-2.5 flex items-center gap-2.5">

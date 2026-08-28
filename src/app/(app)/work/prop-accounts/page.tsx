@@ -61,7 +61,7 @@ export default function PropAccountsPage() {
       </div>
 
       {accounts.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Ще немає доданих prop-акаунтів
         </div>
       )}

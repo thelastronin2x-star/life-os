@@ -49,7 +49,7 @@ export function FinanceDiagnostics() {
   return (
     <div className="mb-4">
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">Діагностика</div>
-      <div className="rounded-card-sm bg-surface shadow-card p-3 text-[11px] leading-relaxed text-text-dim">
+      <div className="card-raised rounded-card-sm bg-surface p-3 text-[11px] leading-relaxed text-text-dim">
         <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1">
           <span>Транзакцій: <b className="font-mono text-text">{transactions.length}</b></span>
           <span>Категорій: <b className="font-mono text-text">{budgetCategories.length}</b></span>

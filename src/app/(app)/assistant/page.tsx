@@ -146,7 +146,7 @@ export default function AssistantPage() {
             key={chip.type}
             onClick={() => handleReportChip(chip.type, chip.userText)}
             disabled={isStreaming}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-card-sm bg-surface shadow-card py-2 text-center text-[11px] font-semibold text-text-dim disabled:opacity-40"
+            className="card-raised flex flex-1 items-center justify-center gap-1.5 rounded-card-sm bg-surface py-2 text-center text-[11px] font-semibold text-text-dim disabled:opacity-40"
           >
             <chip.Icon className="h-3.5 w-3.5" /> {chip.label}
           </button>

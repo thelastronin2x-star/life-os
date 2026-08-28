@@ -126,7 +126,7 @@ export default function RiskCalculatorPage() {
         <span className="flex-shrink-0 text-[11px] text-text-faint">пунктів</span>
       </div>
 
-      <div className="mb-4 rounded-card bg-sage-soft p-4 shadow-card">
+      <div className="card-raised mb-4 rounded-card bg-sage-soft p-4">
         <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-sage">
           Результат розрахунку
         </div>

@@ -115,7 +115,7 @@ export function TradeDetailSheet({
           </div>
         </div>
 
-        <div className="mt-3 rounded-card bg-surface px-3.5 shadow-card">
+        <div className="card-raised mt-3 rounded-card bg-surface px-3.5">
           <Row label="Вхід" value={String(t.entry)} />
           <Row label="Вихід" value={t.closePrice != null ? String(t.closePrice) : "—"} />
           {t.stop > 0 && <Row label="Стоп" value={String(t.stop)} />}
@@ -126,7 +126,7 @@ export function TradeDetailSheet({
           )}
         </div>
 
-        <div className="mt-3 rounded-card bg-surface px-3.5 shadow-card">
+        <div className="card-raised mt-3 rounded-card bg-surface px-3.5">
           <Row label="Відкрито" value={formatMoment(m?.openedAt, t.date, t.time)} />
           <Row label="Закрито" value={formatMoment(m?.closedAt, t.date, t.time)} />
           {duration && <Row label="Тривалість" value={duration} />}
@@ -134,7 +134,7 @@ export function TradeDetailSheet({
         </div>
 
         {(m?.fee !== undefined || m?.funding !== undefined || t.commission > 0 || t.swap !== 0) && (
-          <div className="mt-3 rounded-card bg-surface px-3.5 shadow-card">
+          <div className="card-raised mt-3 rounded-card bg-surface px-3.5">
             {(m?.fee ?? t.commission) > 0 && (
               <Row label="Комісія" value={`−${(m?.fee ?? t.commission).toFixed(2)} ${currencySymbol}`} tone="neg" />
             )}
@@ -155,7 +155,7 @@ export function TradeDetailSheet({
           </div>
         )}
 
-        <div className="mt-3 rounded-card bg-surface px-3.5 shadow-card">
+        <div className="card-raised mt-3 rounded-card bg-surface px-3.5">
           <Row label="Джерело" value={SOURCE_LABEL[t.source ?? "manual"] ?? t.source ?? "—"} />
           {t.sourceSymbol && t.sourceSymbol !== instrument?.symbol && (
             <Row label="Символ біржі" value={t.sourceSymbol} />
@@ -179,7 +179,7 @@ export function TradeDetailSheet({
         )}
 
         {t.notes && (
-          <div className="mt-3 rounded-card bg-surface p-3.5 shadow-card">
+          <div className="card-raised mt-3 rounded-card bg-surface p-3.5">
             <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-text-faint">
               Логіка входу / нотатки
             </div>

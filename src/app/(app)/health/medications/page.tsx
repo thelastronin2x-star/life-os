@@ -41,7 +41,7 @@ export default function MedicationsDetailPage() {
     <div>
       <HealthSubpageHeader title="Ліки та добавки" subtitle="Чеклист прийому й нагадування" />
 
-      <div className="rounded-card border border-border bg-surface p-5 shadow-card">
+      <div className="card-raised rounded-card bg-surface p-5">
         <div className="mb-4.5 text-center">
           <div className="font-display text-[30px] font-extrabold text-text">
             {doneCount} з {store.medications.length}

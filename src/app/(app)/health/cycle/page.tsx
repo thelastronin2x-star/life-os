@@ -28,7 +28,7 @@ export default function CycleDetailPage() {
     <div>
       <HealthSubpageHeader title="Цикл" subtitle="Фаза, прогноз, симптоми" />
 
-      <div className="mb-3.5 rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="card-raised mb-3.5 rounded-card bg-surface p-4">
         {cycle ? (
           <>
             <div className="mb-1 text-center font-display text-[28px] text-text">День {cycle.day}</div>
@@ -52,7 +52,7 @@ export default function CycleDetailPage() {
         </button>
       </div>
 
-      <div className="mb-3.5 rounded-card-sm border border-border bg-surface p-3.5">
+      <div className="card-raised mb-3.5 rounded-card-sm bg-surface p-3.5">
         <div className="mb-2 text-[11.5px] font-semibold text-text">Симптоми сьогодні</div>
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
@@ -73,7 +73,7 @@ export default function CycleDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-card-sm border border-border bg-surface p-3.5">
+      <div className="card-raised rounded-card-sm bg-surface p-3.5">
         <div className="mb-2 text-[11.5px] font-semibold text-text">Середні показники</div>
         <div className="flex items-center gap-2">
           <div className="flex-1">

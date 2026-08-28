@@ -57,9 +57,9 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
 
   return (
     <div>
-      <div className="mb-3.5 rounded-card bg-gradient-to-br from-surface-2 to-surface p-5 shadow-card">
+      <div className="card-raised mb-3.5 rounded-card bg-gradient-to-br from-surface-2 to-surface p-5">
         <div className="mb-4 flex items-center gap-3">
-          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-[15px] font-extrabold text-gold shadow-card">
+          <span className="well-pressed flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-[15px] font-extrabold text-gold">
             {teamAvatarInitials(state.team.name)}
           </span>
           <div>
@@ -82,8 +82,8 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Час команди</div>
-      <button onClick={() => setChatOpen(true)} className="mb-3.5 flex w-full items-start gap-2.5 rounded-card border border-border bg-surface p-3.5 text-left">
-        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-text-dim">
+      <button onClick={() => setChatOpen(true)} className="card-raised mb-3.5 flex w-full items-start gap-2.5 rounded-card bg-surface p-3.5 text-left">
+        <span className="well-pressed flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-text-dim">
           <ChatBubbleIcon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
@@ -107,9 +107,9 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
         </button>
       </div>
       {state.projects.length === 0 ? (
-        <div className="mb-3.5 rounded-card border border-border bg-surface py-6 text-center text-[11.5px] text-text-faint">Ще немає спільних проєктів</div>
+        <div className="card-raised mb-3.5 rounded-card bg-surface py-6 text-center text-[11.5px] text-text-faint">Ще немає спільних проєктів</div>
       ) : (
-        <div className="mb-3.5 rounded-card border border-border bg-surface p-1.5">
+        <div className="card-raised mb-3.5 rounded-card bg-surface p-1.5">
           {state.projects.map((project) => (
             <button key={project.id} onClick={() => setOpenProjectId(project.id)} className="flex w-full items-center gap-3 rounded-card-sm p-2.5 text-left">
               <div className="min-w-0 flex-1">
@@ -126,7 +126,7 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
         <span className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{copy.ratingTitle}</span>
         <span className="text-[10.5px] font-semibold text-text-faint">за тиждень</span>
       </div>
-      <div className="mb-3.5 rounded-card border border-border bg-surface p-1.5">
+      <div className="card-raised mb-3.5 rounded-card bg-surface p-1.5">
         {state.members.map((member, i) => (
           <div key={member.deviceId} className={cn("flex items-center gap-2.5 rounded-card-sm p-2.5", member.deviceId === state.me.deviceId && "bg-surface-2")}>
             <span className={cn("w-5 flex-shrink-0 text-center font-mono text-[12px]", i === 0 ? "text-gold" : "text-text-faint")}>{i + 1}</span>
@@ -141,7 +141,7 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Стрічка команди</div>
-      <div className="mb-3.5 rounded-card border border-border bg-surface px-3.5">
+      <div className="card-raised mb-3.5 rounded-card bg-surface px-3.5">
         {state.activity.length === 0 ? (
           <div className="py-6 text-center text-[11.5px] text-text-faint">Ще нічого не відбувалось</div>
         ) : (
@@ -160,7 +160,7 @@ export function TeamHub({ state, sendMessage, createProject, updateProject, addP
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Товариський виклик</div>
-      <button onClick={() => setRivalOpen(true)} className="mb-3.5 block w-full rounded-card border border-border bg-surface p-4">
+      <button onClick={() => setRivalOpen(true)} className="card-raised mb-3.5 block w-full rounded-card bg-surface p-4">
         {state.rival ? (
           <>
             <div className="mb-3 flex items-center justify-between">

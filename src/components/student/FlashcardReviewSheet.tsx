@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useStudentStore, type Flashcard } from "@/lib/student-store";
 import { REVIEW_QUALITY } from "@/lib/sm2";
 import { formatDateKey } from "@/lib/calendar-utils";
-import { cn } from "@/lib/cn";
 
 const SESSION_START = Date.now();
 
@@ -54,7 +53,7 @@ export function FlashcardReviewSheet({ cards, onClose }: { cards: Flashcard[]; o
           <>
             <button
               onClick={() => setFlipped((v) => !v)}
-              className="mb-4 flex min-h-[180px] w-full flex-col items-center justify-center rounded-card border border-border bg-surface p-6 text-center"
+              className="card-raised mb-4 flex min-h-[180px] w-full flex-col items-center justify-center rounded-card bg-surface p-6 text-center"
             >
               <span className="mb-2 text-[9.5px] font-bold uppercase tracking-wide text-text-faint">
                 {flipped ? "Відповідь" : "Питання"}
@@ -89,7 +88,7 @@ export function FlashcardReviewSheet({ cards, onClose }: { cards: Flashcard[]; o
             )}
           </>
         ) : (
-          <div className={cn("rounded-card border border-border bg-surface py-10 text-center")}>
+          <div className="card-raised rounded-card bg-surface py-10 text-center">
             <div className="text-[14px] font-bold text-text">
               {reviewedCount > 0 ? `Повторено ${reviewedCount} карток!` : "Немає карток для повторення"}
             </div>

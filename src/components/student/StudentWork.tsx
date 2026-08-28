@@ -105,7 +105,7 @@ export function StudentWork() {
         <div className="mb-4 flex items-center justify-between px-0.5 pt-1">
           <h1 className="text-[19px] font-extrabold tracking-tight text-text">Робота</h1>
         </div>
-        <div className="rounded-card border border-border bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
           Ще немає предметів
           <Link href="/work/student/library" className="mt-3 block text-[12.5px] font-extrabold text-sage">
             Додати перший предмет
@@ -165,7 +165,7 @@ export function StudentWork() {
         </div>
       </div>
 
-      <div className="mb-3.5 rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="card-raised mb-3.5 rounded-card bg-surface p-4">
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[12px] font-bold text-text">Завдання дня</span>
           <span className="flex items-center gap-1 text-[9.5px] font-bold text-gold">+{quest.xpReward} XP</span>
@@ -188,10 +188,11 @@ export function StudentWork() {
       </div>
 
       <div className="mb-3.5">
+        <div className="card-raised rounded-card bg-surface">
         <div
           ref={carouselRef}
           onScroll={handleCarouselScroll}
-          className="flex snap-x snap-mandatory overflow-x-auto rounded-card border border-border bg-surface"
+          className="flex snap-x snap-mandatory overflow-x-auto rounded-card"
         >
           <div className="w-full flex-shrink-0 snap-start p-3.5">
             <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-faint">
@@ -240,6 +241,7 @@ export function StudentWork() {
             )}
           </div>
         </div>
+        </div>
         <div className="mt-2 flex justify-center gap-1.5">
           {[0, 1].map((i) => (
             <span key={i} className={cn("h-1.5 w-1.5 rounded-full", page === i ? "bg-text" : "bg-border")} />
@@ -250,21 +252,21 @@ export function StudentWork() {
       <div className="mb-3.5 flex gap-2">
         <button
           onClick={() => setAssignmentsOpen(true)}
-          className="flex flex-1 flex-col items-center gap-1.5 rounded-card-sm border border-border bg-surface py-3"
+          className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3"
         >
           <PlusIcon className="h-[17px] w-[17px] text-text-dim" />
           <span className="text-[10.5px] font-semibold text-text-dim">Завдання</span>
         </button>
         <button
           onClick={() => setReviewOpen(true)}
-          className="flex flex-1 flex-col items-center gap-1.5 rounded-card-sm border border-border bg-surface py-3"
+          className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3"
         >
           <ClockIcon className="h-[17px] w-[17px] text-text-dim" />
           <span className="text-[10.5px] font-semibold text-text-dim">Сесія {dueCount > 0 ? `(${dueCount})` : ""}</span>
         </button>
         <Link
           href="/work/student/library"
-          className="flex flex-1 flex-col items-center gap-1.5 rounded-card-sm border border-border bg-surface py-3"
+          className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3"
         >
           <NotebookIcon className="h-[17px] w-[17px] text-text-dim" />
           <span className="text-[10.5px] font-semibold text-text-dim">Конспект</span>
@@ -272,14 +274,14 @@ export function StudentWork() {
       </div>
 
       <div className="mb-3.5 grid grid-cols-2 gap-2">
-        <div className="rounded-card border border-border bg-surface p-3.5">
+        <div className="card-raised rounded-card bg-surface p-3.5">
           <div className="flex items-center gap-1.5 text-[12px] font-bold text-text">
             <GraduationCapIcon className="h-3.5 w-3.5 text-text-faint" /> Середній бал
           </div>
           <div className="mt-2 font-display text-[19px] font-bold text-gold">{overallAvg !== null ? overallAvg.toFixed(1) : "—"}</div>
           <div className="mt-1 text-[10px] text-text-faint">{grades.length} оцінок</div>
         </div>
-        <div className="rounded-card border border-border bg-surface p-3.5">
+        <div className="card-raised rounded-card bg-surface p-3.5">
           <div className="flex items-center gap-1.5 text-[12px] font-bold text-text">
             <LayersIcon className="h-3.5 w-3.5 text-text-faint" /> Флеш-картки
           </div>
@@ -288,14 +290,14 @@ export function StudentWork() {
             {activeDeck ? `Запам'ятано з колоди «${activeDeck.deckName}»` : "Ще немає карток"}
           </div>
         </div>
-        <div className="rounded-card border border-border bg-surface p-3.5">
+        <div className="card-raised rounded-card bg-surface p-3.5">
           <div className="flex items-center gap-1.5 text-[12px] font-bold text-text">
             <UsersIcon className="h-3.5 w-3.5 text-text-faint" /> Рейтинг друзів
           </div>
           <div className="mt-2 text-[13px] font-semibold text-text-faint">Скоро</div>
           <div className="mt-1 text-[10px] text-text-faint">Ще не запущено</div>
         </div>
-        <div className="rounded-card border border-border bg-surface p-3.5">
+        <div className="card-raised rounded-card bg-surface p-3.5">
           <div className="flex items-center gap-1.5 text-[12px] font-bold text-text">
             <CalendarDateIcon className="h-3.5 w-3.5 text-text-faint" /> Пари сьогодні
           </div>
@@ -307,30 +309,32 @@ export function StudentWork() {
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Досягнення</div>
-      <div className="mb-3.5 flex gap-2.5 overflow-x-auto rounded-card border border-border bg-surface p-3.5">
-        {achievements.map((a) => (
-          <div key={a.id} className="w-[70px] flex-shrink-0 text-center">
-            <div
-              className={cn(
-                "mx-auto mb-1.5 flex h-12 w-12 items-center justify-center rounded-card-sm",
-                a.unlocked ? "bg-gold-soft text-gold" : "text-text-faint opacity-40"
-              )}
-              style={!a.unlocked ? { background: "var(--surface-2)" } : undefined}
-            >
-              <MedalIcon className="h-5 w-5" />
+      <div className="card-raised mb-3.5 rounded-card bg-surface">
+        <div className="flex gap-2.5 overflow-x-auto p-3.5">
+          {achievements.map((a) => (
+            <div key={a.id} className="w-[70px] flex-shrink-0 text-center">
+              <div
+                className={cn(
+                  "mx-auto mb-1.5 flex h-12 w-12 items-center justify-center rounded-card-sm",
+                  a.unlocked ? "bg-gold-soft text-gold" : "text-text-faint opacity-40"
+                )}
+                style={!a.unlocked ? { background: "var(--surface-2)" } : undefined}
+              >
+                <MedalIcon className="h-5 w-5" />
+              </div>
+              <div className={cn("text-[9px] font-bold", a.unlocked ? "text-text-dim" : "text-text-faint")}>{a.label}</div>
             </div>
-            <div className={cn("text-[9px] font-bold", a.unlocked ? "text-text-dim" : "text-text-faint")}>{a.label}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Навчання з допомогою</div>
       <button
         onClick={() => openHelper("tutor")}
         disabled={courses.length === 0}
-        className="mb-2 flex w-full items-center gap-3 rounded-card border border-border bg-surface p-3.5 text-left disabled:opacity-50"
+        className="card-raised mb-2 flex w-full items-center gap-3 rounded-card bg-surface p-3.5 text-left disabled:opacity-50"
       >
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-gold">
+        <span className="well-pressed flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-gold">
           <SparkleIcon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
@@ -341,9 +345,9 @@ export function StudentWork() {
       <button
         onClick={() => openHelper("quiz")}
         disabled={courses.length === 0}
-        className="mb-3.5 flex w-full items-center gap-3 rounded-card border border-border bg-surface p-3.5 text-left disabled:opacity-50"
+        className="card-raised mb-3.5 flex w-full items-center gap-3 rounded-card bg-surface p-3.5 text-left disabled:opacity-50"
       >
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-sage">
+        <span className="well-pressed flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-sage">
           <NotebookIcon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
@@ -358,7 +362,7 @@ export function StudentWork() {
       </div>
 
       <div className="mb-2 mt-1 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Найближчі дедлайни</div>
-      <button onClick={() => setAssignmentsOpen(true)} className="mb-4 block w-full rounded-card border border-border bg-surface px-3.5 text-left">
+      <button onClick={() => setAssignmentsOpen(true)} className="card-raised mb-4 block w-full rounded-card bg-surface px-3.5 text-left">
         {deadlines.length === 0 ? (
           <div className="py-6 text-center text-[11px] text-text-faint">Немає найближчих дедлайнів</div>
         ) : (

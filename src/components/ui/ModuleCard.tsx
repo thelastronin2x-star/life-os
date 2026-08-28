@@ -39,7 +39,7 @@ function ModuleCardBody({
   tone?: ModuleTone;
 }) {
   return (
-    <div className="mb-1.5 flex items-center gap-2.5 rounded-card border border-border bg-surface px-3.5 py-2.5 shadow-card">
+    <div className="card-raised mb-1.5 flex items-center gap-2.5 rounded-card bg-surface px-3.5 py-2.5">
       <div
         aria-hidden
         className={cn(

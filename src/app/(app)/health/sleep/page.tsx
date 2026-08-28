@@ -94,7 +94,7 @@ export default function SleepDetailPage() {
       <HealthSubpageHeader title="Сон" subtitle="Старт/стоп, а не форма" />
 
       {activeSleep ? (
-        <div className="mb-3.5 rounded-card border border-border bg-surface p-4 text-center shadow-card">
+        <div className="card-raised mb-3.5 rounded-card bg-surface p-4 text-center">
           <div className="mb-1 text-[11.5px] text-text-faint">Заснув(ла) о {formatClock(activeSleep.sleepAt)}</div>
           <div className="mb-3 font-display text-[28px] text-text">Триває</div>
           <button onClick={handleEndSleep} className="w-full rounded-btn bg-sky py-2.5 text-[13px] font-semibold text-bg">
@@ -102,7 +102,7 @@ export default function SleepDetailPage() {
           </button>
         </div>
       ) : (
-        <div className="mb-3.5 rounded-card border border-border bg-surface p-4 shadow-card">
+        <div className="card-raised mb-3.5 rounded-card bg-surface p-4">
           {lastSleep && lastSleep.wakeAt ? (
             <>
               <div className="text-center">
@@ -186,7 +186,7 @@ export default function SleepDetailPage() {
         </div>
       )}
 
-      <div className="rounded-card-sm border border-border bg-surface p-3.5">
+      <div className="card-raised rounded-card-sm bg-surface p-3.5">
         <div className="mb-1 text-[11.5px] font-semibold text-text">Тривалість за тиждень</div>
         <WeeklyBars data={chartData} color="var(--sky)" formatValue={formatDuration} />
       </div>

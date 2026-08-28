@@ -87,7 +87,7 @@ function WaterDetailInner() {
     <div>
       <HealthSubpageHeader title="Вода" subtitle="Обʼєм за день" />
 
-      <div className="rounded-card border border-border bg-surface p-5 shadow-card">
+      <div className="card-raised rounded-card bg-surface p-5">
         <div className="mb-4.5 text-center">
           <div className="font-display text-[32px] font-extrabold text-text">
             {formatLiters(todayMl)} з {formatLiters(store.waterGoalMl)} л
@@ -152,7 +152,7 @@ function WaterDetailInner() {
         </div>
       </div>
 
-      <div className="mt-3.5 rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="card-raised mt-3.5 rounded-card bg-surface p-4">
         <div className="mb-3 text-[11.5px] font-bold text-text-faint">Нагадування</div>
         <div className="flex items-center justify-between">
           <span className="text-[12.5px] text-text">Нагадувань на день</span>

@@ -65,7 +65,7 @@ function buildGroups(
 function GroupTable({ title, groups, currencySymbol }: { title: string; groups: GroupStat[]; currencySymbol: string }) {
   if (groups.length === 0) return null;
   return (
-    <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
+    <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">{title}</div>
       <div className="space-y-1.5">
         {groups.map((g) => {
@@ -119,7 +119,7 @@ function CorrelationCard({ title, correlation }: { title: string; correlation: B
   const diff = correlation.aWinRate - correlation.bWinRate;
   const positive = diff >= 0;
   return (
-    <div className="mb-2 flex items-start gap-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-2 flex items-start gap-3 rounded-card bg-surface p-3.5">
       <div
         className={cn(
           "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm",
@@ -152,7 +152,7 @@ function RiskOfRuinGauge({ result }: { result: NonNullable<ReturnType<typeof com
   const offset = RUIN_ARC_LENGTH * (1 - Math.min(100, result.ruinProbabilityPercent) / 100);
   const color = ruinColor(result.ruinProbabilityPercent);
   return (
-    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
       <div className="text-[10.5px] text-text-faint">Ймовірність втратити 50%+ депозиту при поточній стратегії ризику</div>
       <div className="relative mx-auto mb-1.5 mt-3 h-[80px] w-[150px]">
         <svg width="150" height="80" viewBox="0 0 150 80">
@@ -195,7 +195,7 @@ function KellyCriterionCard({
   sampleSize: number;
 }) {
   return (
-    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
       <div className="mb-3 text-[10.5px] text-text-faint">
         Розраховано з твоєї реальної статистики за {sampleSize} угод
       </div>
@@ -247,7 +247,7 @@ function MonteCarloCard({ projection, currencySymbol }: { projection: NonNullabl
   const { containerRef, tooltip, handlers } = useContinuousChartTooltip(tooltipValues);
 
   return (
-    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
       <div className="mb-3 text-[10.5px] text-text-faint">Тримай палець на області, щоб побачити ймовірний діапазон</div>
       <div ref={containerRef} className="relative" {...handlers}>
         <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
@@ -273,7 +273,7 @@ function SetupEdgeCard({ edges }: { edges: NonNullable<ReturnType<typeof compute
   const lowSampleEdge = edges.find((e) => e.lowSample);
 
   return (
-    <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
       <div className="mb-3 text-[10.5px] text-text-faint">Win rate по сетапах — тримай палець на стовпчику</div>
       <div ref={containerRef} className="relative flex h-[80px] items-end gap-1.5">
         {edges.map((e) => (
@@ -447,21 +447,21 @@ export default function JournalStatsPage() {
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-2">
-        <div className="rounded-card-sm bg-surface shadow-card p-2.5 text-center">
+        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
           <div className="text-[8px] uppercase text-text-faint">Win rate</div>
           <div className="font-mono text-[15px] font-bold text-text">{winRate}%</div>
         </div>
-        <div className="rounded-card-sm bg-surface shadow-card p-2.5 text-center">
+        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
           <div className="text-[8px] uppercase text-text-faint">Profit Factor</div>
           <div className="font-mono text-[15px] font-bold text-gold">{profitFactor}</div>
         </div>
-        <div className="rounded-card-sm bg-surface shadow-card p-2.5 text-center">
+        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
           <div className="text-[8px] uppercase text-text-faint">Сер. виграш</div>
           <div className="font-mono text-[15px] font-bold text-sage">
             +{avgWin.toFixed(0)} {currencySymbol}
           </div>
         </div>
-        <div className="rounded-card-sm bg-surface shadow-card p-2.5 text-center">
+        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
           <div className="text-[8px] uppercase text-text-faint">Сер. програш</div>
           <div className="font-mono text-[15px] font-bold text-rose">
             {avgLoss.toFixed(0)} {currencySymbol}
@@ -481,7 +481,7 @@ export default function JournalStatsPage() {
       {curve.length > 1 && (
         <>
           <SectionLabel>Крива результативності за часом сесії</SectionLabel>
-          <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+          <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
             <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
             <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на стовпчику</div>
             <div ref={curveContainerRef} className="relative mt-3 flex h-[70px] items-end gap-1">
@@ -543,7 +543,7 @@ export default function JournalStatsPage() {
       {tagCombos.length > 0 && (
         <>
           <SectionLabel>Найефективніші комбінації сетапів</SectionLabel>
-          <div className="mb-3 rounded-card border border-border bg-surface p-3.5 shadow-card">
+          <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
             {tagCombos.map((combo, i) => (
               <div
                 key={combo.tagNames.join("+")}
@@ -583,7 +583,7 @@ export default function JournalStatsPage() {
         </>
       )}
 
-      <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
+      <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
         <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
           Витрати брокера (за період)
         </div>
@@ -606,7 +606,7 @@ export default function JournalStatsPage() {
       <GroupTable title="По сесії" groups={bySession} currencySymbol={currencySymbol} />
 
       {closed.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Ще немає закритих угод за цей період
         </div>
       )}

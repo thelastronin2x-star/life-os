@@ -62,7 +62,12 @@ export function AICard({
   const accent = TONE_VAR[tone];
 
   return (
-    <div className="relative overflow-hidden rounded-card border border-border bg-surface px-4 pb-3.5 pt-4 shadow-card">
+    // Shadow on this wrapper, overflow-hidden (clipping the corner watermark
+    // and the bottom SeriesWash curve to the rounded corners) on the inner
+    // node — an element's own overflow:hidden clips its own box-shadow too,
+    // so the two can't share one node.
+    <div className="card-raised rounded-card bg-surface">
+    <div className="relative overflow-hidden rounded-card px-4 pb-3.5 pt-4">
       {mark && (
         <div
           aria-hidden
@@ -116,6 +121,7 @@ export function AICard({
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

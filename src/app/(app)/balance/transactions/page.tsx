@@ -201,7 +201,7 @@ function AllTransactionsInner() {
       )}
 
       {groups.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Нічого не знайдено
         </div>
       )}
@@ -232,7 +232,7 @@ function AllTransactionsInner() {
               <button
                 key={t.id}
                 onClick={() => setEditingTxn(t)}
-                className="mb-1.5 flex w-full items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3 text-left"
+                className="card-raised mb-1.5 flex w-full items-center gap-2.5 rounded-card-sm bg-surface p-3 text-left"
               >
                 <div
                   className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon"

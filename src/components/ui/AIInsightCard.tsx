@@ -18,9 +18,9 @@ export interface Insight {
  *  copies drifting apart. */
 export function AIInsightCard({ insights, emptyText }: { insights: Insight[]; emptyText?: string }) {
   return (
-    <div className="mb-3.5 rounded-card border border-border bg-surface p-3.5 shadow-card">
+    <div className="card-raised mb-3.5 rounded-card bg-surface p-3.5">
       <div className="mb-2.5 flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-icon bg-surface-2 text-text">
+        <div className="well-pressed flex h-7 w-7 items-center justify-center rounded-icon bg-surface-2 text-text">
           <SparkleIcon className="assistant-fab-icon h-4 w-4" />
         </div>
         <div className="flex-1">

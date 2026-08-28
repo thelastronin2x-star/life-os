@@ -83,13 +83,13 @@ export function MacroCalendarModule() {
       </div>
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">Завантажую події…</div>
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">Завантажую події…</div>
       ) : error ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Не вдалося завантажити календар. Спробуй пізніше.
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">Найближчим часом немає значних подій</div>
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">Найближчим часом немає значних подій</div>
       ) : (
         <>
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -108,9 +108,9 @@ export function MacroCalendarModule() {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">Немає подій для обраної валюти</div>
+            <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">Немає подій для обраної валюти</div>
           ) : weekView ? (
-            <div className="rounded-card border border-border bg-surface px-3.5">
+            <div className="card-raised rounded-card bg-surface px-3.5">
               {dayGroups.map((group) => (
                 <div key={group.dateKey} className="border-b border-border py-2.5 last:border-b-0">
                   <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-text-faint">{group.label}</div>
@@ -121,7 +121,7 @@ export function MacroCalendarModule() {
               ))}
             </div>
           ) : (
-            <div className="rounded-card border border-border bg-surface px-3.5">
+            <div className="card-raised rounded-card bg-surface px-3.5">
               {compactItems.map((event) => (
                 <MacroEventRow key={event.id} event={event} onOpen={setSelectedEvent} />
               ))}

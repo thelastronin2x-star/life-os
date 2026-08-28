@@ -78,7 +78,7 @@ export function JournalCalendarView({
         </button>
       </div>
 
-      <div className="mb-3 flex justify-between rounded-card border border-border bg-surface p-3.5 shadow-card">
+      <div className="card-raised mb-3 flex justify-between rounded-card bg-surface p-3.5">
         <div className="flex-1 text-center">
           <div className="text-[9px] font-bold uppercase tracking-wide text-text-faint">Net P&L</div>
           <div className={cn("mt-1 font-mono text-[14px] font-extrabold", summary.net >= 0 ? "text-sage" : "text-clay")}>

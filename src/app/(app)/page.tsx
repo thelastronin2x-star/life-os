@@ -160,7 +160,7 @@ export default function HomePage() {
           {/* Left white: it's the only widget made of several lines of text,
               and a tint plus a watermark behind a list is where this treatment
               stops helping and starts competing with the words. */}
-          <div className="rounded-card border border-border bg-surface px-3.5 shadow-card">
+          <div className="card-raised rounded-card bg-surface px-3.5">
             {todayEvents.length === 0 ? (
               <Link href="/calendar" className="block py-3.5 text-center text-[11.5px] font-semibold text-text-faint">
                 На сьогодні нічого не заплановано
@@ -239,7 +239,7 @@ export default function HomePage() {
         // White like every other widget; only the figure and the curve carry
         // the result's colour. Tinting the whole card green on a good week
         // and red on a bad one turned Home's mood into a P&L readout.
-        <div className="relative mb-2 overflow-hidden rounded-card border border-border bg-surface px-4 pb-2.5 pt-3 shadow-card">
+        <div className="card-raised relative mb-2 rounded-card bg-surface px-4 pb-2.5 pt-3">
           <div className="flex items-center justify-between">
             <div className="text-[12px] font-bold text-text-dim">Крива капіталу</div>
             <div

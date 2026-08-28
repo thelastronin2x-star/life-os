@@ -13,7 +13,7 @@ export function NewsTeaser() {
   const focusItem = pickFocusItem(items);
 
   return (
-    <Link href="/work/news" className="mb-4 block rounded-card border border-border bg-surface p-3.5">
+    <Link href="/work/news" className="card-raised mb-4 block rounded-card bg-surface p-3.5">
       <div className="mb-1.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">
           <NewspaperIcon className="h-3.5 w-3.5" />

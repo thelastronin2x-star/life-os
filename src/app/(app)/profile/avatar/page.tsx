@@ -40,7 +40,7 @@ export default function AvatarEditPage() {
         value={nameDraft}
         onChange={(e) => setNameDraft(e.target.value)}
         placeholder="Наприклад, Богдан"
-        className="mb-5 w-full rounded-card-sm bg-surface shadow-card px-3.5 py-3 font-heading text-[14px] text-text outline-none"
+        className="card-raised mb-5 w-full rounded-card-sm bg-surface px-3.5 py-3 font-heading text-[14px] text-text outline-none"
       />
 
       <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-text-dim">

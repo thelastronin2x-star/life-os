@@ -29,9 +29,9 @@ export default function TeamsPage() {
       <WorkSubpageHeader title="Команда" subtitle="Спілкування, спільна робота та невеликі змагання з друзями" />
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface py-10 text-center text-[12px] text-text-faint">Завантажую…</div>
+        <div className="card-raised rounded-card bg-surface py-10 text-center text-[12px] text-text-faint">Завантажую…</div>
       ) : error ? (
-        <div className="rounded-card border border-border bg-surface py-10 text-center text-[12px] text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-10 text-center text-[12px] text-text-faint">
           Не вдалося завантажити команду. Спробуй пізніше.
         </div>
       ) : !state ? (

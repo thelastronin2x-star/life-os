@@ -32,7 +32,7 @@ export function AssignmentSheet({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="mb-4 rounded-card bg-surface shadow-card p-3.5">
+        <div className="card-raised mb-4 rounded-card bg-surface p-3.5">
           <input
             type="text"
             value={title}
@@ -68,13 +68,13 @@ export function AssignmentSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         {deadlines.length === 0 && (
-          <div className="rounded-card-sm bg-surface shadow-card py-8 text-center text-[11.5px] text-text-faint">
+          <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
             Немає найближчих дедлайнів
           </div>
         )}
 
         {deadlines.map((d) => (
-          <div key={d.id} className="mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface shadow-card p-3">
+          <div key={d.id} className="card-raised mb-1.5 flex items-center gap-2.5 rounded-card-sm bg-surface p-3">
             <button
               onClick={() => toggleAssignment(d.id)}
               className="h-4 w-4 flex-shrink-0 rounded-[5px] border-2 border-border"

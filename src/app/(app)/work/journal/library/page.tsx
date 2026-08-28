@@ -135,13 +135,13 @@ export default function JournalLibraryPage() {
             Твої інструменти
           </div>
           {instruments.length === 0 && (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card py-6 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface py-6 text-center text-[11.5px] text-text-faint">
               Ще нічого не додано
             </div>
           )}
           <div className="space-y-1.5">
             {instruments.map((i) => (
-              <div key={i.id} className="flex items-center justify-between rounded-card-sm bg-surface shadow-card px-3 py-2">
+              <div key={i.id} className="card-raised flex items-center justify-between rounded-card-sm bg-surface px-3 py-2">
                 <div>
                   <span className="text-[12.5px] font-medium text-text">{i.symbol}</span>
                   <span className="ml-2 text-[10px] text-text-faint">
@@ -237,7 +237,7 @@ export default function JournalLibraryPage() {
         <section className="mb-4">
           <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-text-dim">Теги / сетапи</div>
           {tags.length === 0 && (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card py-6 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface py-6 text-center text-[11.5px] text-text-faint">
               Ще немає тегів
             </div>
           )}
@@ -274,13 +274,13 @@ export default function JournalLibraryPage() {
         <section className="mb-4">
           <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-text-dim">Торгові сесії</div>
           {sessions.length === 0 && (
-            <div className="mb-2 rounded-card-sm bg-surface shadow-card py-6 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised mb-2 rounded-card-sm bg-surface py-6 text-center text-[11.5px] text-text-faint">
               Ще немає сесій
             </div>
           )}
           <div className="space-y-1.5">
             {sessions.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-card-sm bg-surface shadow-card px-3 py-2">
+              <div key={s.id} className="card-raised flex items-center justify-between rounded-card-sm bg-surface px-3 py-2">
                 <div>
                   <span className="text-[12.5px] font-medium text-text">{s.name}</span>
                   <span className="ml-2 font-mono text-[10px] text-text-faint">

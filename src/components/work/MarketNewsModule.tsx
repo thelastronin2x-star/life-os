@@ -76,15 +76,15 @@ export function MarketNewsModule() {
       </div>
 
       {loading ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Завантажую новини…
         </div>
       ) : error ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Не вдалося завантажити новини. Спробуй пізніше.
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Поки немає новин для обраних ринків
         </div>
       ) : (
@@ -92,7 +92,7 @@ export function MarketNewsModule() {
           {focusItem && (
             <button
               onClick={() => setSelectedItem(focusItem)}
-              className="mb-3 block w-full rounded-card border border-border bg-surface p-3.5 text-left shadow-card"
+              className="card-raised mb-3 block w-full rounded-card bg-surface p-3.5 text-left"
             >
               <div className="mb-1.5 text-[9.5px] font-bold uppercase tracking-wide text-sage">Зараз у фокусі</div>
               <div className="text-[13.5px] font-bold leading-snug text-text">{focusItem.headline}</div>
@@ -120,11 +120,11 @@ export function MarketNewsModule() {
           </div>
 
           {listItems.length === 0 ? (
-            <div className="rounded-card border border-border bg-surface py-8 text-center text-[11.5px] text-text-faint">
+            <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] text-text-faint">
               Поки немає новин для обраних ринків
             </div>
           ) : (
-            <div className="rounded-card border border-border bg-surface px-3.5">
+            <div className="card-raised rounded-card bg-surface px-3.5">
               {listItems.map((item) => (
                 <NewsRow key={item.id} item={item} onOpen={setSelectedItem} />
               ))}
@@ -133,8 +133,8 @@ export function MarketNewsModule() {
         </>
       )}
 
-      <div className="mt-3 flex items-start gap-3 rounded-card border border-gold/25 bg-gold-soft p-3.5">
-        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-gold">
+      <div className="card-raised mt-3 flex items-start gap-3 rounded-card border border-gold/25 bg-gold-soft p-3.5">
+        <span className="well-pressed flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-gold">
           <AlertTriangleIcon className="h-4 w-4" />
         </span>
         <div className="text-[11.5px] leading-relaxed text-text-dim">

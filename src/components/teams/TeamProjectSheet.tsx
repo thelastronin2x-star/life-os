@@ -70,7 +70,7 @@ function SessionBody({ project, onUpdateData }: Pick<Props, "project" | "onUpdat
   const time = data.time ?? "19:00";
 
   return (
-    <div className="rounded-card border border-border bg-surface p-4 text-center">
+    <div className="card-raised rounded-card bg-surface p-4 text-center">
       <div className="text-[12px] font-semibold text-text-faint">Наступна сесія</div>
       <div className="mt-1.5 font-heading text-[18px] font-bold text-text">
         {WEEKDAY_LABELS[weekday - 1]}, {time}
@@ -127,7 +127,7 @@ function PartsBody({ project, myDeviceId, myDisplayName, onUpdateData }: Pick<Pr
           <div className="py-6 text-center text-[11.5px] text-text-faint">Ще немає частин — додай першу нижче</div>
         ) : (
           parts.map((part) => (
-            <div key={part.id} className="rounded-card-sm border border-border bg-surface p-3">
+            <div key={part.id} className="card-raised rounded-card-sm bg-surface p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="min-w-0 flex-1 truncate text-[12.5px] font-bold text-text">{part.name}</span>
                 <button
@@ -201,7 +201,7 @@ function SharedDeckBody({ project, onAddCard, onReviewCard }: Pick<Props, "proje
       <div>
         {current ? (
           <>
-            <div onClick={() => setFlipped((f) => !f)} className="mb-4 flex min-h-[160px] cursor-pointer items-center justify-center rounded-card border border-border bg-surface p-6 text-center">
+            <div onClick={() => setFlipped((f) => !f)} className="card-raised mb-4 flex min-h-[160px] cursor-pointer items-center justify-center rounded-card bg-surface p-6 text-center">
               <div className="text-[14px] font-semibold text-text">{flipped ? current.back : current.front}</div>
             </div>
             {!flipped ? (

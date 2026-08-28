@@ -9,8 +9,8 @@ import { UsersIcon } from "@/components/icons";
  *  per-profile wording differences on the actual team screen). */
 export function TeamsTeaser() {
   return (
-    <Link href="/work/teams" className="mb-4 flex items-center gap-3 rounded-card border border-border bg-surface p-3.5">
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-sage">
+    <Link href="/work/teams" className="card-raised mb-4 flex items-center gap-3 rounded-card bg-surface p-3.5">
+      <span className="well-pressed flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface-2 text-sage">
         <UsersIcon className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">

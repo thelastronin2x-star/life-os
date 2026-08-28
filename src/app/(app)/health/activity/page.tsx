@@ -39,7 +39,7 @@ export default function ActivityDetailPage() {
     <div>
       <HealthSubpageHeader title="Активність" subtitle="Тип і тривалість тренування" />
 
-      <div className="mb-3.5 rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="card-raised mb-3.5 rounded-card bg-surface p-4">
         <div className="mb-3 flex flex-wrap gap-1.5">
           {types.map((t) => (
             <button
@@ -82,7 +82,7 @@ export default function ActivityDetailPage() {
       </div>
 
       {todayEntries.length > 0 && (
-        <div className="mb-3.5 rounded-card-sm border border-border bg-surface p-3.5">
+        <div className="card-raised mb-3.5 rounded-card-sm bg-surface p-3.5">
           <div className="mb-2 text-[11.5px] font-semibold text-text">Сьогодні</div>
           <div className="space-y-1.5">
             {todayEntries.map((e) => (
@@ -95,7 +95,7 @@ export default function ActivityDetailPage() {
         </div>
       )}
 
-      <div className="rounded-card-sm border border-border bg-surface p-3.5">
+      <div className="card-raised rounded-card-sm bg-surface p-3.5">
         <div className="mb-1 text-[11.5px] font-semibold text-text">Хвилини активності за тиждень</div>
         <WeeklyBars data={chartData} color="var(--sky)" formatValue={(v) => `${v} хв`} />
       </div>

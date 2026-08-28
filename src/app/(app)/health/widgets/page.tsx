@@ -26,7 +26,7 @@ export default function HealthWidgetSettingsPage() {
         {HEALTH_WIDGET_IDS.map((id) => (
           <div
             key={id}
-            className="flex items-center justify-between rounded-card-sm border border-border bg-surface px-3.5 py-3"
+            className="card-raised flex items-center justify-between rounded-card-sm bg-surface px-3.5 py-3"
           >
             <span className="text-[13.5px] font-medium text-text">{HEALTH_WIDGET_CONFIG[id].label}</span>
             <ToggleSwitch on={enabledHealthWidgets.includes(id)} onToggle={() => toggleHealthWidget(id)} />

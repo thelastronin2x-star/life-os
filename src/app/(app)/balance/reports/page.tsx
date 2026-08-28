@@ -673,14 +673,14 @@ export default function FinanceReportsPage() {
 
       <SectionTitle>Регулярні платежі</SectionTitle>
       {recurring.length === 0 && (
-        <div className="rounded-card-sm bg-surface shadow-card p-3 text-center text-[11.5px] text-text-faint">
+        <div className="card-raised rounded-card-sm bg-surface p-3 text-center text-[11.5px] text-text-faint">
           Немає повторюваних транзакцій
         </div>
       )}
       {recurring.map((r) => (
         <div
           key={r.key}
-          className="mb-1.5 flex items-center justify-between rounded-card-sm bg-surface shadow-card p-3"
+          className="card-raised mb-1.5 flex items-center justify-between rounded-card-sm bg-surface p-3"
         >
           <div>
             <div className="text-[12.5px] font-medium text-text">{r.title}</div>

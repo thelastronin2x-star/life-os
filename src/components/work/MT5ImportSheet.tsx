@@ -122,7 +122,7 @@ export function MT5ImportSheet({ accountId, onClose }: { accountId: string | nul
 
         {stage === "preview" && (
           <>
-            <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
+            <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
               <div className="text-[13px] font-semibold text-text">Знайдено {parsed.length} угод</div>
               {skippedRows > 0 && (
                 <div className="mt-1 text-[10.5px] text-text-faint">
@@ -132,7 +132,7 @@ export function MT5ImportSheet({ accountId, onClose }: { accountId: string | nul
             </div>
             <div className="mb-3 max-h-[240px] space-y-1.5 overflow-y-auto">
               {parsed.slice(0, 50).map((t, i) => (
-                <div key={i} className="flex items-center justify-between rounded-card-sm bg-surface shadow-card px-3 py-2">
+                <div key={i} className="card-raised flex items-center justify-between rounded-card-sm bg-surface px-3 py-2">
                   <div>
                     <span className="text-[12px] font-medium text-text">{t.symbol}</span>
                     <span className="ml-2 text-[10px] text-text-faint">{t.direction}</span>

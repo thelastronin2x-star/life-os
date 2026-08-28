@@ -47,7 +47,7 @@ export function PillarCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="mb-2.5 rounded-card border border-border bg-surface p-4">
+    <div className="card-raised mb-2.5 rounded-card bg-surface p-4">
       <div
         role="button"
         tabIndex={0}

@@ -42,7 +42,7 @@ export function MacroEventDetailSheet({ event, onClose }: { event: MacroEvent; o
 
         <div className="mb-3 text-[16px] font-bold leading-snug text-text">{event.title}</div>
 
-        <div className="mb-4 rounded-card border border-border bg-surface p-3.5 text-[12.5px] text-text-dim">
+        <div className="card-raised mb-4 rounded-card bg-surface p-3.5 text-[12.5px] text-text-dim">
           <div className="flex items-center justify-between border-b border-border py-1.5 first:pt-0 last:border-b-0">
             <span className="text-text-faint">Дата</span>
             <span className="font-semibold text-text">

@@ -28,7 +28,7 @@ const TICKS = [0, 3, 6, 9, 12, 15, 18, 21];
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-card border border-border bg-surface p-4 text-center text-[11.5px] font-semibold text-text-faint shadow-card">
+    <div className="card-raised rounded-card bg-surface p-4 text-center text-[11.5px] font-semibold text-text-faint">
       {children}
     </div>
   );
@@ -71,7 +71,7 @@ export function WeatherWidget() {
   }
 
   return (
-    <div className="rounded-card border border-border bg-surface px-4 pb-2.5 pt-3.5 shadow-card">
+    <div className="card-raised rounded-card bg-surface px-4 pb-2.5 pt-3.5">
       <div className="flex items-start justify-between">
         <div>
           <div className="font-display text-[29px] font-medium leading-none tracking-[-0.055em] text-text">

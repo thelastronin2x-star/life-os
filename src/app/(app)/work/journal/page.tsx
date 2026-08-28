@@ -463,7 +463,7 @@ export default function JournalPage() {
 
       <div className="pt-4">
         {activeAccount && (
-          <div className="mb-3 rounded-card-sm bg-surface shadow-card p-3">
+          <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
             <div className="mb-3 flex gap-4 border-b border-border pb-2">
               {CHART_TYPES.map((c) => (
                 <button
@@ -542,11 +542,11 @@ export default function JournalPage() {
                   )}
                 </div>
                 {calendarDayTrades.length === 0 ? (
-                  <div className="rounded-card bg-surface shadow-card py-8 text-center text-[11.5px] font-semibold text-text-faint">
+                  <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] font-semibold text-text-faint">
                     Угод не було
                   </div>
                 ) : (
-                  <div className="rounded-card bg-surface shadow-card px-3.5 py-1">
+                  <div className="card-raised rounded-card bg-surface px-3.5 py-1">
                     <TimelineTrades
                       rows={calendarDayTrades}
                       currencySymbol={currencySymbol}
@@ -590,7 +590,7 @@ export default function JournalPage() {
             </div>
 
             {days.length === 0 && (
-              <div className="rounded-card bg-surface shadow-card py-8 text-center text-[11.5px] font-semibold text-text-faint">
+              <div className="card-raised rounded-card bg-surface py-8 text-center text-[11.5px] font-semibold text-text-faint">
                 Немає угод у цій категорії
               </div>
             )}
@@ -611,7 +611,7 @@ export default function JournalPage() {
                     </span>
                   )}
                 </div>
-                <div className="rounded-card bg-surface shadow-card px-3.5 py-1">
+                <div className="card-raised rounded-card bg-surface px-3.5 py-1">
                   <TimelineTrades
                     rows={day.trades}
                     currencySymbol={currencySymbol}

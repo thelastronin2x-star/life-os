@@ -31,7 +31,7 @@ export default function WellbeingDetailPage() {
     <div>
       <HealthSubpageHeader title="Самопочуття" subtitle="Загальне відчуття і зони тіла" />
 
-      <div className="rounded-card border border-border bg-surface p-5 shadow-card">
+      <div className="card-raised rounded-card bg-surface p-5">
         <div className="mb-2.5 text-[11.5px] font-bold text-text-faint">Загальне відчуття</div>
         <DraggableQualitySlider
           levels={FEELING_OPTIONS}

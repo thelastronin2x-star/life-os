@@ -412,7 +412,7 @@ export default function HealthPage() {
       <AIInsightCard insights={insights} />
 
       {isStaleSleep && (
-        <div className="mb-3.5 rounded-card-sm border border-border bg-surface-2 p-3.5">
+        <div className="card-raised mb-3.5 rounded-card-sm bg-surface-2 p-3.5">
           <div className="mb-2 text-[12.5px] font-semibold text-text">Здається, ти забув відмітити пробудження</div>
           <div className="mb-2.5 flex items-center gap-2">
             <input
