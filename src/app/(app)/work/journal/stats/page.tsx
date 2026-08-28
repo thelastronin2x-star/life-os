@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CURRENCIES, useAppStore } from "@/lib/store";
-import { useJournalStore, type Trade } from "@/lib/journal-store";
+import { useJournalStore } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { useTradingAccounts } from "@/lib/trading-accounts";
-import { computeTradePnL } from "@/lib/trade-calculations";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 import {
   closedTradesWithNet,
@@ -15,7 +14,6 @@ import {
   computeLateHourCorrelation,
   computePlanCorrelation,
   computePostLossPauseCorrelation,
-  computeTagCombinations,
   detectRevengeTrading,
   type BinaryCorrelation,
 } from "@/lib/trade-insights";
@@ -28,67 +26,12 @@ import {
   tradesNeededForKelly,
   computeRiskOfRuin,
   computeMonteCarloProjection,
-  computeSetupEdge,
 } from "@/lib/trade-risk-analytics";
-import { smoothPath } from "@/lib/smooth-path";
-import { useContinuousChartTooltip, useDiscreteChartTooltip, ChartTooltipBubble } from "@/components/ui/ChartTooltip";
+import { smoothPath, smoothArea } from "@/lib/smooth-path";
+import { useContinuousChartTooltip, ChartTooltipBubble } from "@/components/ui/ChartTooltip";
+import { MetricInfoSheet, InfoBadge, METRIC_INFO_ROW_ICONS } from "@/components/ui/MetricInfoSheet";
 import { cn } from "@/lib/cn";
-import { SparkleIcon, AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon } from "@/components/icons";
-
-interface GroupStat {
-  key: string;
-  label: string;
-  count: number;
-  wins: number;
-  net: number;
-}
-
-function buildGroups(
-  trades: { trade: Trade; net: number | null }[],
-  keyFn: (t: Trade) => string[],
-  labelFn: (key: string) => string
-): GroupStat[] {
-  const map = new Map<string, GroupStat>();
-  for (const { trade, net } of trades) {
-    if (net === null) continue;
-    for (const key of keyFn(trade)) {
-      const existing = map.get(key) ?? { key, label: labelFn(key), count: 0, wins: 0, net: 0 };
-      existing.count += 1;
-      existing.net += net;
-      if (net > 0) existing.wins += 1;
-      map.set(key, existing);
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => b.net - a.net);
-}
-
-function GroupTable({ title, groups, currencySymbol }: { title: string; groups: GroupStat[]; currencySymbol: string }) {
-  if (groups.length === 0) return null;
-  return (
-    <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">{title}</div>
-      <div className="space-y-1.5">
-        {groups.map((g) => {
-          const winRate = g.count > 0 ? Math.round((g.wins / g.count) * 100) : 0;
-          return (
-            <div key={g.key} className="flex items-center justify-between border-b border-border py-1.5 last:border-0">
-              <div>
-                <div className="text-[12px] font-medium text-text">{g.label}</div>
-                <div className="text-[10px] text-text-faint">
-                  {g.count} угод · win rate {winRate}%
-                </div>
-              </div>
-              <span className={cn("font-mono text-[13px] font-bold", g.net >= 0 ? "text-sage" : "text-rose")}>
-                {g.net >= 0 ? "+" : ""}
-                {g.net.toFixed(0)} {currencySymbol}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import { SparkleIcon, AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon, TargetIcon, BarChartIcon } from "@/components/icons";
 
 const PERIOD_TABS: { id: AnalyticsPeriod; label: string }[] = [
   { id: "week", label: "Тиждень" },
@@ -106,9 +49,15 @@ const PERIOD_DAYS: Record<AnalyticsPeriod, number> = { week: 7, month: 30, quart
 
 /** Shared small-caps section heading used above every analytics card on
  *  this screen — same style repeated before each section per the reference
- *  design, not a one-off. */
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="mb-[10px] mt-[18px] text-[11px] font-bold uppercase tracking-wide text-text-faint">{children}</div>;
+ *  design, not a one-off. `info` renders an InfoBadge flush right, for the
+ *  three sections complex enough to need a "what is this" explainer. */
+function SectionLabel({ children, info }: { children: React.ReactNode; info?: React.ReactNode }) {
+  return (
+    <div className="mb-[10px] mt-[18px] flex items-center justify-between">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{children}</div>
+      {info}
+    </div>
+  );
 }
 
 function CorrelationCard({ title, correlation }: { title: string; correlation: BinaryCorrelation }) {
@@ -267,31 +216,43 @@ function MonteCarloCard({ projection, currencySymbol }: { projection: NonNullabl
   );
 }
 
-function SetupEdgeCard({ edges }: { edges: NonNullable<ReturnType<typeof computeSetupEdge>> }) {
-  const maxWinRate = Math.max(1, ...edges.map((e) => e.winRate));
-  const { containerRef, tooltip, bind } = useDiscreteChartTooltip();
-  const lowSampleEdge = edges.find((e) => e.lowSample);
+/** Win rate over the trading day — a real line+area chart (not bars): the
+ *  reference design calls for a continuous curve you can drag a finger
+ *  along, matching the same interaction as the Monte Carlo band below.
+ *  Hours with no trades break the line rather than forcing a fake zero. */
+function HourlyCurveCard({ curve }: { curve: { hour: number; winRate: number | null; count: number }[] }) {
+  const width = 320;
+  const height = 60;
+  const known = curve.map((c, i) => ({ i, c })).filter((x) => x.c.winRate !== null);
+  const min = Math.min(0, ...known.map((x) => x.c.winRate as number));
+  const max = Math.max(100, ...known.map((x) => x.c.winRate as number));
+  const range = max - min || 1;
+
+  const toX = (i: number) => (i / (curve.length - 1 || 1)) * width;
+  const toY = (v: number) => height - ((v - min) / range) * height;
+
+  const points = known.map((x) => ({ x: toX(x.i), y: toY(x.c.winRate as number) }));
+  const linePath = smoothPath(points);
+  const areaPath = smoothArea(points, height);
+
+  const tooltipValues = curve.map((c) => (c.winRate !== null ? `${c.hour}:00 — ${c.winRate}% WR` : `${c.hour}:00 — немає угод`));
+  const { containerRef, tooltip, handlers } = useContinuousChartTooltip(tooltipValues);
 
   return (
     <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
-      <div className="mb-3 text-[10.5px] text-text-faint">Win rate по сетапах — тримай палець на стовпчику</div>
-      <div ref={containerRef} className="relative flex h-[80px] items-end gap-1.5">
-        {edges.map((e) => (
-          <div
-            key={e.tagName}
-            {...bind(`${e.tagName}: ${e.winRate}%`)}
-            className="flex-1 rounded-t-[5px]"
-            style={{ height: `${Math.max(6, (e.winRate / maxWinRate) * 100)}%`, background: e.lowSample ? "var(--gold)" : "var(--sage)" }}
-          />
-        ))}
+      <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
+      <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на графіку</div>
+      <div ref={containerRef} className="relative mt-3" {...handlers}>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          <path d={areaPath} fill="var(--sky)" fillOpacity="0.16" />
+          <path d={linePath} fill="none" stroke="var(--sky)" strokeWidth="2" strokeLinecap="round" />
+        </svg>
         <ChartTooltipBubble tooltip={tooltip} />
       </div>
-      {lowSampleEdge && (
-        <div className="mt-2.5 rounded-card-sm bg-gold-soft p-2.5 text-[10.5px] font-semibold text-text-dim">
-          «{lowSampleEdge.tagName}» має лише {lowSampleEdge.count} угод — замало для впевненого висновку. Потрібно ще ~
-          {Math.max(1, 20 - lowSampleEdge.count)}.
-        </div>
-      )}
+      <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
+        <span>{curve[0].hour}:00</span>
+        <span>{curve[curve.length - 1].hour}:00</span>
+      </div>
     </div>
   );
 }
@@ -308,7 +269,7 @@ export default function JournalStatsPage() {
   const currencySymbol = account?.currencySymbol ?? appCurrencySymbol;
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
-  const { containerRef: curveContainerRef, tooltip: curveTooltipState, bind: curveBind } = useDiscreteChartTooltip();
+  const [openInfo, setOpenInfo] = useState<"ruin" | "kelly" | "mc" | null>(null);
 
   const { trades: allTrades } = useJournalStore();
   const accountTrades = useMemo(
@@ -316,30 +277,14 @@ export default function JournalStatsPage() {
     [allTrades, accountId]
   );
   const trades = useMemo(() => tradesInPeriod(accountTrades, period), [accountTrades, period]);
-  const { instruments, tags, sessions } = useJournalConfigStore();
+  const { instruments } = useJournalConfigStore();
 
   const instrumentById = useMemo(() => new Map(instruments.map((i) => [i.id, i])), [instruments]);
-  const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
-  const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
 
   const narrative = useWorkAnalyticsInsightSync(period);
   const narrativeText = narrative.streamingText ?? narrative.cached?.text ?? "";
 
   const closed = closedTradesWithNet(trades, instrumentById);
-  const winRate = closed.length > 0 ? Math.round((closed.filter((x) => x.net > 0).length / closed.length) * 100) : 0;
-  const avgWin =
-    closed.filter((x) => x.net > 0).length > 0
-      ? closed.filter((x) => x.net > 0).reduce((s, x) => s + x.net, 0) / closed.filter((x) => x.net > 0).length
-      : 0;
-  const avgLoss =
-    closed.filter((x) => x.net <= 0).length > 0
-      ? closed.filter((x) => x.net <= 0).reduce((s, x) => s + x.net, 0) / closed.filter((x) => x.net <= 0).length
-      : 0;
-  const grossWin = closed.filter((x) => x.net > 0).reduce((s, x) => s + x.net, 0);
-  const grossLoss = Math.abs(closed.filter((x) => x.net <= 0).reduce((s, x) => s + x.net, 0));
-  const profitFactor = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : grossWin > 0 ? "∞" : "—";
-  const totalCommission = trades.reduce((s, t) => s + t.commission, 0);
-  const totalSwap = trades.reduce((s, t) => s + t.swap, 0);
 
   const planCorrelation = computePlanCorrelation(trades, instrumentById);
   const lateHourCorrelation = computeLateHourCorrelation(trades, instrumentById);
@@ -351,9 +296,6 @@ export default function JournalStatsPage() {
   ].filter((x): x is { title: string; correlation: BinaryCorrelation } => !!x);
 
   const curve = computeHourlyPerformanceCurve(trades, instrumentById);
-  const maxCurveWinRate = Math.max(1, ...curve.map((c) => c.winRate ?? 0));
-
-  const tagCombos = computeTagCombinations(trades, instrumentById, tagById, 5);
 
   // Risk of Ruin / Kelly / Monte Carlo all need a capital figure to turn
   // R-multiples into a risk %, so they're scoped to a single selected
@@ -374,27 +316,9 @@ export default function JournalStatsPage() {
   const riskAmountPerTrade = riskCapitalBase && currentRiskPercent !== null ? (riskCapitalBase * currentRiskPercent) / 100 : 0;
   const monteCarlo = computeMonteCarloProjection(rMultiples, riskAmountPerTrade, tradesPerWeek);
 
-  const setupEdges = computeSetupEdge(trades, instrumentById, tagById);
-
   // Revenge-trading pattern is checked over the account's whole history, not
   // just the selected period — see detectRevengeTrading's own note.
   const revenge = detectRevengeTrading(accountTrades, instrumentById);
-
-  const byInstrument = buildGroups(
-    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
-    (t) => [t.instrumentId],
-    (key) => instrumentById.get(key)?.symbol ?? key
-  );
-  const byTag = buildGroups(
-    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
-    (t) => t.tagIds,
-    (key) => tagById.get(key)?.name ?? key
-  );
-  const bySession = buildGroups(
-    trades.map((t) => ({ trade: t, net: computeTradePnL(t, instrumentById.get(t.instrumentId)).net })),
-    (t) => (t.sessionId ? [t.sessionId] : []),
-    (key) => sessionById.get(key)?.name ?? key
-  );
 
   if (!isTrader) return null;
 
@@ -446,29 +370,6 @@ export default function JournalStatsPage() {
         )}
       </div>
 
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
-          <div className="text-[8px] uppercase text-text-faint">Win rate</div>
-          <div className="font-mono text-[15px] font-bold text-text">{winRate}%</div>
-        </div>
-        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
-          <div className="text-[8px] uppercase text-text-faint">Profit Factor</div>
-          <div className="font-mono text-[15px] font-bold text-gold">{profitFactor}</div>
-        </div>
-        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
-          <div className="text-[8px] uppercase text-text-faint">Сер. виграш</div>
-          <div className="font-mono text-[15px] font-bold text-sage">
-            +{avgWin.toFixed(0)} {currencySymbol}
-          </div>
-        </div>
-        <div className="card-raised rounded-card-sm bg-surface p-2.5 text-center">
-          <div className="text-[8px] uppercase text-text-faint">Сер. програш</div>
-          <div className="font-mono text-[15px] font-bold text-rose">
-            {avgLoss.toFixed(0)} {currencySymbol}
-          </div>
-        </div>
-      </div>
-
       {correlations.length > 0 && (
         <>
           <SectionLabel>Поведінкові кореляції</SectionLabel>
@@ -481,42 +382,24 @@ export default function JournalStatsPage() {
       {curve.length > 1 && (
         <>
           <SectionLabel>Крива результативності за часом сесії</SectionLabel>
-          <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
-            <div className="text-[12px] font-semibold text-text">Win rate протягом торгового дня</div>
-            <div className="mt-0.5 text-[10.5px] text-text-faint">За часом входу в позицію, тримай палець на стовпчику</div>
-            <div ref={curveContainerRef} className="relative mt-3 flex h-[70px] items-end gap-1">
-              {curve.map((c) => (
-                <div key={c.hour} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-                  <div
-                    {...curveBind(c.winRate !== null ? `${c.hour}:00 — ${c.winRate}% win rate` : `${c.hour}:00 — немає угод`)}
-                    className="w-full rounded-t-[3px]"
-                    style={{
-                      height: c.winRate !== null ? `${Math.max(6, (c.winRate / maxCurveWinRate) * 100)}%` : "2%",
-                      background: c.winRate === null ? "var(--surface-2)" : "var(--sky)",
-                    }}
-                  />
-                </div>
-              ))}
-              <ChartTooltipBubble tooltip={curveTooltipState} />
-            </div>
-            <div className="mt-1.5 flex justify-between text-[8.5px] font-semibold text-text-faint">
-              <span>{curve[0].hour}:00</span>
-              <span>{curve[curve.length - 1].hour}:00</span>
-            </div>
-          </div>
+          <HourlyCurveCard curve={curve} />
         </>
       )}
 
       {riskOfRuin && (
         <>
-          <SectionLabel>Ризик розорення</SectionLabel>
+          <SectionLabel info={<InfoBadge label="Ризик розорення" onClick={() => setOpenInfo("ruin")} />}>
+            Ризик розорення
+          </SectionLabel>
           <RiskOfRuinGauge result={riskOfRuin} />
         </>
       )}
 
       {account && (
         <>
-          <SectionLabel>Kelly Criterion — оптимальний ризик</SectionLabel>
+          <SectionLabel info={<InfoBadge label="Kelly Criterion" onClick={() => setOpenInfo("kelly")} />}>
+            Kelly Criterion — оптимальний ризик
+          </SectionLabel>
           <KellyCriterionCard
             kelly={kelly}
             currentRiskPercent={currentRiskPercent}
@@ -528,87 +411,111 @@ export default function JournalStatsPage() {
 
       {monteCarlo && (
         <>
-          <SectionLabel>Monte Carlo · 1000 симуляцій наступного місяця</SectionLabel>
+          <SectionLabel info={<InfoBadge label="Monte Carlo" onClick={() => setOpenInfo("mc")} />}>
+            Monte Carlo · 1000 симуляцій
+          </SectionLabel>
           <MonteCarloCard projection={monteCarlo} currencySymbol={currencySymbol} />
-        </>
-      )}
-
-      {setupEdges.length > 0 && (
-        <>
-          <SectionLabel>Аналіз переваги сетапу</SectionLabel>
-          <SetupEdgeCard edges={setupEdges} />
-        </>
-      )}
-
-      {tagCombos.length > 0 && (
-        <>
-          <SectionLabel>Найефективніші комбінації сетапів</SectionLabel>
-          <div className="card-raised mb-3 rounded-card bg-surface p-3.5">
-            {tagCombos.map((combo, i) => (
-              <div
-                key={combo.tagNames.join("+")}
-                className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0"
-              >
-                <span className="w-4 flex-shrink-0 font-mono text-[12px] text-text-faint">{i + 1}</span>
-                <div className="flex flex-1 flex-wrap gap-1.5">
-                  {combo.tagNames.map((name) => (
-                    <span key={name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold text-text-dim">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-                <span className="flex-shrink-0 font-mono text-[12.5px] font-bold text-sage">{combo.winRate}% WR</span>
-              </div>
-            ))}
-          </div>
         </>
       )}
 
       {revenge.count > 0 && (
         <>
           <SectionLabel>Попередження</SectionLabel>
-          <div className="mb-4 flex items-start gap-3 rounded-card border border-clay/25 bg-clay-soft p-3.5">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-clay">
-            <AlertTriangleIcon className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[12.5px] font-bold text-clay">Патерн помстливого трейдингу</div>
-            <div className="mt-1 text-[11px] leading-relaxed text-text-dim">
-              {revenge.count} раз{revenge.count === 1 ? "" : "и"} за весь час обсяг наступної угоди після збитку був
-              помітно більшим за звичайний — схоже на спробу «відіграватися». Варто заздалегідь зафіксувати ліміт
-              розміру позиції на день.
+          <div className="card-raised mb-4 flex items-start gap-3 rounded-card border border-clay/25 bg-clay-soft p-3.5">
+            <div className="well-pressed flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card-sm bg-surface text-clay">
+              <AlertTriangleIcon className="h-4 w-4" />
             </div>
-          </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[12.5px] font-bold text-clay">Патерн помстливого трейдингу</div>
+              <div className="mt-1 text-[11px] leading-relaxed text-text-dim">
+                {revenge.count} раз{revenge.count === 1 ? "" : "и"} за весь час обсяг наступної угоди після збитку був
+                помітно більшим за звичайний — схоже на спробу «відіграватися». Варто заздалегідь зафіксувати ліміт
+                розміру позиції на день.
+              </div>
+            </div>
           </div>
         </>
       )}
-
-      <div className="card-raised mb-3 rounded-card-sm bg-surface p-3">
-        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
-          Витрати брокера (за період)
-        </div>
-        <div className="flex items-center justify-between py-1">
-          <span className="text-[12px] text-text-dim">Комісія</span>
-          <span className="font-mono text-[13px] font-semibold text-clay">-{totalCommission.toFixed(2)} {currencySymbol}</span>
-        </div>
-        <div className="flex items-center justify-between py-1">
-          <span className="text-[12px] text-text-dim">Своп</span>
-          <span className={cn("font-mono text-[13px] font-semibold", totalSwap >= 0 ? "text-sage" : "text-clay")}>
-            {totalSwap >= 0 ? "+" : ""}
-            {totalSwap.toFixed(2)} {currencySymbol}
-          </span>
-        </div>
-      </div>
-
-      <SectionLabel>Детальна розбивка</SectionLabel>
-      <GroupTable title="По інструменту" groups={byInstrument} currencySymbol={currencySymbol} />
-      <GroupTable title="По тегу / сетапу" groups={byTag} currencySymbol={currencySymbol} />
-      <GroupTable title="По сесії" groups={bySession} currencySymbol={currencySymbol} />
 
       {closed.length === 0 && (
         <div className="card-raised rounded-card-sm bg-surface py-8 text-center text-[11.5px] text-text-faint">
           Ще немає закритих угод за цей період
         </div>
+      )}
+
+      {openInfo === "ruin" && (
+        <MetricInfoSheet
+          icon={<TrendingDownIcon className="h-4 w-4" />}
+          title="Ризик розорення"
+          onClose={() => setOpenInfo(null)}
+          rows={[
+            {
+              icon: METRIC_INFO_ROW_ICONS.what,
+              label: "Що це",
+              text: "Ймовірність, що серія збиткових угод підряд знищить половину депозиту при поточному розмірі ризику.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.read,
+              label: "Як читати",
+              text: "Нижче число — безпечніше. До 10% вважається прийнятним ризиком, вище 25% — сигнал зменшити розмір позиції.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.calc,
+              label: "Як рахується",
+              text: "Формула ризику розорення на основі твого win rate, середнього R:R і поточного % ризику на угоду — стандартна модель для серії ставок із фіксованим ризиком.",
+            },
+          ]}
+        />
+      )}
+
+      {openInfo === "kelly" && (
+        <MetricInfoSheet
+          icon={<TargetIcon className="h-4 w-4" />}
+          title="Kelly Criterion"
+          onClose={() => setOpenInfo(null)}
+          rows={[
+            {
+              icon: METRIC_INFO_ROW_ICONS.what,
+              label: "Що це",
+              text: "Математично виведений оптимальний розмір ризику на угоду, що максимізує довгостроковий ріст депозиту при твоїй реальній результативності.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.read,
+              label: "Як читати",
+              text: "«Оптимально» — це половина повного значення Kelly (Kelly/2) — консервативніша версія, повний Kelly вважається занадто агресивним для практичного використання.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.calc,
+              label: "Як рахується",
+              text: "Формула Келлі на основі твого win rate і середнього співвідношення виграшу до програшу за останні угоди — що вищий і стабільніший edge, то вищий рекомендований ризик.",
+            },
+          ]}
+        />
+      )}
+
+      {openInfo === "mc" && (
+        <MetricInfoSheet
+          icon={<BarChartIcon className="h-4 w-4" />}
+          title="Monte Carlo"
+          onClose={() => setOpenInfo(null)}
+          rows={[
+            {
+              icon: METRIC_INFO_ROW_ICONS.what,
+              label: "Що це",
+              text: "1000 випадкових прогонів твоєї торгової стратегії в майбутнє — показує не одне число-прогноз, а реалістичний діапазон можливих результатів.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.read,
+              label: "Як читати",
+              text: "Область на графіку — це коридор між песимістичним і оптимістичним сценарієм, лінія посередині — типовий/медіанний результат.",
+            },
+            {
+              icon: METRIC_INFO_ROW_ICONS.calc,
+              label: "Як рахується",
+              text: "Bootstrap-семплювання — випадковим чином перемішуються реальні R-множники твоїх минулих угод у нові послідовності, для кожної рахується кумулятивний результат, з усіх 1000 прогонів будується діапазон.",
+            },
+          ]}
+        />
       )}
     </div>
   );
