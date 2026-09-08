@@ -13,6 +13,7 @@ import {
   type InsuranceType,
   type QuizAttempt,
 } from "@/lib/finance-store";
+import { useVoiceDraftStore } from "@/lib/voice-draft-store";
 import { GoalForm } from "./GoalForm";
 import { TransactionForm } from "./TransactionForm";
 import { MonthlyCheckInForm } from "./MonthlyCheckInForm";
@@ -85,6 +86,7 @@ function FinanceOverviewInner() {
   } = useFinanceStore();
 
   const [txnFormOpen, setTxnFormOpen] = useState(false);
+  const [txnDraft, setTxnDraft] = useState<Partial<Omit<Transaction, "id">> | undefined>(undefined);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
   const [checkInFormOpen, setCheckInFormOpen] = useState(false);
@@ -118,6 +120,26 @@ function FinanceOverviewInner() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
     if (searchParams.get("action") === "quiz") setQuizModalOpen(true);
+  }, [searchParams]);
+
+  // Deep link from the voice-capture flow's "Виправити" button — see
+  // VoiceResultSheet.goCorrect. The draft lives in a separate transient
+  // store (not the URL) since it carries more than a query string can hold
+  // cleanly; the `?action=voice` param is just the trigger to read it.
+  useEffect(() => {
+    if (searchParams.get("action") !== "voice") return;
+    const draft = useVoiceDraftStore.getState().pendingDraft;
+    if (draft && draft.section === "finance") {
+      const category = draft.categoryName
+        ? budgetCategories.find((c) => c.name.toLowerCase().includes(draft.categoryName!.toLowerCase()))
+        : undefined;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+      setTxnDraft({ type: "expense", title: draft.title, amount: draft.amount ?? 0, categoryId: category?.id ?? null, date: draft.date });
+      useVoiceDraftStore.getState().clearPendingDraft();
+      setTxnFormOpen(true);
+    }
+    router.replace("/balance");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const latest = latestCheckIn(checkIns);
@@ -236,6 +258,7 @@ function FinanceOverviewInner() {
   function handleSaveTxn(data: Omit<Transaction, "id">) {
     addTransaction(data);
     setTxnFormOpen(false);
+    setTxnDraft(undefined);
   }
   function closeCheckInForm() {
     setCheckInFormOpen(false);
@@ -554,7 +577,10 @@ function FinanceOverviewInner() {
       </button>
 
       <button
-        onClick={() => setTxnFormOpen(true)}
+        onClick={() => {
+          setTxnDraft(undefined);
+          setTxnFormOpen(true);
+        }}
         aria-label="Додати транзакцію"
         className="assistant-fab fixed bottom-[84px] right-4 z-[45] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-text text-bg shadow-lg"
       >
@@ -566,8 +592,12 @@ function FinanceOverviewInner() {
           categories={budgetCategories}
           accounts={accounts}
           editingTxn={null}
+          draftValues={txnDraft}
           onSave={handleSaveTxn}
-          onClose={() => setTxnFormOpen(false)}
+          onClose={() => {
+            setTxnFormOpen(false);
+            setTxnDraft(undefined);
+          }}
         />
       )}
 

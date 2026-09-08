@@ -616,3 +616,12 @@ export function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
     </Base>
   );
 }
+
+export function MicIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M12 2a3 3 0 00-3 3v6a3 3 0 006 0V5a3 3 0 00-3-3z" />
+      <path d="M19 10v1a7 7 0 01-14 0v-1M12 18v4" />
+    </Base>
+  );
+}

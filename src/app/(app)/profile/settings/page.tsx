@@ -28,6 +28,7 @@ import {
   BellIcon,
   DocumentIcon,
   TrashIcon,
+  SparkleIcon,
 } from "@/components/icons";
 
 const SETTINGS_ITEMS = [{ label: "Сповіщення асистента", value: "Увімкнено" }];
@@ -275,6 +276,14 @@ export default function SettingsPage() {
             right={<span className="text-[11px] text-text-faint">{item.value} ›</span>}
           />
         ))}
+        <MenuRow
+          icon={<SparkleIcon className="h-4 w-4" />}
+          iconColor="sage"
+          title="AI-автоматизація"
+          sub="Що застосунок робить сам, без запиту"
+          onClick={() => router.push("/profile/settings/ai-automations")}
+          right={<span className="text-[13px] text-text-faint">›</span>}
+        />
       </div>
 
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">

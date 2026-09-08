@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TradeForm } from "@/components/work/TradeForm";
 import { TradeItem } from "@/components/work/TradeItem";
 import { TradeDetailSheet } from "@/components/work/TradeDetailSheet";
@@ -18,6 +19,9 @@ import { usePropAccountsStore } from "@/lib/prop-accounts-store";
 import { computeTradePnL, type TradePnL } from "@/lib/trade-calculations";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
+import { useVoiceDraftStore } from "@/lib/voice-draft-store";
+import { useAutomationsStore } from "@/lib/automations-store";
+import { detectRevengeTrading } from "@/lib/trade-insights";
 import { cn } from "@/lib/cn";
 import {
   BarChartIcon,
@@ -97,8 +101,10 @@ function TimelineTrades({
   );
 }
 
-export default function JournalPage() {
+function JournalPageInner() {
   const isTrader = useTraderOnlyGuard();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { trades, addTrade, updateTrade, removeTrade } = useJournalStore();
   const { instruments, tags, sessions } = useJournalConfigStore();
@@ -112,6 +118,54 @@ export default function JournalPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [draftValues, setDraftValues] = useState<Partial<Omit<Trade, "id">> | undefined>(undefined);
+
+  // Deep link from the voice-capture flow's "Виправити" button — see
+  // VoiceResultSheet.goCorrect. A trade needs entry/stop/take/lot the voice
+  // command never said, so this only ever prefills title-adjacent fields
+  // (instrument, direction) and always still opens the real form.
+  useEffect(() => {
+    if (searchParams.get("action") !== "voice") return;
+    const draft = useVoiceDraftStore.getState().pendingDraft;
+    if (draft && draft.section === "work") {
+      const instrument = draft.instrumentSymbol
+        ? instruments.find((i) => i.symbol.toLowerCase() === draft.instrumentSymbol!.toLowerCase())
+        : undefined;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+      setDraftValues({ instrumentId: instrument?.id, direction: draft.direction });
+      useVoiceDraftStore.getState().clearPendingDraft();
+      setEditingTrade(null);
+      setFormOpen(true);
+    }
+    router.replace("/work/journal");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const retroTaggingEnabled = useAutomationsStore((s) => s.enabled["retro-tagging"]);
+
+  // "Автотегування заднім числом" automation — backfills tags on closed
+  // trades that have none, from the majority tag combo of past trades on
+  // the same instrument+session. Requires at least 3 matching precedents
+  // and a real majority (same "don't guess from a thin sample" bar as
+  // every other pattern-based feature in the app, e.g. computeSetupEdge's
+  // lowSample flag) — a trade that doesn't clear the bar is left alone
+  // rather than tagged from a coin-flip. Naturally idempotent: once a trade
+  // gets tags, `tagIds.length === 0` stops matching it, so this can't loop.
+  useEffect(() => {
+    if (!retroTaggingEnabled) return;
+    const untagged = trades.filter((t) => t.status === "closed" && t.tagIds.length === 0);
+    for (const t of untagged) {
+      const precedents = trades.filter(
+        (o) => o.id !== t.id && o.instrumentId === t.instrumentId && o.sessionId === t.sessionId && o.tagIds.length > 0
+      );
+      if (precedents.length < 3) continue;
+      const tagCounts = new Map<string, number>();
+      for (const p of precedents) for (const tagId of p.tagIds) tagCounts.set(tagId, (tagCounts.get(tagId) ?? 0) + 1);
+      const majority = [...tagCounts.entries()].filter(([, n]) => n / precedents.length >= 0.5).map(([id]) => id);
+      if (majority.length > 0) updateTrade(t.id, { tagIds: majority });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trades, retroTaggingEnabled]);
   const [editingAccount, setEditingAccount] = useState<PersonalAccountView | null>(null);
   // Tapping a row opens the read view; editing is one deliberate step further.
   // Looking at a trade is much more frequent than changing one, and a form
@@ -317,6 +371,7 @@ export default function JournalPage() {
 
   function openAddForm() {
     setEditingTrade(null);
+    setDraftValues(undefined);
     setFormOpen(true);
   }
 
@@ -328,6 +383,7 @@ export default function JournalPage() {
   function closeForm() {
     setFormOpen(false);
     setEditingTrade(null);
+    setDraftValues(undefined);
   }
 
   function handleSave(data: Omit<Trade, "id">) {
@@ -335,8 +391,32 @@ export default function JournalPage() {
       updateTrade(editingTrade.id, data);
     } else {
       addTrade(data);
+      maybeWarnInstantRevengeTrade();
     }
     closeForm();
+  }
+
+  // "Пуш в моменті" automation — the one background job that's genuinely
+  // instant rather than opportunistic-on-open: it fires right where the
+  // trade that might match gets logged, using the exact same
+  // detectRevengeTrading check the AI Аналітика warning card already runs
+  // over the whole history, just narrowed to "is the trade I just saved one
+  // of the incidents".
+  function maybeWarnInstantRevengeTrade() {
+    if (!useAutomationsStore.getState().enabled["instant-warnings"]) return;
+    const latestTrades = useJournalStore.getState().trades;
+    const justAdded = latestTrades[latestTrades.length - 1];
+    if (!justAdded || justAdded.status !== "closed") return;
+    const { count, trades: incidents } = detectRevengeTrading(latestTrades, instrumentById);
+    if (count === 0 || !incidents.some((t) => t.id === justAdded.id)) return;
+    fetch("/api/push/send-to-self", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Схоже на помстливий трейдинг",
+        body: "Розмір цієї угоди помітно більший за звичайний, і попередня закрилась у мінус.",
+      }),
+    }).catch(() => undefined);
   }
 
   function handleDelete(id: string) {
@@ -655,6 +735,7 @@ export default function JournalPage() {
         <TradeForm
           initialDateKey={formatDateKey(new Date())}
           editingTrade={editingTrade}
+          draftValues={draftValues}
           accounts={accounts}
           defaultAccountId={activeAccountId}
           onSave={handleSave}
@@ -675,5 +756,13 @@ export default function JournalPage() {
 
       {importOpen && <MT5ImportSheet accountId={activeAccountId} onClose={() => setImportOpen(false)} />}
     </div>
+  );
+}
+
+export default function JournalPage() {
+  return (
+    <Suspense fallback={null}>
+      <JournalPageInner />
+    </Suspense>
   );
 }

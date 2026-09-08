@@ -22,6 +22,7 @@ export function TransactionForm({
   accounts,
   editingTxn,
   initialType,
+  draftValues,
   onSave,
   onClose,
   onDelete,
@@ -33,28 +34,32 @@ export function TransactionForm({
    *  "Поповнити"/"Переказ" quick actions) — ignored while editing, where the
    *  transaction's own type always wins. */
   initialType?: TxnType;
+  /** Prefill for a brand-new transaction — from the voice-capture flow's
+   *  recognized fields, for instance. Same shape/intent as TradeForm's
+   *  `draftValues`: only used as a fallback when there's no editingTxn. */
+  draftValues?: Partial<Omit<Transaction, "id">>;
   onSave: (data: Omit<Transaction, "id">) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const addBudgetCategory = useFinanceStore((s) => s.addBudgetCategory);
 
-  const [type, setType] = useState<TxnType>(editingTxn?.type ?? initialType ?? "expense");
-  const [title, setTitle] = useState(editingTxn?.title ?? "");
-  const [amount, setAmount] = useState(editingTxn?.amount ?? 0);
+  const [type, setType] = useState<TxnType>(editingTxn?.type ?? draftValues?.type ?? initialType ?? "expense");
+  const [title, setTitle] = useState(editingTxn?.title ?? draftValues?.title ?? "");
+  const [amount, setAmount] = useState(editingTxn?.amount ?? draftValues?.amount ?? 0);
   // Only default to the first category for a BRAND NEW transaction. When
   // editing an existing one, respect its actual categoryId as-is — including
   // null (uncategorized) — otherwise opening an uncategorized transaction to
   // fix something unrelated (the amount, say) silently assigns and "learns"
   // whatever category happens to be first in the list.
   const [categoryId, setCategoryId] = useState<string | null>(
-    editingTxn ? editingTxn.categoryId : (categories[0]?.id ?? null)
+    editingTxn ? editingTxn.categoryId : (draftValues?.categoryId ?? categories[0]?.id ?? null)
   );
-  const [accountId, setAccountId] = useState(editingTxn?.accountId ?? accounts[0]?.id ?? "");
+  const [accountId, setAccountId] = useState(editingTxn?.accountId ?? draftValues?.accountId ?? accounts[0]?.id ?? "");
   const [transferAccountId, setTransferAccountId] = useState(
     editingTxn?.transferAccountId ?? accounts.find((a) => a.id !== (editingTxn?.accountId ?? accounts[0]?.id))?.id ?? ""
   );
-  const [date, setDate] = useState(editingTxn?.date ?? formatDateKey(new Date()));
+  const [date, setDate] = useState(editingTxn?.date ?? draftValues?.date ?? formatDateKey(new Date()));
   const [recurring, setRecurring] = useState(!!editingTxn?.recurring);
   const [frequency, setFrequency] = useState<"weekly" | "monthly">(editingTxn?.recurring?.frequency ?? "monthly");
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);

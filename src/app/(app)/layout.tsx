@@ -7,6 +7,8 @@ import { NavShell } from "@/components/nav/NavShell";
 import { useNewsReminders } from "@/lib/use-news-reminders";
 import { useWorkoutActivitySync } from "@/lib/use-workout-activity-sync";
 import { checkAndGenerateAutoReports } from "@/lib/reports";
+import { VoiceCaptureFab } from "@/components/voice/VoiceCaptureFab";
+import { useSmartCalendarBlocker } from "@/lib/use-smart-calendar-blocker";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const hydrated = useHasHydrated();
@@ -16,6 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   useNewsReminders(hydrated && onboarded && profile === "trader");
   useWorkoutActivitySync();
+  useSmartCalendarBlocker(hydrated && onboarded && profile === "trader");
 
   useEffect(() => {
     if (!hydrated) return;
@@ -41,5 +44,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return null;
   }
 
-  return <NavShell>{children}</NavShell>;
+  return (
+    <NavShell>
+      {children}
+      <VoiceCaptureFab />
+    </NavShell>
+  );
 }

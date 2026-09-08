@@ -92,12 +92,17 @@ function repeatLabel(value: SimpleRepeat): string {
 export function EventForm({
   initialDateKey,
   editingItem,
+  draftValues,
   onSave,
   onClose,
   onDelete,
 }: {
   initialDateKey: string;
   editingItem: CalendarItem | null;
+  /** Prefill for a brand-new event — from the voice-capture flow's
+   *  recognized fields, for instance. Same shape/intent as TradeForm's
+   *  `draftValues`: only used as a fallback when there's no editingItem. */
+  draftValues?: Partial<Pick<CalendarItem, "title" | "date" | "time" | "category">>;
   onSave: (data: Omit<CalendarItem, "id">) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
@@ -105,21 +110,22 @@ export function EventForm({
   const items = useCalendarStore((s) => s.items);
 
   const [kind, setKind] = useState<Kind>(editingItem?.kind ?? "event");
-  const [title, setTitle] = useState(editingItem?.title ?? "");
-  const [date, setDate] = useState(editingItem?.date ?? initialDateKey);
+  const [title, setTitle] = useState(editingItem?.title ?? draftValues?.title ?? "");
+  const [date, setDate] = useState(editingItem?.date ?? draftValues?.date ?? initialDateKey);
   // The wheel picker and the quick-time chips share this one value, not two
   // — a chip tap moves the wheel, and scrolling the wheel by hand drops
   // whichever chip used to match (see the `time === t` comparison below,
   // which just stops being true once the wheel no longer agrees).
+  const draftTime = editingItem?.time ?? draftValues?.time;
   const [selectedHour, setSelectedHour] = useState<number>(() =>
-    editingItem?.time ? parseInt(editingItem.time.split(":")[0], 10) : getDefaultHour()
+    draftTime ? parseInt(draftTime.split(":")[0], 10) : getDefaultHour()
   );
   const [selectedMinute, setSelectedMinute] = useState<number>(() =>
-    editingItem?.time ? roundToStep5(parseInt(editingItem.time.split(":")[1], 10)) : 0
+    draftTime ? roundToStep5(parseInt(draftTime.split(":")[1], 10)) : 0
   );
   const time = `${String(selectedHour).padStart(2, "0")}:${String(selectedMinute).padStart(2, "0")}`;
   const [duration, setDuration] = useState(editingItem?.durationMinutes ?? 60);
-  const [category, setCategory] = useState<CalendarCategory>(editingItem?.category ?? "personal");
+  const [category, setCategory] = useState<CalendarCategory>(editingItem?.category ?? draftValues?.category ?? "personal");
   const [isWorkout, setIsWorkout] = useState(editingItem?.isWorkout ?? false);
   const [reminder, setReminder] = useState<ReminderOption>(
     editingItem?.reminder ?? (kind === "note" ? "day" : "10min")

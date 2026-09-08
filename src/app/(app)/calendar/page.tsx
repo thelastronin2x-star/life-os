@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { WeekStrip } from "@/components/calendar/WeekStrip";
 import { DayAgenda } from "@/components/calendar/DayAgenda";
@@ -8,6 +9,7 @@ import { EventForm } from "@/components/calendar/EventForm";
 import { CalendarBubble } from "@/components/assistant/CalendarBubble";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useCalendarStore, type CalendarCategory, type CalendarItem } from "@/lib/calendar-store";
+import { useVoiceDraftStore } from "@/lib/voice-draft-store";
 import { expandItemsForRange } from "@/lib/recurrence";
 import { formatDateKey, parseDateKey, MONTH_LABELS } from "@/lib/calendar-utils";
 import { useAppStore } from "@/lib/store";
@@ -28,7 +30,9 @@ const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
   { id: "month", label: "Місяць" },
 ];
 
-export default function CalendarPage() {
+function CalendarPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const firstDayOfWeek = useAppStore((s) => s.settings.firstDayOfWeek);
   const today = new Date();
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -39,9 +43,26 @@ export default function CalendarPage() {
   const [editingItem, setEditingItem] = useState<CalendarItem | null>(null);
   const [editContext, setEditContext] = useState<EditContext>(null);
   const [pendingChoice, setPendingChoice] = useState<PendingChoice>(null);
+  const [draftValues, setDraftValues] = useState<Partial<Pick<CalendarItem, "title" | "date" | "time" | "category">> | undefined>(undefined);
 
   const { items, addItem, updateItem, removeItem } = useCalendarStore();
   useReminderNotifications();
+
+  // Deep link from the voice-capture flow's "Виправити" button — see
+  // VoiceResultSheet.goCorrect.
+  useEffect(() => {
+    if (searchParams.get("action") !== "voice") return;
+    const draft = useVoiceDraftStore.getState().pendingDraft;
+    if (draft && draft.section === "calendar") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+      setDraftValues({ title: draft.title, date: draft.date, time: draft.time });
+      useVoiceDraftStore.getState().clearPendingDraft();
+      setEditingItem(null);
+      setFormOpen(true);
+    }
+    router.replace("/calendar");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission());
 
@@ -138,6 +159,7 @@ export default function CalendarPage() {
   function openAddForm() {
     setEditingItem(null);
     setEditContext(null);
+    setDraftValues(undefined);
     setFormOpen(true);
   }
 
@@ -194,6 +216,7 @@ export default function CalendarPage() {
     setFormOpen(false);
     setEditingItem(null);
     setEditContext(null);
+    setDraftValues(undefined);
   }
 
   function handleSave(data: Omit<CalendarItem, "id">) {
@@ -311,6 +334,7 @@ export default function CalendarPage() {
           <EventForm
             initialDateKey={selectedKey}
             editingItem={editingItem}
+            draftValues={draftValues}
             onSave={handleSave}
             onClose={closeForm}
             onDelete={editingItem ? handleDelete : undefined}
@@ -356,5 +380,13 @@ export default function CalendarPage() {
 
       <CalendarBubble />
     </>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={null}>
+      <CalendarPageInner />
+    </Suspense>
   );
 }
