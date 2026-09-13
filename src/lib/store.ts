@@ -107,7 +107,8 @@ export type HomeWidgetId =
   | "weather"
   | "equity-curve"
   | "journal-link"
-  | "it-work";
+  | "it-work"
+  | "constructor";
 
 export interface HomeWidgetConfig {
   id: HomeWidgetId;
@@ -127,6 +128,7 @@ const DEFAULT_HOME_WIDGETS: HomeWidgetConfig[] = [
   { id: "equity-curve", visible: true, order: 3 },
   { id: "journal-link", visible: true, order: 4 },
   { id: "it-work", visible: true, order: 3 },
+  { id: "constructor", visible: true, order: 6 },
 ];
 
 interface AppState {
@@ -201,7 +203,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "life-os-store",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         let state = persisted as AppState;
 
@@ -230,6 +232,15 @@ export const useAppStore = create<AppState>()(
               enabledHealthWidgets: [...DEFAULT_ENABLED_HEALTH_WIDGETS, ...(cycleWasOn ? ["cycle"] : [])],
             },
           };
+        }
+
+        // v2 -> v3: same reasoning as the v0 backfill above, for the
+        // Конструктор widget shipping after most installs already have a
+        // saved homeWidgets array.
+        if (version < 3) {
+          const known = new Set(state.homeWidgets?.map((w) => w.id) ?? []);
+          const missing = DEFAULT_HOME_WIDGETS.filter((w) => !known.has(w.id));
+          state = { ...state, homeWidgets: [...(state.homeWidgets ?? []), ...missing] };
         }
 
         return state;

@@ -625,3 +625,53 @@ export function MicIcon(props: SVGProps<SVGSVGElement>) {
     </Base>
   );
 }
+
+export function TextFieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M4 6h16M4 12h16M4 18h7" />
+    </Base>
+  );
+}
+
+export function LongTextFieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Base>
+  );
+}
+
+export function NumberFieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M9 9h6v6H9z" />
+    </Base>
+  );
+}
+
+export function ToggleFieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M9 12l2 2 4-4" />
+      <circle cx="12" cy="12" r="9" />
+    </Base>
+  );
+}
+
+export function StarScaleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6l-6.3 4.4 2.3-7.2-6-4.4h7.6z" />
+    </Base>
+  );
+}
+
+export function ChecklistFieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+    </Base>
+  );
+}

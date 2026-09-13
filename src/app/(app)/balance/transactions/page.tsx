@@ -13,6 +13,8 @@ import { formatCurrency } from "@/lib/currency-format";
 import { learnMerchantRule, recategorizeUncategorizedTransactions } from "@/lib/recategorize";
 import { useFinanceScope } from "@/lib/finance-scope-store";
 import { useLongPress } from "@/lib/use-long-press";
+import { schemaAttachedToTab, useSchemaStore } from "@/lib/schema-store";
+import { useSchemaEntriesStore, type SchemaFieldValue } from "@/lib/schema-entries-store";
 import { cn } from "@/lib/cn";
 
 function Chip({
@@ -128,10 +130,14 @@ function AllTransactionsInner() {
     setEditingTxn(null);
   }
 
-  function handleSave(data: Omit<Transaction, "id">) {
+  function handleSave(data: Omit<Transaction, "id">, customValues?: Record<string, SchemaFieldValue>) {
     if (editingTxn) updateTransaction(editingTxn.id, data);
     if (data.type === "expense" && data.categoryId) {
       learnMerchantRule(data.title, data.categoryId);
+    }
+    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "finance");
+    if (attachedSchema && editingTxn && customValues) {
+      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, editingTxn.id, customValues);
     }
     closeForm();
   }

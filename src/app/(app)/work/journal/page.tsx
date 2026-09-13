@@ -22,6 +22,8 @@ import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 import { useVoiceDraftStore } from "@/lib/voice-draft-store";
 import { useAutomationsStore } from "@/lib/automations-store";
 import { detectRevengeTrading } from "@/lib/trade-insights";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { useSchemaEntriesStore, type SchemaFieldValue } from "@/lib/schema-entries-store";
 import { cn } from "@/lib/cn";
 import {
   BarChartIcon,
@@ -386,12 +388,18 @@ function JournalPageInner() {
     setDraftValues(undefined);
   }
 
-  function handleSave(data: Omit<Trade, "id">) {
+  function handleSave(data: Omit<Trade, "id">, customValues?: Record<string, SchemaFieldValue>) {
+    let recordId = editingTrade?.id;
     if (editingTrade) {
       updateTrade(editingTrade.id, data);
     } else {
       addTrade(data);
       maybeWarnInstantRevengeTrade();
+      recordId = useJournalStore.getState().trades[useJournalStore.getState().trades.length - 1]?.id;
+    }
+    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "work");
+    if (attachedSchema && recordId && customValues) {
+      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, recordId, customValues);
     }
     closeForm();
   }

@@ -8,6 +8,9 @@ import { computeTradePnL } from "@/lib/trade-calculations";
 import { getContractMultiplier, type CurrencyPair } from "@/lib/currency-pairs";
 import { InstrumentPickerSheet } from "./InstrumentPickerSheet";
 import type { TradingAccountView } from "@/lib/trading-accounts";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { useSchemaEntriesStore, getSchemaEntryFor, type SchemaFieldValue } from "@/lib/schema-entries-store";
+import { SchemaFieldsValueEditor } from "@/components/constructor/SchemaFieldsValueEditor";
 import { cn } from "@/lib/cn";
 import {
   TrendingUpIcon,
@@ -87,11 +90,17 @@ export function TradeForm({
   draftValues?: Partial<Omit<Trade, "id">>;
   accounts: TradingAccountView[];
   defaultAccountId: string | null;
-  onSave: (data: Omit<Trade, "id">) => void;
+  onSave: (data: Omit<Trade, "id">, customValues?: Record<string, SchemaFieldValue>) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const { instruments, tags, sessions, addTag, addInstrument } = useJournalConfigStore();
+  const schemas = useSchemaStore((s) => s.schemas);
+  const attachedSchema = schemaAttachedToTab(schemas, "work");
+  const schemaEntries = useSchemaEntriesStore((s) => s.entries);
+  const [customValues, setCustomValues] = useState<Record<string, SchemaFieldValue>>(() =>
+    attachedSchema && editingTrade ? (getSchemaEntryFor(schemaEntries, attachedSchema.id, editingTrade.id)?.values ?? {}) : {}
+  );
   const [instrumentPickerOpen, setInstrumentPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const accountSelectRef = useRef<HTMLSelectElement>(null);
@@ -249,7 +258,7 @@ export function TradeForm({
       screenshots,
       followedPlan,
       notes: notes.trim() ? notes : undefined,
-    });
+    }, attachedSchema ? customValues : undefined);
   }
 
   return (
@@ -606,6 +615,17 @@ export function TradeForm({
               </div>
             )}
           </div>
+
+          {attachedSchema && (
+            <div className="mt-3.5 border-t border-border pt-3.5">
+              <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">{attachedSchema.name}</div>
+              <SchemaFieldsValueEditor
+                fields={attachedSchema.fields}
+                values={customValues}
+                onChange={(id, v) => setCustomValues((prev) => ({ ...prev, [id]: v }))}
+              />
+            </div>
+          )}
 
           <div className="flex items-baseline justify-between border-t border-border py-3.5">
             <span className="text-[11.5px] text-text-dim">Чистий P&L</span>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAppStore, type HomeWidgetId } from "@/lib/store";
-import { ChatBubbleIcon, CalendarDateIcon, WalletIcon, TrendingUpIcon, NotebookIcon, ConstructionIcon, PlusIcon } from "@/components/icons";
+import { ChatBubbleIcon, CalendarDateIcon, WalletIcon, TrendingUpIcon, NotebookIcon, ConstructionIcon, PlusIcon, BookIcon } from "@/components/icons";
 import type { ReactNode } from "react";
 
 const WIDGET_META: Record<HomeWidgetId, { title: string; icon: ReactNode; color: "sage" | "clay" | "gold" | "sky" | "rose" }> = {
@@ -13,6 +13,7 @@ const WIDGET_META: Record<HomeWidgetId, { title: string; icon: ReactNode; color:
   "equity-curve": { title: "Крива капіталу", icon: <TrendingUpIcon className="h-5 w-5" />, color: "sage" },
   "journal-link": { title: "Журнал угод", icon: <NotebookIcon className="h-5 w-5" />, color: "sage" },
   "it-work": { title: "IT-профіль", icon: <ConstructionIcon className="h-5 w-5" />, color: "sky" },
+  constructor: { title: "Конструктор", icon: <BookIcon className="h-5 w-5" />, color: "gold" },
 };
 
 export default function HomeAddWidgetPage() {
@@ -20,12 +21,12 @@ export default function HomeAddWidgetPage() {
   const homeWidgets = useAppStore((s) => s.homeWidgets);
   const addHomeWidget = useAppStore((s) => s.addHomeWidget);
 
-  // Weather is in both lists — it's the one widget that has nothing to do
+  // Weather and Конструктор are in both lists — neither has anything to do
   // with which profession the user picked.
   const relevantIds: HomeWidgetId[] =
     profile === "trader"
-      ? ["ai-card", "today", "week-balance", "weather", "equity-curve", "journal-link"]
-      : ["ai-card", "today", "week-balance", "weather", "it-work"];
+      ? ["ai-card", "today", "week-balance", "weather", "equity-curve", "journal-link", "constructor"]
+      : ["ai-card", "today", "week-balance", "weather", "it-work", "constructor"];
 
   const hidden = homeWidgets.filter((w) => relevantIds.includes(w.id) && !w.visible);
 

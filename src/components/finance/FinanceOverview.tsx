@@ -14,6 +14,8 @@ import {
   type QuizAttempt,
 } from "@/lib/finance-store";
 import { useVoiceDraftStore } from "@/lib/voice-draft-store";
+import { schemaAttachedToTab, useSchemaStore } from "@/lib/schema-store";
+import { useSchemaEntriesStore, type SchemaFieldValue } from "@/lib/schema-entries-store";
 import { GoalForm } from "./GoalForm";
 import { TransactionForm } from "./TransactionForm";
 import { MonthlyCheckInForm } from "./MonthlyCheckInForm";
@@ -255,8 +257,16 @@ function FinanceOverviewInner() {
     removeGoal(id);
     closeGoalForm();
   }
-  function handleSaveTxn(data: Omit<Transaction, "id">) {
+  function handleSaveTxn(data: Omit<Transaction, "id">, customValues?: Record<string, SchemaFieldValue>) {
     addTransaction(data);
+    // addTransaction prepends, not appends — the new row is index 0. This
+    // FAB is create-only (editingTxn is always null below); editing an
+    // existing transaction happens on the transactions list screen instead.
+    const recordId = useFinanceStore.getState().transactions[0]?.id;
+    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "finance");
+    if (attachedSchema && recordId && customValues) {
+      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, recordId, customValues);
+    }
     setTxnFormOpen(false);
     setTxnDraft(undefined);
   }

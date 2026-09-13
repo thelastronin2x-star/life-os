@@ -12,6 +12,8 @@ import { useJournalStore } from "@/lib/journal-store";
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { computeTradePnL } from "@/lib/trade-calculations";
 import { useTradingAccounts } from "@/lib/trading-accounts";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { AttachedSchemaWidgetCard } from "@/components/constructor/AttachedSchemaWidgetCard";
 import { summarizeWeekTrades } from "@/lib/week-trading";
 import { formatAgendaDate, formatDateKey } from "@/lib/calendar-utils";
 import { getTimeGreeting } from "@/lib/greeting";
@@ -28,6 +30,7 @@ import {
   ClockIcon,
   BriefcaseIcon,
   PlusIcon,
+  BookIcon,
 } from "@/components/icons";
 import type { ReactElement, ReactNode } from "react";
 
@@ -98,6 +101,7 @@ export default function HomePage() {
   const trades = useJournalStore((s) => s.trades);
   const instruments = useJournalConfigStore((s) => s.instruments);
   const tradingAccounts = useTradingAccounts();
+  const schemas = useSchemaStore((s) => s.schemas);
 
   // The week block prints trading money in the account's own currency, so it
   // needs the account library, not just the journal.
@@ -225,6 +229,40 @@ export default function HomePage() {
           <HomeLabel>Погода</HomeLabel>
           <WeatherWidget />
         </>
+      ),
+    });
+  }
+
+  if (isWidgetVisible("constructor")) {
+    const lastSchema = schemas[schemas.length - 1];
+    items.push({
+      id: "constructor",
+      order: widgetOrder("constructor"),
+      node: block(
+        "constructor",
+        <ModuleCard
+          icon={<BookIcon className="h-16 w-16" />}
+          tone="gold"
+          title="Конструктор"
+          subtitle={schemas.length === 0 ? "Ще немає власних тем" : `${schemas.length} власних тем · остання: ${lastSchema.name}`}
+          href="/constructor"
+        />
+      ),
+    });
+  }
+  // A schema attached to "Головна" renders as its own standalone card, right
+  // next to the Конструктор nav widget — separate concern from that widget's
+  // own visibility toggle, since attaching/detaching happens from inside the
+  // builder, not the home-widget gallery.
+  const attachedHomeSchema = schemaAttachedToTab(schemas, "home");
+  if (attachedHomeSchema) {
+    items.push({
+      id: "constructor-attached",
+      order: widgetOrder("constructor") + 0.5,
+      node: (
+        <div className="mb-3.5">
+          <AttachedSchemaWidgetCard schema={attachedHomeSchema} />
+        </div>
       ),
     });
   }

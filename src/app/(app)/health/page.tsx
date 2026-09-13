@@ -15,6 +15,8 @@ import { HealthWidgetCard } from "@/components/health/HealthWidgetCard";
 import { CustomWaterAmountSheet } from "@/components/health/CustomWaterAmountSheet";
 import { DraggableQualitySlider } from "@/components/health/DraggableQualitySlider";
 import { sendSelfPush } from "@/lib/push-confirm";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { AttachedSchemaWidgetCard } from "@/components/constructor/AttachedSchemaWidgetCard";
 import { MoonIcon, DropletIcon, PulseIcon, PillIcon, DumbbellIcon, FireIcon, RepeatIcon, GearIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
@@ -26,6 +28,8 @@ export default function HealthPage() {
   const store = useHealthStore();
   const enabledHealthWidgets = useAppStore((s) => s.settings.enabledHealthWidgets) as HealthWidgetId[];
   const firstDayOfWeek = useAppStore((s) => s.settings.firstDayOfWeek);
+  const schemas = useSchemaStore((s) => s.schemas);
+  const attachedSchema = schemaAttachedToTab(schemas, "health");
 
   const insights = useMemo(
     () =>
@@ -449,6 +453,12 @@ export default function HealthPage() {
               {widgetElements[id]}
             </div>
           ))}
+        </div>
+      )}
+
+      {attachedSchema && (
+        <div className="mt-3.5">
+          <AttachedSchemaWidgetCard schema={attachedSchema} />
         </div>
       )}
     </div>

@@ -13,6 +13,9 @@ import { formatDateKey, parseEventText } from "@/lib/calendar-utils";
 import { frequentTitles } from "@/lib/calendar-suggestions";
 import { TimeWheelPicker } from "./ScrollPicker";
 import { SparkleIcon } from "@/components/icons";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { useSchemaEntriesStore, getSchemaEntryFor, type SchemaFieldValue } from "@/lib/schema-entries-store";
+import { SchemaFieldsValueEditor } from "@/components/constructor/SchemaFieldsValueEditor";
 import { cn } from "@/lib/cn";
 
 type Kind = "event" | "note";
@@ -103,11 +106,17 @@ export function EventForm({
    *  recognized fields, for instance. Same shape/intent as TradeForm's
    *  `draftValues`: only used as a fallback when there's no editingItem. */
   draftValues?: Partial<Pick<CalendarItem, "title" | "date" | "time" | "category">>;
-  onSave: (data: Omit<CalendarItem, "id">) => void;
+  onSave: (data: Omit<CalendarItem, "id">, customValues?: Record<string, SchemaFieldValue>) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const items = useCalendarStore((s) => s.items);
+  const schemas = useSchemaStore((s) => s.schemas);
+  const attachedSchema = schemaAttachedToTab(schemas, "calendar");
+  const schemaEntries = useSchemaEntriesStore((s) => s.entries);
+  const [customValues, setCustomValues] = useState<Record<string, SchemaFieldValue>>(() =>
+    attachedSchema && editingItem ? (getSchemaEntryFor(schemaEntries, attachedSchema.id, editingItem.id)?.values ?? {}) : {}
+  );
 
   const [kind, setKind] = useState<Kind>(editingItem?.kind ?? "event");
   const [title, setTitle] = useState(editingItem?.title ?? draftValues?.title ?? "");
@@ -190,7 +199,7 @@ export function EventForm({
       reminder,
       recurrence: kind === "event" ? recurrence : null,
       isWorkout: kind === "event" ? isWorkout : undefined,
-    });
+    }, attachedSchema ? customValues : undefined);
   }
 
   const fieldClass = "w-full rounded-input bg-surface px-3.5 py-2.5 text-[14px] font-bold text-text outline-none";
@@ -430,6 +439,17 @@ export function EventForm({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {attachedSchema && (
+          <div className="mb-1 mt-3.5 rounded-card border border-border bg-surface p-3.5">
+            <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">{attachedSchema.name}</div>
+            <SchemaFieldsValueEditor
+              fields={attachedSchema.fields}
+              values={customValues}
+              onChange={(id, v) => setCustomValues((prev) => ({ ...prev, [id]: v }))}
+            />
           </div>
         )}
 

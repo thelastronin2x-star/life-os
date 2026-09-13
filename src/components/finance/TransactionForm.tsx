@@ -8,6 +8,9 @@ import { formatDateKey } from "@/lib/calendar-utils";
 import { CategoryIcon } from "@/lib/finance-categories";
 import { CategoryPickerSheet } from "./CategoryPickerSheet";
 import { WalletIcon, CalendarDateIcon, RefreshIcon } from "@/components/icons";
+import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
+import { useSchemaEntriesStore, getSchemaEntryFor, type SchemaFieldValue } from "@/lib/schema-entries-store";
+import { SchemaFieldsValueEditor } from "@/components/constructor/SchemaFieldsValueEditor";
 import { cn } from "@/lib/cn";
 
 function formatRowDate(dateKey: string): string {
@@ -38,11 +41,17 @@ export function TransactionForm({
    *  recognized fields, for instance. Same shape/intent as TradeForm's
    *  `draftValues`: only used as a fallback when there's no editingTxn. */
   draftValues?: Partial<Omit<Transaction, "id">>;
-  onSave: (data: Omit<Transaction, "id">) => void;
+  onSave: (data: Omit<Transaction, "id">, customValues?: Record<string, SchemaFieldValue>) => void;
   onClose: () => void;
   onDelete?: (id: string) => void;
 }) {
   const addBudgetCategory = useFinanceStore((s) => s.addBudgetCategory);
+  const schemas = useSchemaStore((s) => s.schemas);
+  const attachedSchema = schemaAttachedToTab(schemas, "finance");
+  const schemaEntries = useSchemaEntriesStore((s) => s.entries);
+  const [customValues, setCustomValues] = useState<Record<string, SchemaFieldValue>>(() =>
+    attachedSchema && editingTxn ? (getSchemaEntryFor(schemaEntries, attachedSchema.id, editingTxn.id)?.values ?? {}) : {}
+  );
 
   const [type, setType] = useState<TxnType>(editingTxn?.type ?? draftValues?.type ?? initialType ?? "expense");
   const [title, setTitle] = useState(editingTxn?.title ?? draftValues?.title ?? "");
@@ -100,7 +109,7 @@ export function TransactionForm({
             ),
           }
         : undefined,
-    });
+    }, attachedSchema ? customValues : undefined);
   }
 
   return (
@@ -308,6 +317,17 @@ export function TransactionForm({
                   {f === "weekly" ? "Щотижня" : "Щомісяця"}
                 </button>
               ))}
+            </div>
+          )}
+
+          {attachedSchema && (
+            <div className="mt-3.5 border-t border-border pt-3.5">
+              <div className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">{attachedSchema.name}</div>
+              <SchemaFieldsValueEditor
+                fields={attachedSchema.fields}
+                values={customValues}
+                onChange={(id, v) => setCustomValues((prev) => ({ ...prev, [id]: v }))}
+              />
             </div>
           )}
 

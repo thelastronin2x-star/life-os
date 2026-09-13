@@ -10,6 +10,8 @@ import { CalendarBubble } from "@/components/assistant/CalendarBubble";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useCalendarStore, type CalendarCategory, type CalendarItem } from "@/lib/calendar-store";
 import { useVoiceDraftStore } from "@/lib/voice-draft-store";
+import { schemaAttachedToTab, useSchemaStore } from "@/lib/schema-store";
+import { useSchemaEntriesStore, type SchemaFieldValue } from "@/lib/schema-entries-store";
 import { expandItemsForRange } from "@/lib/recurrence";
 import { formatDateKey, parseDateKey, MONTH_LABELS } from "@/lib/calendar-utils";
 import { useAppStore } from "@/lib/store";
@@ -219,7 +221,8 @@ function CalendarPageInner() {
     setDraftValues(undefined);
   }
 
-  function handleSave(data: Omit<CalendarItem, "id">) {
+  function handleSave(data: Omit<CalendarItem, "id">, customValues?: Record<string, SchemaFieldValue>) {
+    let recordId: string | undefined;
     if (editContext === "occurrence" && editingItem) {
       const original = items.find((i) => i.id === editingItem.id);
       if (original?.recurrence) {
@@ -228,10 +231,17 @@ function CalendarPageInner() {
         });
       }
       addItem(data);
+      recordId = useCalendarStore.getState().items[useCalendarStore.getState().items.length - 1]?.id;
     } else if (editingItem) {
       updateItem(editingItem.id, data);
+      recordId = editingItem.id;
     } else {
       addItem(data);
+      recordId = useCalendarStore.getState().items[useCalendarStore.getState().items.length - 1]?.id;
+    }
+    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "calendar");
+    if (attachedSchema && recordId && customValues) {
+      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, recordId, customValues);
     }
     closeForm();
   }
