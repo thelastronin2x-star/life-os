@@ -17,6 +17,7 @@ export function PropAccountForm({
 }) {
   const [firm, setFirm] = useState(editingAccount?.firm ?? "");
   const [phase, setPhase] = useState(editingAccount?.phase ?? "Challenge Phase 1");
+  const [accountSize, setAccountSize] = useState(editingAccount?.accountSize ?? 10000);
   const [profitPct, setProfitPct] = useState(editingAccount?.profitPct ?? 0);
   const [profitTarget, setProfitTarget] = useState(editingAccount?.profitTarget ?? 10);
   const [drawdownPct, setDrawdownPct] = useState(editingAccount?.drawdownPct ?? 0);
@@ -25,7 +26,7 @@ export function PropAccountForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firm.trim()) return;
-    onSave({ firm: firm.trim(), phase: phase.trim(), profitPct, profitTarget, drawdownPct, maxDrawdown });
+    onSave({ firm: firm.trim(), phase: phase.trim(), accountSize, profitPct, profitTarget, drawdownPct, maxDrawdown });
   }
 
   return (
@@ -56,6 +57,14 @@ export function PropAccountForm({
             onChange={(e) => setPhase(e.target.value)}
             className="w-full rounded-input border border-border bg-surface-2 px-3 py-2 text-[13px] text-text outline-none"
           />
+          <label className="block">
+            <span className="mb-1 block text-[9.5px] uppercase text-text-faint">Сума рахунку</span>
+            <NumberInput
+              value={accountSize}
+              onChange={setAccountSize}
+              className="w-full rounded-input border border-border bg-surface-2 px-3 py-2 font-mono text-[13px] text-text outline-none"
+            />
+          </label>
 
           <div className="flex gap-2">
             <label className="block flex-1">

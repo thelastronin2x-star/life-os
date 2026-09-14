@@ -16,6 +16,13 @@ export interface PropAccount {
   /** See PersonalTradingAccount.currency — same reasoning, same USD default.
    *  Prop challenges are sized in dollars essentially without exception. */
   currency?: TradingCurrency;
+  /** The challenge's actual account size (e.g. 10000/50000/100000) —
+   *  optional and shown as-is rather than defaulted, since a guessed size
+   *  would be a fabricated number, not a real one. Purely a reference field:
+   *  netPnL for prop accounts is already computed from real closed trades
+   *  (see trading-accounts.ts), nothing derives a dollar figure from this
+   *  combined with profitPct. */
+  accountSize?: number;
 }
 
 function seedAccounts(): PropAccount[] {

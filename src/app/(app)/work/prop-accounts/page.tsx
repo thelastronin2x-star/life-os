@@ -5,6 +5,7 @@ import { WorkSubpageHeader } from "@/components/work/WorkSubpageHeader";
 import { PropAccountForm } from "@/components/work/PropAccountForm";
 import { Card } from "@/components/ui/Card";
 import { usePropAccountsStore, type PropAccount } from "@/lib/prop-accounts-store";
+import { TRADING_CURRENCY_SYMBOL } from "@/lib/personal-trading-accounts-store";
 import { useTraderOnlyGuard } from "@/lib/use-trader-guard";
 import { BriefcaseIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
@@ -79,7 +80,10 @@ export default function PropAccountsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold text-text">{acc.firm}</div>
-                <div className="text-[10.5px] text-text-faint">{acc.phase}</div>
+                <div className="text-[10.5px] text-text-faint">
+                  {acc.phase}
+                  {acc.accountSize ? ` · ${TRADING_CURRENCY_SYMBOL[acc.currency ?? "USD"]}${acc.accountSize.toLocaleString("uk-UA")}` : ""}
+                </div>
               </div>
               <button onClick={() => openEditForm(acc)} className="flex-shrink-0 text-[10.5px] text-text-faint">
                 ред. ›
