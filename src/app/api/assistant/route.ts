@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { selectModel } from "@/lib/model-router";
-import { ASSISTANT_BASE_PROMPT, SCOPE_PROMPTS } from "@/lib/assistant-prompts";
+import { ASSISTANT_BASE_PROMPT, SCOPE_PROMPTS, toneInstruction } from "@/lib/assistant-prompts";
 import { TOOLS_BY_SCOPE, type ToolScope } from "@/lib/assistant-tools";
 import type { AssistantApiRequest, AssistantApiResponse } from "@/lib/assistant-api-types";
 
 function isToolScope(scope: string | undefined): scope is ToolScope {
-  return scope === "calendar" || scope === "health" || scope === "work";
+  return scope === "calendar" || scope === "health" || scope === "work" || scope === "assistant-main";
 }
 
 export async function POST(request: NextRequest) {
@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
   }
 
   const scopePrompt = body.scope && body.scope in SCOPE_PROMPTS ? SCOPE_PROMPTS[body.scope] : ASSISTANT_BASE_PROMPT;
-  const system = body.context ? `${scopePrompt}\n\n${body.context}` : scopePrompt;
+  const tone = toneInstruction(body.tone);
+  const system = [scopePrompt, tone, body.context].filter(Boolean).join("\n\n");
   const model = selectModel(body.taskType);
 
   // Tools only ever matter for the interactive chat turn (BubbleShell's tool
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
       system,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(tools && tools.length > 0 ? { tools } : {}),
+      ...(body.forceTool ? { tool_choice: { type: "tool", name: body.forceTool } } : {}),
     }),
   });
 

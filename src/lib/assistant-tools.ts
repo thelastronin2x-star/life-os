@@ -2,6 +2,8 @@
  *  side effects here, execution lives in assistant-tool-executors.ts (which
  *  needs "use client" to touch the Zustand stores; this file doesn't). */
 
+import { FINANCE_CATEGORY_KEYS } from "./finance-categories";
+
 export interface ToolDefinition {
   name: string;
   description: string;
@@ -162,12 +164,146 @@ const WORK_TOOLS: ToolDefinition[] = [
       required: ["entry", "stop", "take"],
     },
   },
+  {
+    name: "set_risk_limit",
+    description:
+      "Змінює ліміт максимальної просадки (maxDrawdown, у %) для проп-акаунта. Використовуй лише для акаунта, точна назва фірми якого є в контексті.",
+    input_schema: {
+      type: "object",
+      properties: {
+        firm: { type: "string", description: "Точна назва фірми проп-акаунта з контексту" },
+        newMaxDrawdown: { type: "number", description: "Новий ліміт максимальної просадки, у відсотках" },
+      },
+      required: ["firm", "newMaxDrawdown"],
+    },
+  },
 ];
+
+const FINANCE_TOOLS: ToolDefinition[] = [
+  {
+    name: "update_budget_limit",
+    description: "Змінює місячний ліміт наявної бюджетної категорії на нове значення.",
+    input_schema: {
+      type: "object",
+      properties: {
+        categoryName: { type: "string", description: "Точна назва категорії з контексту, напр. 'Одяг'" },
+        newLimit: { type: "number", description: "Нове значення ліміту" },
+      },
+      required: ["categoryName", "newLimit"],
+    },
+  },
+  {
+    name: "move_budget",
+    description:
+      "Переносить суму ліміту з однієї наявної бюджетної категорії в іншу (зменшує ліміт джерела, збільшує ліміт цілі на ту саму суму). Обидві категорії мають вже існувати в контексті.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fromCategoryName: { type: "string", description: "Категорія-джерело, точна назва з контексту" },
+        toCategoryName: { type: "string", description: "Категорія-ціль, точна назва з контексту" },
+        amount: { type: "number", description: "Сума перенесення" },
+      },
+      required: ["fromCategoryName", "toCategoryName", "amount"],
+    },
+  },
+  {
+    name: "create_budget_category",
+    description: "Створює нову бюджетну категорію з місячним лімітом.",
+    input_schema: {
+      type: "object",
+      properties: {
+        categoryKey: {
+          type: "string",
+          enum: [...FINANCE_CATEGORY_KEYS],
+          description: "Ключ категорії, що найкраще відповідає потрібній назві",
+        },
+        limit: { type: "number", description: "Початковий місячний ліміт" },
+      },
+      required: ["categoryKey", "limit"],
+    },
+  },
+];
+
+const AUTOMATION_TOOLS: ToolDefinition[] = [
+  {
+    name: "create_automation_rule",
+    description: "Зберігає нове користувацьке правило автоматизації як текстовий запис.",
+    input_schema: {
+      type: "object",
+      properties: { text: { type: "string", description: "Опис правила простою мовою" } },
+      required: ["text"],
+    },
+  },
+];
+
+/** Not scope-gated — always attached to the assistant-main tool set. See
+ *  assistant-prompts.ts's ASSISTANT_MAIN_PROMPT for the protocol: the model
+ *  calls present_options when it spots a real, contextually-backed problem
+ *  instead of just describing it, and never calls a mutating tool on the
+ *  same turn — execution only happens after the user picks one, driven
+ *  entirely client-side (see /assistant/page.tsx). select_option is only
+ *  ever sent with a forced tool_choice, for classifying free-text replies
+ *  ("зроби перший") against a pending option set. */
+const DIALOGUE_TOOLS: ToolDefinition[] = [
+  {
+    name: "present_options",
+    description:
+      "Використовуй, коли контекст показує РЕАЛЬНУ конкретну проблему (перевищення ліміту категорії, близькість до ліміту просадки тощо) — постав вибір замість того, щоб просто описати проблему текстом. Не виконуй жодну дію сам у цьому виклику.",
+    input_schema: {
+      type: "object",
+      properties: {
+        problemSummary: { type: "string", description: "Короткий опис проблеми з конкретними цифрами з контексту" },
+        options: {
+          type: "array",
+          description: "Рівно 2-3 конкретні дії-варіанти, згенеровані з реальних чисел контексту. Нейтральний варіант 'показати все' додає застосунок сам, його вказувати не треба.",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string", description: "Коротка назва дії з конкретними числами, напр. 'Перенести 320₴ з Розваг в Одяг'" },
+              reasoning: { type: "string", description: "Чому саме ця сума/значення" },
+              expectedResult: { type: "string", description: "Що конкретно зміниться після виконання" },
+              tool: {
+                type: "string",
+                enum: ["update_budget_limit", "move_budget", "create_budget_category", "set_risk_limit", "create_automation_rule", "create_event"],
+                description: "Інструмент, який виконає цю дію",
+              },
+              toolInput: { type: "object", description: "Аргументи для інструмента, що відповідають його схемі" },
+            },
+            required: ["label", "reasoning", "expectedResult", "tool", "toolInput"],
+          },
+        },
+      },
+      required: ["problemSummary", "options"],
+    },
+  },
+  {
+    name: "select_option",
+    description: "Визначає, який із запропонованих варіантів користувач обрав своїми словами.",
+    input_schema: {
+      type: "object",
+      properties: {
+        optionIndex: {
+          type: "number",
+          description: "0-based індекс обраного варіанта серед наданих, або -1, якщо жоден не підходить чи повідомлення не про вибір",
+        },
+      },
+      required: ["optionIndex"],
+    },
+  },
+];
+
+// prepare_trade_draft is deliberately left out of assistant-main — it opens
+// a trade form via a callback that only exists on /work/journal (see
+// WorkBubble's onDraftTrade); the full-page assistant has nowhere to render
+// that form, so keeping the tool here would make the model promise
+// something this page can't deliver.
+const WORK_TOOLS_MAIN = WORK_TOOLS.filter((t) => t.name !== "prepare_trade_draft");
 
 export const TOOLS_BY_SCOPE = {
   calendar: CALENDAR_TOOLS,
   health: HEALTH_TOOLS,
   work: WORK_TOOLS,
+  "assistant-main": [...CALENDAR_TOOLS, ...HEALTH_TOOLS, ...WORK_TOOLS_MAIN, ...FINANCE_TOOLS, ...AUTOMATION_TOOLS, ...DIALOGUE_TOOLS],
 } as const;
 
 export type ToolScope = keyof typeof TOOLS_BY_SCOPE;

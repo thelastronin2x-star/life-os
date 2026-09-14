@@ -7,6 +7,7 @@ import { NavShell } from "@/components/nav/NavShell";
 import { useNewsReminders } from "@/lib/use-news-reminders";
 import { useWorkoutActivitySync } from "@/lib/use-workout-activity-sync";
 import { checkAndGenerateAutoReports } from "@/lib/reports";
+import { checkAdviceOutcomes } from "@/lib/assistant-effectiveness";
 import { VoiceCaptureFab } from "@/components/voice/VoiceCaptureFab";
 import { useSmartCalendarBlocker } from "@/lib/use-smart-calendar-blocker";
 
@@ -37,6 +38,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     // browser's localStorage), so instead we check on every app open whether
     // a week/month has passed since the last report and generate it then.
     checkAndGenerateAutoReports(profile).catch(() => undefined);
+    // Same opportunistic reasoning as above, for the "Автоперевірка своїх
+    // порад" automation — see assistant-effectiveness.ts.
+    checkAdviceOutcomes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, onboarded]);
 

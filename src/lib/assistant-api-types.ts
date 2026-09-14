@@ -13,13 +13,22 @@ export interface AssistantApiMessage {
   content: string | AnthropicContentBlock[];
 }
 
-export type AssistantScopeParam = "global" | "calendar" | "health" | "work" | "student";
+export type AssistantScopeParam = "global" | "calendar" | "health" | "work" | "student" | "assistant-main";
+
+export type CommunicationTone = "concise" | "supportive" | "colleague";
 
 export interface AssistantApiRequest {
   messages: AssistantApiMessage[];
   context?: string;
   scope?: AssistantScopeParam;
   taskType?: string;
+  /** Only meaningful for assistant-main — injected into the system prompt.
+   *  See assistant-prompts.ts's TONE_PROMPTS. */
+  tone?: CommunicationTone;
+  /** Forces tool_choice to this exact tool name — used only for the
+   *  select_option classifier call (see /assistant/page.tsx), never for the
+   *  open-ended chat turn. */
+  forceTool?: string;
 }
 
 export interface AssistantApiResponse {

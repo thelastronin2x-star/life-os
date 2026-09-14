@@ -10,7 +10,7 @@ import { persist } from "zustand/middleware";
  *  exactly the "fake AI feature" this app avoids everywhere else (see
  *  ASSISTANT_BASE_PROMPT's "never invent numbers/patterns" rule and every
  *  correlation card on AI Аналітика, all backed by real per-user stats). */
-export type AutomationId = "instant-warnings" | "retro-tagging" | "calendar-blocker";
+export type AutomationId = "instant-warnings" | "retro-tagging" | "calendar-blocker" | "advice-follow-up";
 
 export interface CustomRule {
   id: string;
@@ -38,6 +38,7 @@ const DEFAULT_ENABLED: Record<AutomationId, boolean> = {
   "instant-warnings": true,
   "retro-tagging": true,
   "calendar-blocker": false,
+  "advice-follow-up": true,
 };
 
 export const useAutomationsStore = create<AutomationsState>()(
@@ -61,6 +62,26 @@ export const useAutomationsStore = create<AutomationsState>()(
       markTradeBlocked: (tradeId) => set((s) => ({ autoBlockedTradeIds: [...s.autoBlockedTradeIds, tradeId] })),
       markMacroEventBlocked: (eventId) => set((s) => ({ autoBlockedMacroEventIds: [...s.autoBlockedMacroEventIds, eventId] })),
     }),
-    { name: "life-os-automations" }
+    {
+      name: "life-os-automations",
+      version: 1,
+      // v0 -> v1: adding "advice-follow-up" to a Record<AutomationId,
+      // boolean> doesn't reach already-persisted installs on its own —
+      // zustand-persist's default merge is shallow, so an existing `enabled`
+      // object just wouldn't have the new key rather than picking up
+      // DEFAULT_ENABLED's value for it.
+      migrate: (persisted, version) => {
+        const state = persisted as AutomationsState;
+        // Unconditional backfill rather than checking whether the key is
+        // already present — TS narrows a `"advice-follow-up" in enabled`
+        // check against a Record<AutomationId, boolean> (where that key is
+        // required) down to `never`, which then can't be spread. Always
+        // setting it to true is idempotent for anyone who already has it.
+        if (version < 1) {
+          return { ...state, enabled: { ...state.enabled, "advice-follow-up": true } };
+        }
+        return state;
+      },
+    }
   )
 );

@@ -5,6 +5,25 @@ import { persist } from "zustand/middleware";
 
 export type ChatRole = "user" | "assistant";
 
+/** One concrete action offered by present_options — see assistant-tools.ts's
+ *  DIALOGUE_TOOLS comment for the full protocol. `action: null` marks the
+ *  always-appended neutral "show me everything" choice, which the app adds
+ *  itself rather than trusting the model to remember it every time. */
+export interface PresentedOption {
+  id: string;
+  label: string;
+  reasoning: string;
+  expectedResult: string;
+  action: { tool: string; input: Record<string, unknown> } | null;
+}
+
+export interface DialogueConfirmation {
+  /** Lines like "Ліміт 'Одяг': 300₴", "Перенесено: 320₴" — exactly what
+   *  changed, not a restatement of the option's own label/reasoning. */
+  summary: string[];
+  deepLink: { href: string; label: string };
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
@@ -12,6 +31,16 @@ export interface ChatMessage {
   /** Which mini-assistant this came from, if any — unset for messages sent
    *  from the full /assistant chat screen, which isn't scoped to a context. */
   context?: MiniContext;
+  /** Set only on an assistant message that called present_options. Renders
+   *  as OptionsCard instead of plain text. `resolved` flips true the moment
+   *  the user picks one (tap or free-text) — a pending (unresolved) options
+   *  message is what routes the NEXT user message through the select_option
+   *  classifier instead of the normal chat flow. See /assistant/page.tsx. */
+  options?: PresentedOption[];
+  resolved?: boolean;
+  /** Set only on the assistant message that reports a just-executed action's
+   *  outcome — renders as ConfirmationCard instead of plain text. */
+  confirmation?: DialogueConfirmation;
 }
 
 export type ReportType = "weekly" | "monthly";
@@ -53,6 +82,7 @@ interface AssistantState {
   messages: ChatMessage[];
   addMessage: (m: ChatMessage) => void;
   updateMessage: (id: string, content: string) => void;
+  patchMessage: (id: string, patch: Partial<ChatMessage>) => void;
   clearMessages: () => void;
 
   reports: AssistantReport[];
@@ -74,6 +104,8 @@ export const useAssistantStore = create<AssistantState>()(
       addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
       updateMessage: (id, content) =>
         set((s) => ({ messages: s.messages.map((msg) => (msg.id === id ? { ...msg, content } : msg)) })),
+      patchMessage: (id, patch) =>
+        set((s) => ({ messages: s.messages.map((msg) => (msg.id === id ? { ...msg, ...patch } : msg)) })),
       clearMessages: () => set({ messages: [] }),
 
       reports: [],

@@ -1,7 +1,7 @@
 "use client";
 
 import type { AssistantTaskType } from "./model-router";
-import type { AssistantApiMessage, AssistantApiResponse, AssistantScopeParam } from "./assistant-api-types";
+import type { AssistantApiMessage, AssistantApiResponse, AssistantScopeParam, CommunicationTone } from "./assistant-api-types";
 
 /** Just the HTTP call — deliberately has zero store imports. Every scoped
  *  bubble and Home's global insight import this, so any store it touched
@@ -64,12 +64,14 @@ export async function callAssistantTurn(
   messages: AssistantApiMessage[],
   context: string,
   taskType: AssistantTaskType,
-  scope?: AssistantScopeParam
+  scope?: AssistantScopeParam,
+  tone?: CommunicationTone,
+  forceTool?: string
 ): Promise<AssistantApiResponse> {
   const res = await fetch("/api/assistant", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, context, taskType, scope }),
+    body: JSON.stringify({ messages, context, taskType, scope, tone, forceTool }),
   });
   if (!res.ok) {
     throw new Error("assistant_request_failed");

@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { BriefcaseIcon, TrendingUpIcon, GraduationCapIcon } from "@/components/icons";
 import { DEFAULT_ENABLED_HEALTH_WIDGETS } from "@/lib/health-widget-config";
+import type { CommunicationTone } from "@/lib/assistant-api-types";
 
 export type Profile = "trader" | "it" | "student";
 export type Theme =
@@ -93,6 +94,10 @@ interface GeneralSettings {
    *  special case, extending the same "off until you opt in" principle to
    *  every widget instead of only Цикл. */
   enabledHealthWidgets: string[];
+  /** null until the ToneOfVoiceSheet's first-use prompt on /assistant is
+   *  answered (see assistant/page.tsx) — no default is silently guessed,
+   *  the app-main system prompt just injects nothing until it's set. */
+  communicationTone: CommunicationTone | null;
 }
 
 /** Every block the Home screen can render. "equity-curve"/"journal-link" only
@@ -170,6 +175,7 @@ export const useAppStore = create<AppState>()(
         currency: "UAH",
         firstDayOfWeek: "monday",
         enabledHealthWidgets: DEFAULT_ENABLED_HEALTH_WIDGETS,
+        communicationTone: null,
       },
       hasSeenFirstLaunch: false,
       homeWidgets: DEFAULT_HOME_WIDGETS,
@@ -203,7 +209,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "life-os-store",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         let state = persisted as AppState;
 
@@ -241,6 +247,13 @@ export const useAppStore = create<AppState>()(
           const known = new Set(state.homeWidgets?.map((w) => w.id) ?? []);
           const missing = DEFAULT_HOME_WIDGETS.filter((w) => !known.has(w.id));
           state = { ...state, homeWidgets: [...(state.homeWidgets ?? []), ...missing] };
+        }
+
+        // v3 -> v4: communicationTone is new — backfill null (not a guessed
+        // default) so existing installs get the ToneOfVoiceSheet's one-time
+        // prompt on their next /assistant visit, same as a fresh install.
+        if (version < 4) {
+          state = { ...state, settings: { ...state.settings, communicationTone: null } };
         }
 
         return state;

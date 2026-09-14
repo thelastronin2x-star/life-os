@@ -12,6 +12,7 @@ import {
   useAppStore,
 } from "@/lib/store";
 import { PickerSheet } from "@/components/ui/PickerSheet";
+import { ToneOfVoiceSheet } from "@/components/assistant/ToneOfVoiceSheet";
 import { BuildInfo } from "@/components/BuildInfo";
 import { FinanceDiagnostics } from "@/components/finance/FinanceDiagnostics";
 import { useGoogleCalendar } from "@/lib/use-google-calendar";
@@ -99,6 +100,7 @@ export default function SettingsPage() {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
+  const [toneOpen, setToneOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
@@ -142,6 +144,8 @@ export default function SettingsPage() {
   const timezoneName = TIMEZONES.find((t) => t.id === settings.timezone)?.name ?? settings.timezone;
   const dateFormatName = DATE_FORMATS.find((d) => d.id === settings.dateFormat)!.name;
   const firstDayName = FIRST_DAY_OPTIONS.find((f) => f.id === settings.firstDayOfWeek)!.name;
+  const TONE_NAMES = { concise: "Коротко й чесно", supportive: "Розгорнуто й підтримуюче", colleague: "Як досвідчений колега" } as const;
+  const toneName = settings.communicationTone ? TONE_NAMES[settings.communicationTone] : "Не обрано";
 
   function handleConfirmDelete() {
     deleteAllUserData();
@@ -284,6 +288,13 @@ export default function SettingsPage() {
           onClick={() => router.push("/profile/settings/ai-automations")}
           right={<span className="text-[13px] text-text-faint">›</span>}
         />
+        <MenuRow
+          icon={<SparkleIcon className="h-4 w-4" />}
+          iconColor="gold"
+          title="Тон спілкування асистента"
+          onClick={() => setToneOpen(true)}
+          right={<span className="text-[11px] text-text-faint">{toneName} ›</span>}
+        />
       </div>
 
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
@@ -388,6 +399,13 @@ export default function SettingsPage() {
           value={settings.firstDayOfWeek}
           onSelect={(firstDayOfWeek) => updateSettings({ firstDayOfWeek })}
           onClose={() => setActivePicker(null)}
+        />
+      )}
+      {toneOpen && (
+        <ToneOfVoiceSheet
+          value={settings.communicationTone}
+          onSelect={(communicationTone) => updateSettings({ communicationTone })}
+          onClose={() => setToneOpen(false)}
         />
       )}
 

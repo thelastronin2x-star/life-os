@@ -1,4 +1,6 @@
-export type AssistantScope = "global" | "calendar" | "health" | "work" | "student" | "chat";
+import type { CommunicationTone } from "./assistant-api-types";
+
+export type AssistantScope = "global" | "calendar" | "health" | "work" | "student" | "assistant-main" | "chat";
 
 /** Shared across every prompt below — language, tone, formatting, and the
  *  "don't invent numbers" guardrail used to be the entire system prompt.
@@ -38,10 +40,32 @@ export const STUDENT_ASSISTANT_PROMPT = `${ASSISTANT_BASE_PROMPT}
 Це асистент вкладки "Робота" для профілю Студент (флеш-картки, курси, дедлайни) — ЗОВСІМ ІНШИЙ профіль від Трейдера, тут немає угод, журналу чи трейдингової статистики. Ти бачиш і можеш обговорювати ТІЛЬКИ навчальні дані з контексту нижче: стрік навчання, флеш-картки, колоди, предмети.
 Тон — режим "хочеться повертатися": святкування прогресу, особисті рекорди, помітні маленькі перемоги. НІКОЛИ не тисни дедлайнами чи недопрацюваннями, не використовуй тривожний тон.`;
 
+/** The full-page /assistant chat's scope — sees all four domains at once
+ *  (same buildGlobalContext as Home) plus per-category/per-account ledgers
+ *  (see assistant-problem-detectors.ts) and has every mutating tool
+ *  attached. The present_options protocol is the whole point of this
+ *  scope existing separately from "global" (which is text-only, no tools):
+ *  a real problem gets concrete resolution options instead of just being
+ *  described. */
+export const ASSISTANT_MAIN_PROMPT = `${ASSISTANT_BASE_PROMPT}
+
+Контекст нижче містить всі розділи (Календар, Здоров'я, Фінанси, Робота) і докладні дані по лімітах категорій та ризику. Коли бачиш РЕАЛЬНУ конкретну проблему в цих даних (перевищений ліміт категорії, близька до ліміту просадка) — обов'язково виклич present_options із 2-3 конкретними діями на основі реальних чисел з контексту (наприклад, перенести ліміт із категорії, де є запас, або змінити ліміт напряму). НЕ виконуй жодну дію сам у тому ж виклику — тільки запропонуй, застосунок сам виконає обрану користувачем дію. Якщо проблеми немає — просто відповідай текстом чи виконуй прямий запит користувача через відповідний інструмент, без present_options. Коли просять щось конкретне без сумнівів ("перенеси подію", "запиши воду") — виконуй одразу відповідним інструментом, без пропозицій.`;
+
+const TONE_PROMPTS: Record<CommunicationTone, string> = {
+  concise: "Тон спілкування: коротко й чесно — мінімум слів, без пом'якшень, прямо по суті.",
+  supportive: "Тон спілкування: розгорнуто й підтримуюче — трохи більше пояснень, тепліше формулювання, підбадьорення.",
+  colleague: "Тон спілкування: як досвідчений колега — професійно, на рівних, без повчального тону.",
+};
+
+export function toneInstruction(tone: CommunicationTone | undefined): string {
+  return tone ? TONE_PROMPTS[tone] : "";
+}
+
 export const SCOPE_PROMPTS: Record<Exclude<AssistantScope, "chat">, string> = {
   global: GLOBAL_ASSISTANT_PROMPT,
   calendar: CALENDAR_ASSISTANT_PROMPT,
   health: HEALTH_ASSISTANT_PROMPT,
   work: WORK_ASSISTANT_PROMPT,
   student: STUDENT_ASSISTANT_PROMPT,
+  "assistant-main": ASSISTANT_MAIN_PROMPT,
 };

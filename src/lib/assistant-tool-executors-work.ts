@@ -3,6 +3,7 @@
 import { useJournalConfigStore } from "@/lib/journal-config-store";
 import { normalizeSymbol } from "@/lib/instrument-symbol";
 import { computeRR } from "@/lib/trade-calculations";
+import { usePropAccountsStore } from "@/lib/prop-accounts-store";
 import type { Trade, TradeDirection } from "@/lib/journal-store";
 
 /** Own file, not shared with the calendar/health executors — see the
@@ -28,6 +29,17 @@ export function executeWorkTool(
     if (![entry, stop, take].every(Number.isFinite)) return "Не вистачає рівнів для розрахунку ризику.";
     const rr = computeRR({ entry, stop, take });
     return `Співвідношення ризик/прибуток: ${rr}.`;
+  }
+
+  if (name === "set_risk_limit") {
+    const firm = String(input.firm ?? "").trim();
+    const newMaxDrawdown = Number(input.newMaxDrawdown);
+    if (!firm || !Number.isFinite(newMaxDrawdown) || newMaxDrawdown <= 0) return "Не вистачає назви фірми або коректного ліміту.";
+    const { accounts, updateAccount } = usePropAccountsStore.getState();
+    const account = accounts.find((a) => a.firm.toLowerCase().includes(firm.toLowerCase()));
+    if (!account) return `Проп-акаунт "${firm}" не знайдено.`;
+    updateAccount(account.id, { maxDrawdown: newMaxDrawdown });
+    return `Ліміт максимальної просадки для "${account.firm}" змінено на ${newMaxDrawdown}%.`;
   }
 
   if (name === "prepare_trade_draft") {
