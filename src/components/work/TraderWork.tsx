@@ -24,6 +24,9 @@ import { useNewsFeed } from "@/lib/use-news-feed";
 import { pickFocusItem } from "@/lib/news-view";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { TradeForm } from "./TradeForm";
+import { TradingAccountForm } from "./TradingAccountForm";
+import { usePersonalTradingAccountsStore } from "@/lib/personal-trading-accounts-store";
+import { usePropAccountsStore } from "@/lib/prop-accounts-store";
 import { smoothArea, smoothPath, type Point } from "@/lib/smooth-path";
 import {
   FireIcon,
@@ -444,11 +447,13 @@ function AccountSwitcherSheet({
   accounts,
   activeId,
   onSelect,
+  onAdd,
   onClose,
 }: {
   accounts: TradingAccountView[];
   activeId: string | null;
   onSelect: (id: string) => void;
+  onAdd: () => void;
   onClose: () => void;
 }) {
   return (
@@ -483,6 +488,13 @@ function AccountSwitcherSheet({
             </button>
           ))}
         </div>
+        <button
+          onClick={onAdd}
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-card-sm border border-dashed border-border py-2.5 text-[12px] font-semibold text-sage"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Додати рахунок
+        </button>
       </div>
     </div>
   );
@@ -508,6 +520,26 @@ export function TraderWork() {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const active = accounts.find((a) => a.id === selectedId) ?? accounts[0] ?? null;
   const symbol = active?.currencySymbol ?? "$";
+
+  // Lets Робота open either kind of account directly (empty state and the
+  // account switcher below), instead of only ever routing to the prop-only
+  // /work/prop-accounts screen — same combined form Журнал already uses.
+  const { addAccount: addPersonalAccount } = usePersonalTradingAccountsStore();
+  const { addAccount: addPropAccount } = usePropAccountsStore();
+  const [accountFormOpen, setAccountFormOpen] = useState(false);
+
+  function handleAddPersonalAccount(data: Parameters<typeof addPersonalAccount>[0]) {
+    const id = addPersonalAccount(data);
+    setSelectedId(id);
+    setAccountFormOpen(false);
+  }
+  function handleAddPropAccount(data: Parameters<typeof addPropAccount>[0]) {
+    addPropAccount(data);
+    const latest = usePropAccountsStore.getState().accounts;
+    const created = latest[latest.length - 1];
+    if (created) setSelectedId(created.id);
+    setAccountFormOpen(false);
+  }
 
   const [tradeFormOpen, setTradeFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -580,10 +612,18 @@ export function TraderWork() {
         <div className="mb-4 pt-1 text-[19px] font-extrabold tracking-tight text-text">Робота</div>
         <div className="card-raised rounded-card bg-surface py-10 text-center text-[12px] font-semibold text-text-faint">
           Ще немає торгових рахунків
-          <Link href="/work/prop-accounts" className="mt-3 block text-[12.5px] font-extrabold text-sage">
+          <button onClick={() => setAccountFormOpen(true)} className="mt-3 block w-full text-[12.5px] font-extrabold text-sage">
             Додати рахунок
-          </Link>
+          </button>
         </div>
+
+        {accountFormOpen && (
+          <TradingAccountForm
+            onSavePersonal={handleAddPersonalAccount}
+            onSaveProp={handleAddPropAccount}
+            onClose={() => setAccountFormOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -622,7 +662,19 @@ export function TraderWork() {
             setSelectedId(id);
             setSwitcherOpen(false);
           }}
+          onAdd={() => {
+            setSwitcherOpen(false);
+            setAccountFormOpen(true);
+          }}
           onClose={() => setSwitcherOpen(false)}
+        />
+      )}
+
+      {accountFormOpen && (
+        <TradingAccountForm
+          onSavePersonal={handleAddPersonalAccount}
+          onSaveProp={handleAddPropAccount}
+          onClose={() => setAccountFormOpen(false)}
         />
       )}
 
