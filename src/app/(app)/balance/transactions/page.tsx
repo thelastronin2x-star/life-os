@@ -268,6 +268,7 @@ function AllTransactionsInner() {
                     ) : (
                       <span className={cat ? undefined : "text-gold"}>{cat?.name ?? "Некатегоризовано"} ✎</span>
                     )}
+                    {t.source === "apple-pay" && <span className="text-text-faint">· через Apple Pay</span>}
                   </div>
                 </div>
                 <div

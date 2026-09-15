@@ -6,11 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   useFinanceStore,
   latestCheckIn,
-  latestQuizAttempt,
-  INSURANCE_TYPES,
+  getPeriodTotals,
+  getCategorySpent,
+  sortTransactionsDesc,
   type FinancialGoal,
   type Transaction,
-  type InsuranceType,
   type QuizAttempt,
 } from "@/lib/finance-store";
 import { useVoiceDraftStore } from "@/lib/voice-draft-store";
@@ -18,68 +18,71 @@ import { schemaAttachedToTab, useSchemaStore } from "@/lib/schema-store";
 import { useSchemaEntriesStore, type SchemaFieldValue } from "@/lib/schema-entries-store";
 import { GoalForm } from "./GoalForm";
 import { TransactionForm } from "./TransactionForm";
+import { BudgetCategoryForm } from "./BudgetCategoryForm";
 import { MonthlyCheckInForm } from "./MonthlyCheckInForm";
 import { FinancialQuizModal } from "./FinancialQuizModal";
-import { PillarCard, StatusPill } from "./PillarCard";
-import { PlusIcon, GearIcon } from "@/components/icons";
+import { ApplePayCategorizeSheet } from "./ApplePayCategorizeSheet";
+import { CategoryIcon } from "@/lib/finance-categories";
+import { suggestCategoryForMerchant } from "@/lib/finance-merchant-suggest";
+import { computeEmergencyFundMonths } from "@/lib/financial-health";
+import { periodStartKey } from "@/lib/finance-periods";
 import { formatCurrency } from "@/lib/currency-format";
 import { CURRENCIES, useAppStore } from "@/lib/store";
-import { sparklinePoints } from "@/lib/sparkline";
-import { pluralizeUk } from "@/lib/calendar-utils";
-import { quizStatus } from "@/lib/finance-quiz";
-import { computeFinanceInsights } from "@/lib/finance-pillar-insights";
-import { AIInsightCard } from "@/components/ui/AIInsightCard";
 import {
-  computeEmergencyFundMonths,
-  emergencyFundStatus,
-  emergencyFundShortfall,
-  savingsRateStatus,
-  computeDebtToIncome,
-  debtStatus,
-  debtPayoffMonths,
-  investmentStatus,
-  investmentRebalanceAmount,
-} from "@/lib/financial-health";
+  PlusIcon,
+  GearIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  ListIcon,
+  BankIcon,
+  TransferIcon,
+  DocumentIcon,
+  WalletIcon,
+  AlertTriangleIcon,
+} from "@/components/icons";
 import { cn } from "@/lib/cn";
 
-function formatShortDate(dateKey: string): string {
-  const [y, m, d] = dateKey.split("-");
-  return `${d}.${m}.${y}`;
+interface PendingApplePayTxn {
+  id: string;
+  amount: number;
+  merchant: string;
+  date: string;
 }
 
-function formatMonthLabel(monthKey: string): string {
-  const [y, m] = monthKey.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
+const TOP_CATEGORY_COUNT = 4;
+const RECENT_TX_COUNT = 4;
+
+function formatShortDateTime(t: Transaction): string {
+  const [y, m, d] = t.date.split("-");
+  const day = `${d}.${m}.${y}`;
+  if (!t.time) return day;
+  const time = new Date(t.time * 1000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+  return `${day}, ${time}`;
 }
 
-const INSURANCE_LABELS: Record<InsuranceType, string> = {
-  life: "Життя",
-  health: "Здоров'я",
-  property: "Майно",
-};
-
-/** Фінанси is 8 independent financial-health indicators, each with its own
- *  good/warn/bad status, no overall score, and no Monobank dependency —
- *  everything reads from MonthlyCheckIn (a hand-entered monthly snapshot)
- *  plus the manually-tracked Debt/Investment/InsurancePolicy/Goal lists.
- *  All 8 (bar the quiz, which opens its own modal instead) collapse to a
- *  one-line header by default so the whole dashboard fits without
- *  scrolling; tapping one expands its detail and advice, closing whichever
- *  else was open. */
+/** Full replacement of the old "8 financial-health pillars" dashboard (see
+ *  git history) — a warm personal expense tracker instead of a judgmental
+ *  bank audit, per finance_comfortable_final_2.html. Норма заощаджень/
+ *  Диверсифікація активів/Чистий капітал/Тест фінзнань are intentionally
+ *  gone from this screen (confirmed with the user) — their data and edit
+ *  screens (manual-data, the quiz modal) still exist, just not surfaced
+ *  here. The ?action=checkin/?action=quiz deep links stay wired even
+ *  without visible entry points, since real push reminders
+ *  (sendCheckInReminders/sendQuizReminders) still promise they'll work. */
 function FinanceOverviewInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
-    accounts,
     goals,
     debts,
-    investments,
     insurancePolicies,
     checkIns,
-    quizAttempts,
     manualDataOnboarded,
     budgetCategories,
+    transactions,
+    accounts,
     addTransaction,
+    addBudgetCategory,
     addGoal,
     updateGoal,
     removeGoal,
@@ -88,46 +91,35 @@ function FinanceOverviewInner() {
   } = useFinanceStore();
 
   const [txnFormOpen, setTxnFormOpen] = useState(false);
+  const [txnInitialType, setTxnInitialType] = useState<Transaction["type"]>("expense");
   const [txnDraft, setTxnDraft] = useState<Partial<Omit<Transaction, "id">> | undefined>(undefined);
+  const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
   const [checkInFormOpen, setCheckInFormOpen] = useState(false);
   const [quizModalOpen, setQuizModalOpen] = useState(false);
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [applePayQueue, setApplePayQueue] = useState<PendingApplePayTxn[]>([]);
 
   const appCurrency = useAppStore((s) => s.settings.currency);
   const symbol = CURRENCIES.find((c) => c.id === appCurrency)?.symbol ?? "₴";
-
-  function toggleCard(id: string) {
-    setExpandedCard((cur) => (cur === id ? null : id));
-  }
+  const monthLabel = new Date().toLocaleDateString("uk-UA", { month: "long" });
 
   // Shown once automatically on first visit — see manual-data/page.tsx's own
-  // doc comment. `replace`, not `push`: this isn't a page the user should
-  // land back on by hitting the browser's back button.
+  // doc comment. `replace`, not `push`.
   useEffect(() => {
     if (!manualDataOnboarded) router.replace("/balance/manual-data");
   }, [manualDataOnboarded, router]);
 
-  // Deep link from the monthly push reminder (see /api/push/send-reminders'
-  // sendCheckInReminders) — opens the same modal the dashboard's own
-  // "Оновити чек-ін" row does, just pre-triggered on arrival.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change
     if (searchParams.get("action") === "checkin") setCheckInFormOpen(true);
   }, [searchParams]);
 
-  // Deep link from the quarterly quiz push reminder (see send-reminders'
-  // sendQuizReminders) — same idea as the check-in deep link above.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change
     if (searchParams.get("action") === "quiz") setQuizModalOpen(true);
   }, [searchParams]);
 
-  // Deep link from the voice-capture flow's "Виправити" button — see
-  // VoiceResultSheet.goCorrect. The draft lives in a separate transient
-  // store (not the URL) since it carries more than a query string can hold
-  // cleanly; the `?action=voice` param is just the trigger to read it.
   useEffect(() => {
     if (searchParams.get("action") !== "voice") return;
     const draft = useVoiceDraftStore.getState().pendingDraft;
@@ -135,105 +127,78 @@ function FinanceOverviewInner() {
       const category = draft.categoryName
         ? budgetCategories.find((c) => c.name.toLowerCase().includes(draft.categoryName!.toLowerCase()))
         : undefined;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change, not a render-cascading loop
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep-link check on mount/param change
       setTxnDraft({ type: "expense", title: draft.title, amount: draft.amount ?? 0, categoryId: category?.id ?? null, date: draft.date });
       useVoiceDraftStore.getState().clearPendingDraft();
+      setTxnInitialType("expense");
       setTxnFormOpen(true);
     }
     router.replace("/balance");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // Apple Pay: push-tap deep link AND a best-effort poll on every normal
+  // open (same reasoning as checkAndGenerateAutoReports — the server has no
+  // other way to reach a device that missed/dismissed the push).
+  useEffect(() => {
+    fetch("/api/finance/apple-pay/pending")
+      .then((r) => r.json())
+      .then((data: { pending: PendingApplePayTxn[] }) => setApplePayQueue(data.pending ?? []))
+      .catch(() => undefined);
+    if (searchParams.get("action") === "applepay") router.replace("/balance");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const monthStart = periodStartKey("Місяць");
+  const monthTransactions = transactions.filter((t) => t.date >= monthStart);
+  const { income, expense } = getPeriodTotals(transactions, monthStart);
+  const balance = income - expense;
+
+  const topCategories = budgetCategories
+    .map((c) => ({
+      category: c,
+      spent: getCategorySpent(c.id, monthTransactions),
+      count: monthTransactions.filter((t) => t.categoryId === c.id && t.type === "expense").length,
+    }))
+    .filter((c) => c.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, TOP_CATEGORY_COUNT);
+
+  const recentTransactions = sortTransactionsDesc(transactions).slice(0, RECENT_TX_COUNT);
+
+  const firstGoal = goals[0] ?? null;
+
   const latest = latestCheckIn(checkIns);
-  const hasHistory = checkIns.length >= 2;
-  // Chronological, capped at the last 12 — every per-pillar mini-trend and
-  // the net-worth chart below all walk the same window, so they can never
-  // silently disagree about "the last year" meaning different things.
-  const sortedCheckIns = [...checkIns].sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
-
   const emergencyFundMonths = computeEmergencyFundMonths(latest?.savings ?? 0, latest?.monthlyExpenses ?? 0);
-  const efStatus = emergencyFundStatus(emergencyFundMonths);
-  const efTrend = hasHistory
-    ? sparklinePoints(
-        sortedCheckIns.map((c) => computeEmergencyFundMonths(c.savings, c.monthlyExpenses)),
-        52,
-        18
-      )
-    : undefined;
-  const efShortfall = emergencyFundShortfall(emergencyFundMonths, latest?.monthlyExpenses ?? 0, latest?.savings ?? 0);
-
-  const savingsRate =
-    latest && latest.monthlyIncome > 0 ? (latest.monthlyIncome - latest.monthlyExpenses) / latest.monthlyIncome : 0;
-  const srStatus = savingsRateStatus(savingsRate);
-  const savingsRingCircumference = 2 * Math.PI * 24;
-  const srTrend = hasHistory
-    ? sparklinePoints(
-        sortedCheckIns.map((c) => (c.monthlyIncome > 0 ? (c.monthlyIncome - c.monthlyExpenses) / c.monthlyIncome : 0)),
-        52,
-        18
-      )
-    : undefined;
-
-  const totalMonthlyDebtPayments = debts.reduce((s, d) => s + d.monthlyPayment, 0);
-  const debtRatio = computeDebtToIncome(totalMonthlyDebtPayments, latest?.monthlyIncome ?? 0);
-  const dStatus = debts.length === 0 ? "good" : debtStatus(debtRatio);
-  const debtTrend =
-    hasHistory && debts.length > 0
-      ? sparklinePoints(
-          sortedCheckIns.map((c) => computeDebtToIncome(c.totalMonthlyDebtPayments, c.monthlyIncome)),
-          52,
-          18
-        )
-      : undefined;
-
-  const totalInvestments = investments.reduce((s, i) => s + i.amount, 0);
-  const investmentPct = totalInvestments + (latest?.savings ?? 0) > 0 ? totalInvestments / (totalInvestments + (latest?.savings ?? 0)) : 0;
-  const invStatus = investmentStatus(investments.length > 0, investmentPct);
-  const invTrend = hasHistory
-    ? sparklinePoints(
-        sortedCheckIns.map((c) => (c.investmentsTotal + c.savings > 0 ? c.investmentsTotal / (c.investmentsTotal + c.savings) : 0)),
-        52,
-        18
-      )
-    : undefined;
-  const rebalanceAmount = investmentRebalanceAmount(totalInvestments, latest?.savings ?? 0);
-
   const insuredCount = insurancePolicies.filter((p) => p.hasPolicy).length;
-  const insuranceStatus = insuredCount === 3 ? "good" : insuredCount >= 1 ? "warn" : "bad";
 
-  // --- Чистий капітал: цілком зі знімків MonthlyCheckIn (savings +
-  // investmentsTotal - debtsTotal, кожен зафіксований на момент чек-іну) —
-  // ніякого живого перерахунку з поточних Investment[]/Debt[], щоб число й
-  // тренд-лінія завжди узгоджувались з тим самим джерелом. */
-  const netWorth = latest ? latest.savings + latest.investmentsTotal - latest.debtsTotal : 0;
-  const netWorthSeries = sortedCheckIns.map((c) => c.savings + c.investmentsTotal - c.debtsTotal);
-  const netWorthChangePct =
-    netWorthSeries.length >= 2 && netWorthSeries[0] !== 0
-      ? Math.round(((netWorth - netWorthSeries[0]) / Math.abs(netWorthSeries[0])) * 100)
-      : null;
-  const nwStatus = netWorth >= 0 ? "good" : "bad";
+  const needsAttention = transactions.filter((t) => t.source === "apple-pay" && !t.categoryId);
 
-  // --- 8. Фінансові знання — не частина expand/collapse-групи вище: тап
-  // одразу відкриває квіз-модалку (той самий інтерактивний патерн, що вже
-  // затестований), а не розгортає деталі inline. ---
-  const lastQuizAttempt = latestQuizAttempt(quizAttempts);
-  const qStatus = quizStatus(lastQuizAttempt);
-  const quizTrendPoints =
-    quizAttempts.length >= 2 ? sparklinePoints(quizAttempts.slice(-8).map((a) => a.scorePct), 52, 18) : undefined;
+  const currentApplePayItem = applePayQueue[0] ?? null;
+  const suggestedCategoryId = currentApplePayItem
+    ? suggestCategoryForMerchant(currentApplePayItem.merchant, transactions)
+    : null;
 
-  // --- AI-картка: протиріччя між показниками, не часові кореляції — щомісячних
-  // точок замало для тих. good/warn/bad-таблиця тут не потрібна: сирі числа
-  // достатньо. ---
-  const financeInsights = computeFinanceInsights({
-    savingsRate,
-    emergencyFundMonths,
-    investmentPct,
-    hasInvestments: investments.length > 0,
-    debtToIncome: debtRatio,
-  });
+  function openQuickTxn(type: Transaction["type"]) {
+    setTxnInitialType(type);
+    setTxnDraft(undefined);
+    setTxnFormOpen(true);
+  }
 
-  function handleCompleteQuiz(attempt: Omit<QuizAttempt, "id">) {
-    addQuizAttempt(attempt);
+  function handleSaveTxn(data: Omit<Transaction, "id">, customValues?: Record<string, SchemaFieldValue>) {
+    addTransaction(data);
+    const recordId = useFinanceStore.getState().transactions[0]?.id;
+    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "finance");
+    if (attachedSchema && recordId && customValues) {
+      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, recordId, customValues);
+    }
+    setTxnFormOpen(false);
+    setTxnDraft(undefined);
+  }
+
+  function handleSaveCategory(data: Parameters<typeof addBudgetCategory>[0]) {
+    addBudgetCategory(data);
+    setCategoryFormOpen(false);
   }
 
   function openAddGoal() {
@@ -257,19 +222,7 @@ function FinanceOverviewInner() {
     removeGoal(id);
     closeGoalForm();
   }
-  function handleSaveTxn(data: Omit<Transaction, "id">, customValues?: Record<string, SchemaFieldValue>) {
-    addTransaction(data);
-    // addTransaction prepends, not appends — the new row is index 0. This
-    // FAB is create-only (editingTxn is always null below); editing an
-    // existing transaction happens on the transactions list screen instead.
-    const recordId = useFinanceStore.getState().transactions[0]?.id;
-    const attachedSchema = schemaAttachedToTab(useSchemaStore.getState().schemas, "finance");
-    if (attachedSchema && recordId && customValues) {
-      useSchemaEntriesStore.getState().saveEntry(attachedSchema.id, recordId, customValues);
-    }
-    setTxnFormOpen(false);
-    setTxnDraft(undefined);
-  }
+
   function closeCheckInForm() {
     setCheckInFormOpen(false);
     if (searchParams.get("action") === "checkin") router.replace("/balance");
@@ -278,336 +231,256 @@ function FinanceOverviewInner() {
     upsertCheckIn(data);
     closeCheckInForm();
   }
+  function handleCompleteQuiz(attempt: Omit<QuizAttempt, "id">) {
+    addQuizAttempt(attempt);
+  }
+
+  async function resolveApplePayItem(item: PendingApplePayTxn, categoryId: string | null) {
+    const defaultAccountId = accounts[0]?.id;
+    if (defaultAccountId) {
+      addTransaction({
+        type: "expense",
+        amount: item.amount,
+        categoryId,
+        accountId: defaultAccountId,
+        date: item.date,
+        title: item.merchant,
+        source: "apple-pay",
+      });
+    }
+    setApplePayQueue((q) => q.filter((p) => p.id !== item.id));
+    fetch("/api/finance/apple-pay/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pendingId: item.id }),
+    }).catch(() => undefined);
+  }
 
   if (!manualDataOnboarded) return null;
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between px-0.5 pt-1">
+      <div className="mb-1 flex items-center justify-between px-0.5 pt-1">
         <h1 className="text-[19px] font-extrabold tracking-tight text-text">Фінанси</h1>
-        <Link
-          href="/balance/settings"
-          aria-label="Налаштування"
-          className="flex h-[34px] w-[34px] items-center justify-center rounded-icon border border-border bg-surface text-text-faint"
-        >
-          <GearIcon className="h-[15px] w-[15px]" />
-        </Link>
-      </div>
-
-      <button
-        onClick={() => setCheckInFormOpen(true)}
-        className="mb-3.5 flex w-full items-center justify-between rounded-card-sm border border-dashed border-border bg-surface px-3.5 py-2.5 text-left"
-      >
-        <span className="text-[11.5px] text-text-dim">
-          {latest ? `Чек-ін: ${formatMonthLabel(latest.month)}` : "Ще не було чек-іну"}
-        </span>
-        <span className="text-[11px] font-semibold text-sage">оновити →</span>
-      </button>
-
-      <AIInsightCard
-        insights={financeInsights}
-        emptyText="Асистент ще не бачить протиріч між показниками — це добре, або ще замало даних для порівняння."
-      />
-
-      {/* 1. Резервний фонд */}
-      <PillarCard
-        title="Резервний фонд"
-        keyMetric={`${emergencyFundMonths.toFixed(1)} місяця`}
-        status={efStatus}
-        statusLabel={efStatus === "good" ? "Відмінно" : efStatus === "warn" ? "Недостатньо" : "Немає"}
-        trendPoints={efTrend}
-        trendColor="var(--sage)"
-        expanded={expandedCard === "emergency"}
-        onToggle={() => toggleCard("emergency")}
-      >
-        <div className="text-[11px] text-text-faint">{formatCurrency(latest?.savings ?? 0, symbol)} з рекомендованих 3-6 місяців витрат</div>
-        <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full rounded-full bg-sage" style={{ width: `${Math.min(100, (emergencyFundMonths / 6) * 100)}%` }} />
-          <div className="absolute top-0 h-full w-[2px] bg-text/40" style={{ left: "50%" }} />
-        </div>
-        <div className="mt-1.5 flex justify-between text-[9.5px] text-text-faint">
-          <span>0</span>
-          <span>Ціль: 3 міс</span>
-          <span>6 міс</span>
-        </div>
-        <div className="advice-box mt-2.5 rounded-input bg-surface-2 p-2.5 text-[11.5px] leading-relaxed text-text-dim">
-          {efShortfall === null
-            ? "Подушка безпеки в нормі — нічого змінювати не треба."
-            : `Щоб досягти 3 місяців, бракує ${formatCurrency(efShortfall.shortfall, symbol)}. При відкладанні ${formatCurrency((latest?.monthlyExpenses ?? 0) * 0.1, symbol)}/міс — це ще ${Math.ceil(efShortfall.monthsToGoal)} міс.`}
-        </div>
-      </PillarCard>
-
-      {/* 2. Норма заощаджень */}
-      <PillarCard
-        title="Норма заощаджень"
-        keyMetric={`${Math.round(savingsRate * 100)}%`}
-        status={srStatus}
-        statusLabel={srStatus === "good" ? "Відмінно" : srStatus === "warn" ? "Недостатньо" : "Низько"}
-        trendPoints={srTrend}
-        trendColor="var(--sage)"
-        expanded={expandedCard === "savings"}
-        onToggle={() => toggleCard("savings")}
-      >
-        <div className="flex items-center gap-3.5">
-          <svg className="h-[60px] w-[60px] flex-shrink-0" viewBox="0 0 60 60">
-            <circle cx="30" cy="30" r="24" fill="none" stroke="var(--bg)" strokeWidth={7} />
-            <circle
-              cx="30"
-              cy="30"
-              r="24"
-              fill="none"
-              stroke="var(--sage)"
-              strokeWidth={7}
-              strokeLinecap="round"
-              strokeDasharray={savingsRingCircumference}
-              strokeDashoffset={savingsRingCircumference * (1 - Math.max(0, Math.min(1, savingsRate)))}
-              transform="rotate(-90 30 30)"
-            />
-          </svg>
-          <div className="text-[11px] text-text-faint">від доходу цього місяця. Рекомендовано: 20%+</div>
-        </div>
-        <div className="advice-box mt-2.5 rounded-input bg-surface-2 p-2.5 text-[11.5px] leading-relaxed text-text-dim">
-          {srStatus === "good"
-            ? "Чудовий результат — тримай темп."
-            : srStatus === "warn"
-              ? "Ще трохи до рекомендованих 20% — спробуй скоротити одну статтю витрат наступного місяця."
-              : "Спробуй скоротити витрати або збільшити дохід, щоб наблизитись до рекомендованих 20%."}
-        </div>
-      </PillarCard>
-
-      {/* 3. Борги проти доходу */}
-      <PillarCard
-        title="Співвідношення боргу до доходу"
-        keyMetric={debts.length === 0 ? "Боргів немає" : `${Math.round(debtRatio * 100)}%`}
-        status={dStatus}
-        statusLabel={debts.length === 0 ? "Немає" : dStatus === "good" ? "Здорово" : dStatus === "warn" ? "Помірно" : "Високо"}
-        trendPoints={debtTrend}
-        trendColor="var(--clay)"
-        expanded={expandedCard === "debt"}
-        onToggle={() => toggleCard("debt")}
-      >
-        {debts.length === 0 ? (
-          <div className="text-[11.5px] text-text-faint">Боргів немає — нічого відстежувати.</div>
-        ) : (
-          <>
-            <div className="text-[11px] text-text-faint">
-              {formatCurrency(totalMonthlyDebtPayments, symbol)} щомісячних платежів із {formatCurrency(latest?.monthlyIncome ?? 0, symbol)} доходу
-            </div>
-            <div className="relative mt-3 h-2 rounded-full bg-surface-2">
-              <div
-                className={cn("absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full", dStatus === "bad" ? "bg-clay" : dStatus === "warn" ? "bg-gold" : "bg-sage")}
-                style={{ left: `calc(${Math.min(100, debtRatio * 100)}% - 6px)` }}
-              />
-            </div>
-            <div className="mt-3 space-y-1.5">
-              {debts.map((d) => {
-                const months = debtPayoffMonths(d.remainingAmount, d.monthlyPayment);
-                return (
-                  <div key={d.id} className="flex items-center justify-between text-[11px] text-text-dim">
-                    <span className="truncate">{d.name || "Без назви"}</span>
-                    <span className="flex-shrink-0 font-mono">
-                      {months === null ? "без активних платежів" : `${months} міс до погашення`}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </PillarCard>
-
-      {/* 4. Інвестиції */}
-      <PillarCard
-        title="Диверсифікація активів"
-        keyMetric={investments.length === 0 ? "Немає" : `${Math.round(investmentPct * 100)}%`}
-        status={invStatus}
-        statusLabel={investments.length === 0 ? "Немає" : investmentPct > 0.2 ? "Добре" : "Мало"}
-        trendPoints={invTrend}
-        trendColor="var(--accent)"
-        expanded={expandedCard === "investments"}
-        onToggle={() => toggleCard("investments")}
-      >
-        <div className="flex h-2 overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full bg-surface-2" style={{ width: `${(1 - investmentPct) * 100}%` }} />
-          <div className="h-full bg-accent" style={{ width: `${investmentPct * 100}%` }} />
-        </div>
-        <div className="mt-2.5 space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] text-text-dim">
-            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-surface-2" />
-            <span className="flex-1">Готівка/депозити</span>
-            <span className="font-mono font-semibold text-text">{Math.round((1 - investmentPct) * 100)}%</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-text-dim">
-            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
-            <span className="flex-1">Інвестиції</span>
-            <span className="font-mono font-semibold text-text">{Math.round(investmentPct * 100)}%</span>
-          </div>
-        </div>
-        <div className="advice-box mt-2.5 rounded-input bg-surface-2 p-2.5 text-[11.5px] leading-relaxed text-text-dim">
-          {rebalanceAmount > 0
-            ? `Перевести ще ${formatCurrency(rebalanceAmount, symbol)} із готівки, щоб вийти на 20% портфеля.`
-            : "Розподіл уже відповідає рекомендованим 20%+."}
-        </div>
-      </PillarCard>
-
-      {/* 5. Фінансові цілі */}
-      <PillarCard
-        title="Фінансові цілі"
-        keyMetric={goals.length === 0 ? "Додати першу" : `${goals.length} ${pluralizeUk(goals.length, ["ціль", "цілі", "цілей"])}`}
-        status={goals.length === 0 ? "warn" : "good"}
-        statusLabel={goals.length === 0 ? "Немає" : "Активні"}
-        expanded={expandedCard === "goals"}
-        onToggle={() => toggleCard("goals")}
-      >
-        <div className="space-y-2.5">
-          {goals.map((g) => {
-            const pct = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
-            return (
-              <button
-                key={g.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEditGoal(g);
-                }}
-                className="card-raised block w-full rounded-card-sm bg-surface p-3 text-left"
-              >
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="truncate text-[12.5px] font-semibold text-text">{g.name}</span>
-                  <span className="flex-shrink-0 font-mono text-[12px] font-bold text-text">{pct}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                  <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, pct)}%` }} />
-                </div>
-                <div className="mt-1.5 text-[10.5px] text-text-faint">
-                  {formatCurrency(g.currentAmount, symbol)} з {formatCurrency(g.targetAmount, symbol)}
-                  {g.targetDate && ` · орієнтовно ${formatShortDate(g.targetDate)}`}
-                </div>
-              </button>
-            );
-          })}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              openAddGoal();
-            }}
-            className="flex w-full items-center justify-center gap-1.5 rounded-card-sm border-[1.5px] border-dashed border-border py-2.5 text-text-faint"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-semibold">Додати ціль</span>
-          </button>
-        </div>
-      </PillarCard>
-
-      {/* 6. Страхування */}
-      <PillarCard
-        title="Страхування"
-        keyMetric={`${insuredCount}/3 застраховано`}
-        status={insuranceStatus}
-        statusLabel={insuredCount === 3 ? "Відмінно" : insuredCount >= 1 ? "Частково" : "Немає"}
-        expanded={expandedCard === "insurance"}
-        onToggle={() => toggleCard("insurance")}
-      >
-        <div className="space-y-2">
-          {INSURANCE_TYPES.map((type) => {
-            const policy = insurancePolicies.find((p) => p.type === type);
-            const has = policy?.hasPolicy ?? false;
-            return (
-              <div key={type} className="flex items-center gap-2.5">
-                <span className={cn("h-2 w-2 flex-shrink-0 rounded-full", has ? "bg-sage" : "bg-surface-2")} />
-                <span className={cn("text-[12.5px] font-medium", has ? "text-text" : "text-text-faint")}>{INSURANCE_LABELS[type]}</span>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold capitalize text-text-faint">{monthLabel}</span>
           <Link
-            href="/balance/manual-data"
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1.5 block text-[11.5px] font-semibold text-sage"
+            href="/balance/settings"
+            aria-label="Налаштування"
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-icon border border-border bg-surface text-text-faint"
           >
-            редагувати →
+            <GearIcon className="h-[15px] w-[15px]" />
           </Link>
         </div>
-      </PillarCard>
+      </div>
 
-      {/* 7. Чистий капітал у часі */}
-      <PillarCard
-        title="Чистий капітал у часі"
-        keyMetric={formatCurrency(netWorth, symbol)}
-        status={nwStatus}
-        statusLabel={nwStatus === "good" ? "Позитивний" : "Від'ємний"}
-        trendPoints={netWorthSeries.length >= 2 ? sparklinePoints(netWorthSeries, 52, 18) : undefined}
-        trendColor="var(--sage)"
-        expanded={expandedCard === "networth"}
-        onToggle={() => toggleCard("networth")}
-      >
-        {netWorthSeries.length >= 2 ? (
-          <>
-            <div className="text-[11px] text-text-faint">
-              {netWorthChangePct === null ? "недостатньо даних для порівняння" : `${netWorthChangePct >= 0 ? "+" : ""}${netWorthChangePct}% за період чек-інів`}
-            </div>
-            <svg className="mt-3 h-[60px] w-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-              <polyline
-                points={sparklinePoints(netWorthSeries, 300, 60)}
-                fill="none"
-                stroke="var(--sage)"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-          </>
-        ) : (
-          <div className="text-[11px] text-text-faint">Зроби ще кілька чек-інів, щоб побачити динаміку</div>
-        )}
-      </PillarCard>
-
-      {/* 8. Фінансові знання — єдина картка не про фінансовий стан, тож
-          завершує список окремо; тап одразу відкриває квіз, а не розгортає
-          картку inline. */}
-      <button
-        onClick={() => setQuizModalOpen(true)}
-        className="card-raised mb-2.5 block w-full rounded-card bg-surface p-4 text-left"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-[12.5px] font-semibold text-text-faint">Фінансові знання</div>
-            <div className="font-display mt-0.5 text-[17px] font-bold text-text">
-              {lastQuizAttempt ? `${lastQuizAttempt.answers.filter((a) => a.correct).length} з ${lastQuizAttempt.answers.length}` : "Пройти тест"}
-            </div>
+      {/* Баланс місяця */}
+      <div className="px-0.5 pb-5 pt-3">
+        <div className="mb-1.5 text-[12px] font-semibold text-text-faint">Баланс цього місяця</div>
+        <div className="font-display text-[44px] font-bold leading-none tracking-tight text-text">
+          {balance >= 0 ? "" : "-"}
+          {formatCurrency(Math.abs(balance), symbol)}
+        </div>
+        <div className="mt-3 flex gap-4">
+          <div className="flex items-center gap-1.5 text-[12.5px] font-bold text-sage">
+            <TrendingUpIcon className="h-3 w-3" />
+            {formatCurrency(income, symbol)}
           </div>
-          <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-            <StatusPill status={qStatus} label={lastQuizAttempt ? `${lastQuizAttempt.scorePct}%` : "Не пройдено"} />
-            {quizTrendPoints && (
-              <svg className="h-[18px] w-[52px]" viewBox="0 0 52 18">
-                <polyline points={quizTrendPoints} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              </svg>
-            )}
+          <div className="flex items-center gap-1.5 text-[12.5px] font-bold text-clay">
+            <TrendingDownIcon className="h-3 w-3" />
+            {formatCurrency(expense, symbol)}
           </div>
         </div>
-      </button>
+      </div>
 
-      <button
-        onClick={() => {
-          setTxnDraft(undefined);
-          setTxnFormOpen(true);
-        }}
-        aria-label="Додати транзакцію"
-        className="assistant-fab fixed bottom-[84px] right-4 z-[45] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-text text-bg shadow-lg"
-      >
-        <PlusIcon className="h-5 w-5" />
-      </button>
+      {/* Швидкі дії */}
+      <div className="mb-5 flex gap-2">
+        <button onClick={() => openQuickTxn("expense")} className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3.5">
+          <PlusIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-bold text-text">Витрата</span>
+        </button>
+        <button onClick={() => openQuickTxn("income")} className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3.5">
+          <TrendingUpIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-bold text-text">Дохід</span>
+        </button>
+        <button onClick={() => setCategoryFormOpen(true)} className="card-raised flex flex-1 flex-col items-center gap-1.5 rounded-card-sm bg-surface py-3.5">
+          <ListIcon className="h-[18px] w-[18px] text-text-dim" />
+          <span className="text-[11px] font-bold text-text">Категорія</span>
+        </button>
+      </div>
+
+      {/* Потребує уваги — тільки якщо є Apple Pay-транзакції без категорії */}
+      {needsAttention.length > 0 && (
+        <>
+          <div className="mb-2.5 mt-6 flex items-center justify-between px-0.5 first:mt-0">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-text-faint">Потребує уваги</span>
+          </div>
+          <div className="card-raised mb-1 rounded-card bg-surface p-1.5">
+            {needsAttention.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setApplePayQueue((q) => [{ id: t.id, amount: t.amount, merchant: t.title, date: t.date }, ...q])}
+                className="flex w-full items-center gap-3 border-b border-border p-3 text-left last:border-b-0"
+              >
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-clay-soft text-clay">
+                  <AlertTriangleIcon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text">{t.title}</span>
+                <span className="flex-shrink-0 font-mono text-[12.5px] text-text">-{formatCurrency(t.amount, symbol)}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Де найбільше пішло */}
+      <div className="mb-2.5 mt-6 flex items-center justify-between px-0.5">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-text-faint">Де найбільше пішло</span>
+        <Link href="/balance/transactions" className="text-[11px] font-bold text-sage">
+          Усі →
+        </Link>
+      </div>
+      {topCategories.length === 0 ? (
+        <div className="card-raised rounded-card-sm bg-surface py-6 text-center text-[11.5px] text-text-faint">
+          Ще немає витрат цього місяця
+        </div>
+      ) : (
+        <div className="card-raised mb-1 rounded-card bg-surface p-1.5">
+          {topCategories.map(({ category, spent, count }) => (
+            <div key={category.id} className="flex items-center gap-3 border-b border-border p-3 last:border-b-0">
+              <CategoryIcon categoryKey={category.icon} color={category.color} className="h-9 w-9 flex-shrink-0 rounded-icon" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold text-text">{category.name}</div>
+                <div className="text-[10.5px] text-text-faint">
+                  {count} {count === 1 ? "покупка" : "покупок"}
+                </div>
+              </div>
+              <div className="font-display flex-shrink-0 text-[13px] text-text">{formatCurrency(spent, symbol)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Що було нещодавно */}
+      <div className="mb-2.5 mt-6 flex items-center justify-between px-0.5">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-text-faint">Що було нещодавно</span>
+        <Link href="/balance/transactions" className="text-[11px] font-bold text-sage">
+          Усі →
+        </Link>
+      </div>
+      {recentTransactions.length === 0 ? (
+        <div className="card-raised rounded-card-sm bg-surface py-6 text-center text-[11.5px] text-text-faint">
+          Ще немає жодної операції
+        </div>
+      ) : (
+        recentTransactions.map((t) => {
+          const category = t.categoryId ? budgetCategories.find((c) => c.id === t.categoryId) : null;
+          return (
+            <div key={t.id} className="card-raised mb-2 flex items-center gap-3 rounded-card-sm bg-surface p-3.5">
+              {category ? (
+                <CategoryIcon categoryKey={category.icon} color={category.color} className="h-9 w-9 flex-shrink-0 rounded-icon" />
+              ) : (
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
+                  <WalletIcon className="h-4 w-4" />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold text-text">{t.title}</div>
+                <div className="text-[10.5px] text-text-faint">{formatShortDateTime(t)}</div>
+              </div>
+              <div className={cn("font-display flex-shrink-0 text-[13px]", t.type === "income" ? "text-sage" : "text-clay")}>
+                {t.type === "income" ? "+" : "-"}
+                {formatCurrency(t.amount, symbol)}
+              </div>
+            </div>
+          );
+        })
+      )}
+
+      {/* Відкладаємо потроху */}
+      <div className="mb-2.5 mt-6 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Відкладаємо потроху</div>
+      {firstGoal ? (
+        <button onClick={() => openEditGoal(firstGoal)} className="card-raised mb-4 block w-full rounded-card bg-surface p-4 text-left">
+          <div className="mb-3 flex items-baseline justify-between">
+            <span className="text-[13.5px] font-bold text-text">{firstGoal.name}</span>
+            <span className="font-display text-[14px] text-sage">
+              {firstGoal.targetAmount > 0 ? Math.round((firstGoal.currentAmount / firstGoal.targetAmount) * 100) : 0}%
+            </span>
+          </div>
+          <div className="mb-2.5 h-[9px] overflow-hidden rounded-full bg-surface-2">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-sage to-sage-deep"
+              style={{ width: `${Math.min(100, firstGoal.targetAmount > 0 ? (firstGoal.currentAmount / firstGoal.targetAmount) * 100 : 0)}%` }}
+            />
+          </div>
+          <div className="text-[11px] text-text-faint">
+            Вже є {formatCurrency(firstGoal.currentAmount, symbol)}, ціль — {formatCurrency(firstGoal.targetAmount, symbol)}
+          </div>
+        </button>
+      ) : (
+        <button onClick={openAddGoal} className="well-pressed mb-4 flex w-full items-center justify-center gap-2 rounded-card bg-surface py-3.5 text-[12.5px] font-bold text-sage">
+          <PlusIcon className="h-3.5 w-3.5" />
+          Додати ціль
+        </button>
+      )}
+
+      {/* Фінансове здоров'я */}
+      <div className="mb-2.5 mt-2 px-0.5 text-[11px] font-bold uppercase tracking-wide text-text-faint">Фінансове здоров&apos;я</div>
+      <Link href="/balance/manual-data" className="card-raised mb-2 flex items-center gap-3 rounded-card-sm bg-surface p-3.5">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
+          <BankIcon className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[12.5px] font-semibold text-text">Резервний фонд</div>
+          <div className="text-[10.5px] text-text-faint">
+            {latest ? `${emergencyFundMonths.toFixed(1)} міс. витрат` : "Скільки протримаєшся без доходу"}
+          </div>
+        </div>
+        <span className="flex-shrink-0 text-[11px] font-bold text-sage">Розрахувати →</span>
+      </Link>
+      <Link href="/balance/manual-data" className="card-raised mb-2 flex items-center gap-3 rounded-card-sm bg-surface p-3.5">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
+          <TransferIcon className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[12.5px] font-semibold text-text">Борги й кредити</div>
+          <div className="text-[10.5px] text-text-faint">{debts.length > 0 ? `${debts.length} активних` : "Поки не додано жодного"}</div>
+        </div>
+        <span className="flex-shrink-0 text-[11px] font-bold text-sage">{debts.length > 0 ? "Переглянути →" : "Додати →"}</span>
+      </Link>
+      <Link href="/balance/manual-data" className="card-raised mb-4 flex items-center gap-3 rounded-card-sm bg-surface p-3.5">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon bg-surface-2 text-text-dim">
+          <DocumentIcon className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[12.5px] font-semibold text-text">Страхування</div>
+          <div className="text-[10.5px] text-text-faint">{insuredCount > 0 ? `${insuredCount}/3 оформлено` : "Не позначено, що застраховано"}</div>
+        </div>
+        <span className="flex-shrink-0 text-[11px] font-bold text-sage">{insuredCount > 0 ? "Переглянути →" : "Додати →"}</span>
+      </Link>
 
       {txnFormOpen && (
         <TransactionForm
           categories={budgetCategories}
           accounts={accounts}
           editingTxn={null}
+          initialType={txnInitialType}
           draftValues={txnDraft}
           onSave={handleSaveTxn}
           onClose={() => {
             setTxnFormOpen(false);
             setTxnDraft(undefined);
           }}
+        />
+      )}
+
+      {categoryFormOpen && (
+        <BudgetCategoryForm
+          editingCategory={null}
+          accounts={accounts}
+          currentAccountId={null}
+          onSave={handleSaveCategory}
+          onClose={() => setCategoryFormOpen(false)}
         />
       )}
 
@@ -630,6 +503,17 @@ function FinanceOverviewInner() {
             setQuizModalOpen(false);
             if (searchParams.get("action") === "quiz") router.replace("/balance");
           }}
+        />
+      )}
+
+      {currentApplePayItem && (
+        <ApplePayCategorizeSheet
+          amount={currentApplePayItem.amount}
+          merchant={currentApplePayItem.merchant}
+          categories={budgetCategories}
+          suggestedCategoryId={suggestedCategoryId}
+          onPick={(categoryId) => resolveApplePayItem(currentApplePayItem, categoryId)}
+          onLater={() => resolveApplePayItem(currentApplePayItem, null)}
         />
       )}
     </div>

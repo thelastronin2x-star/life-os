@@ -446,3 +446,39 @@ export const teamDeckReviews = pgTable(
   },
   (table) => [uniqueIndex("team_deck_reviews_card_device_idx").on(table.cardId, table.deviceId)]
 );
+
+/** One secret per device, shown once on /balance/settings/apple-pay and
+ *  pasted into the user's own Shortcuts automation — the ONLY way that
+ *  automation (an anonymous HTTP POST with no cookies) can prove which
+ *  device's push subscriptions to notify. Not a real auth system, same
+ *  security model as `deviceId` everywhere else in this app (a bearer
+ *  secret instead of a cookie only because Shortcuts can't send cookies). */
+export const applePayTokens = pgTable("apple_pay_tokens", {
+  deviceId: text("device_id").primaryKey(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** A transaction reported by the Shortcuts automation, waiting for the
+ *  device to actually open the app and turn it into a real localStorage
+ *  Transaction (this app's data lives client-side — see finance-store.ts —
+ *  so this row is only ever transient holding state, never the record of
+ *  truth). Deleted by /api/finance/apple-pay/resolve once the client has
+ *  consumed it, whether categorized or left for later. The unique index is
+ *  the dedup guarantee the Apple Pay prompt asks for — a flaky Shortcuts
+ *  trigger re-firing for the same purchase can't create a second pending
+ *  row. */
+export const pendingApplePayTransactions = pgTable(
+  "pending_apple_pay_transactions",
+  {
+    id: text("id").primaryKey(),
+    deviceId: text("device_id").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    merchant: text("merchant").notNull(),
+    transactionDate: text("transaction_date").notNull(), // "YYYY-MM-DD"
+    receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("pending_apple_pay_dedup_idx").on(table.deviceId, table.amount, table.merchant, table.transactionDate),
+  ]
+);

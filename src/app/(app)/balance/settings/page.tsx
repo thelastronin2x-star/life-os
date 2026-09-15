@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { WalletIcon, BankIcon, DocumentIcon, HistoryIcon, BarChartIcon } from "@/components/icons";
+import { WalletIcon, BankIcon, DocumentIcon, HistoryIcon, BarChartIcon, SmartphoneIcon } from "@/components/icons";
 
 function MenuRow({ href, icon, title, sub }: { href: string; icon: React.ReactNode; title: string; sub: string }) {
   return (
@@ -63,6 +63,12 @@ export default function FinanceSettingsPage() {
           icon={<BarChartIcon className="h-4 w-4" />}
           title="Детальна аналітика"
           sub="Тренди, категорії, регулярні платежі"
+        />
+        <MenuRow
+          href="/balance/settings/apple-pay"
+          icon={<SmartphoneIcon className="h-4 w-4" />}
+          title="Швидка категоризація Apple Pay"
+          sub="Категоризуй покупки одразу після оплати"
         />
       </div>
     </div>

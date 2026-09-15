@@ -135,6 +135,13 @@ export interface Transaction {
    *  user's own accounts is a single record (not a linked pair), so
    *  editing or deleting it can never leave one half orphaned. */
   transferAccountId?: string;
+  /** Set only for transactions created from the Apple Pay quick-categorize
+   *  flow (see finance/apple-pay API routes) — lets the transactions list
+   *  show a "через Apple Pay" tag and lets the overview's "Потребує уваги"
+   *  list find ones the user chose "Категоризувати пізніше" for
+   *  (categoryId stays null in that case, same as any other uncategorized
+   *  transaction — nothing else about it is special). */
+  source?: "apple-pay";
 }
 
 function seedAccounts(): FinanceAccount[] {
