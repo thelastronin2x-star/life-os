@@ -6,7 +6,18 @@ import Link from "next/link";
 import { formatDateKey } from "@/lib/calendar-utils";
 import { useHealthStore, DEFAULT_ACTIVITY_TYPES, FEELING_LEVELS, BODY_ZONES } from "@/lib/health-store";
 import { computeHealthInsights } from "@/lib/health-insights";
-import { computeCycleStatus, formatClock, formatDuration, formatLiters, minutesBetween, CYCLE_PHASE_LABEL } from "@/lib/health-utils";
+import {
+  computeCycleStatus,
+  formatClock,
+  formatDuration,
+  formatLiters,
+  minutesBetween,
+  CYCLE_PHASE_LABEL,
+  computeHealthTrackingStreak,
+  computeDayState,
+  lastDays,
+  WEEKDAY_SHORT,
+} from "@/lib/health-utils";
 import { computeCurrentStreak, computeWeekDone } from "@/lib/habit-utils";
 import { useAppStore } from "@/lib/store";
 import { HEALTH_WIDGET_CONFIG, type HealthWidgetId } from "@/lib/health-widget-config";
@@ -14,6 +25,7 @@ import { AIInsightCard } from "@/components/ui/AIInsightCard";
 import { HealthWidgetCard } from "@/components/health/HealthWidgetCard";
 import { CustomWaterAmountSheet } from "@/components/health/CustomWaterAmountSheet";
 import { DraggableQualitySlider } from "@/components/health/DraggableQualitySlider";
+import { WeeklyBars } from "@/components/health/WeeklyBars";
 import { sendSelfPush } from "@/lib/push-confirm";
 import { useSchemaStore, schemaAttachedToTab } from "@/lib/schema-store";
 import { AttachedSchemaWidgetCard } from "@/components/constructor/AttachedSchemaWidgetCard";
@@ -52,6 +64,45 @@ export default function HealthPage() {
       store.habitLogs,
     ]
   );
+
+  const trackingStreak = useMemo(
+    () =>
+      computeHealthTrackingStreak({
+        sleepSessions: store.sleepSessions,
+        waterEntries: store.waterEntries,
+        wellbeingEntries: store.wellbeingEntries,
+        activityEntries: store.activityEntries,
+        habitLogs: store.habitLogs,
+        medIntakes: store.medIntakes,
+      }),
+    [store.sleepSessions, store.waterEntries, store.wellbeingEntries, store.activityEntries, store.habitLogs, store.medIntakes]
+  );
+
+  const dayState = useMemo(
+    () =>
+      computeDayState({
+        sleepSessions: store.sleepSessions,
+        waterEntries: store.waterEntries,
+        waterGoalMl: store.waterGoalMl,
+        wellbeingEntries: store.wellbeingEntries,
+        medications: store.medications,
+        medIntakes: store.medIntakes,
+      }),
+    [store.sleepSessions, store.waterEntries, store.waterGoalMl, store.wellbeingEntries, store.medications, store.medIntakes]
+  );
+
+  const sleepWeekData = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const s of store.sleepSessions) {
+      if (!s.wakeAt) continue;
+      const day = s.wakeAt.slice(0, 10);
+      byDay.set(day, (byDay.get(day) ?? 0) + minutesBetween(s.sleepAt, s.wakeAt));
+    }
+    return lastDays(7).map((d) => ({
+      label: WEEKDAY_SHORT[new Date(d).getDay() === 0 ? 6 : new Date(d).getDay() - 1],
+      value: byDay.get(d) ?? 0,
+    }));
+  }, [store.sleepSessions]);
 
   // Сон — `now` is read inside an effect, not during render, so the
   // component stays pure (react-hooks/purity); it's null on the very first
@@ -145,6 +196,9 @@ export default function HealthPage() {
               Лягти спати
             </button>
           </div>
+        )}
+        {sleepWeekData.some((d) => d.value > 0) && (
+          <WeeklyBars data={sleepWeekData} color="var(--health-sleep)" formatValue={formatDuration} />
         )}
       </HealthWidgetCard>
     ),
@@ -404,14 +458,50 @@ export default function HealthPage() {
           <div className="font-heading text-lg font-semibold text-text">Здоров&apos;я</div>
           <div className="mt-0.5 text-[11.5px] text-text-faint">самостійний трекінг · без сторонніх сервісів</div>
         </div>
-        <Link
-          href="/health/widgets"
-          aria-label="Налаштувати віджети"
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
-        >
-          <GearIcon className="h-4 w-4" />
-        </Link>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          {trackingStreak > 0 && (
+            <div className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-gold">
+              <FireIcon className="h-3.5 w-3.5" />
+              {trackingStreak} днів
+            </div>
+          )}
+          <Link
+            href="/health/widgets"
+            aria-label="Налаштувати віджети"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon border border-border bg-surface text-text-dim"
+          >
+            <GearIcon className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
+
+      {dayState && (
+        <div className="card-raised mb-3.5 flex items-center gap-4 rounded-card bg-surface p-4">
+          <div className="relative h-[68px] w-[68px] flex-shrink-0">
+            <svg viewBox="0 0 68 68" className="h-full w-full -rotate-90">
+              <circle cx="34" cy="34" r="28" fill="none" stroke="var(--surface-2)" strokeWidth={6} />
+              <circle
+                cx="34"
+                cy="34"
+                r="28"
+                fill="none"
+                stroke="var(--sage)"
+                strokeWidth={6}
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 28}
+                strokeDashoffset={2 * Math.PI * 28 * (1 - dayState.pct / 100)}
+              />
+            </svg>
+            <div className="font-display absolute inset-0 flex items-center justify-center text-[15px] text-text">
+              {dayState.pct}%
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-text-faint">Стан дня</div>
+            <div className="mt-1 text-[12px] leading-relaxed text-text-dim">{dayState.text}</div>
+          </div>
+        </div>
+      )}
 
       <AIInsightCard insights={insights} />
 
