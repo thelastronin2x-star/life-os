@@ -10,7 +10,15 @@ import { SmartphoneIcon } from "@/components/icons";
  *  "Get Contents of URL" action POSTing straight to /api/finance/apple-pay/
  *  receive, so this screen's job is generating the token that action needs
  *  and walking through building it by hand — a few taps in the Команди app,
- *  not a redirect to some slick one-tap installer. */
+ *  not a redirect to some slick one-tap installer.
+ *
+ *  The instructions below use "Get Contents of URL"'s own built-in JSON body
+ *  editor (Request Body → JSON → Add new field) instead of a separate "Text"
+ *  action with a hand-typed JSON string — that used to be the slowest, most
+ *  error-prone step (manually typing braces/quotes around inserted Shortcuts
+ *  variables on a phone keyboard). The JSON editor takes each value as its
+ *  own field, so amount/merchant variables are inserted via the normal
+ *  variable picker with no freehand punctuation at all. */
 export default function ApplePaySetupPage() {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,7 +54,7 @@ export default function ApplePaySetupPage() {
       <div className="mb-1 pt-2 font-heading text-lg font-semibold text-text">Швидка категоризація Apple Pay</div>
       <div className="mb-4 text-[11.5px] leading-relaxed text-text-faint">
         Одразу після оплати Apple Pay застосунок пришле пуш із пропозицією категорії — тапнути й готово.
-        Потребує один раз вручну налаштувати автоматизацію в застосунку Команди (~2 хв).
+        Потребує один раз налаштувати автоматизацію в застосунку Команди (~1 хв, без ручного набору тексту).
       </div>
 
       {!token ? (
@@ -78,10 +86,9 @@ export default function ApplePaySetupPage() {
           <ol className="space-y-2.5">
             {[
               "Відкрий застосунок Команди → вкладка Автоматизація → + → Створити особисту автоматизацію.",
-              "Обери тригер «Гаманець» (Wallet) → познач картку(и), за якими стежити.",
-              "Вимкни «Запитувати перед запуском» — інакше кожна оплата питатиме підтвердження.",
-              "Додай дію «Текст»: введи { \"token\": \" вставивши скопійований токен \", \"amount\": вставивши змінну «Сума транзакції» , \"merchant\": \" вставивши змінну «Мерчант транзакції» \" } — фігурні дужки й лапки вводяться вручну, змінні додаються через кнопку зі змінними над клавіатурою.",
-              "Додай дію «Отримати вміст URL»: встав скопійований URL, метод POST, заголовок Content-Type: application/json, тіло запиту — вміст попередньої дії «Текст».",
+              "Обери тригер «Гаманець» (Wallet) → познач картку(и), за якими стежити → вимкни «Запитувати перед запуском».",
+              "Додай дію «Отримати вміст URL»: встав скопійований URL, метод POST, розгорни «Показати більше».",
+              "Тіло запиту → JSON. Кнопкою «Додати нове поле» додай три поля: token — встав скопійований токен як текст; amount — обери змінну «Сума транзакції» через кнопку зі змінними; merchant — обери змінну «Мерчант транзакції» так само. Ручний набір дужок і лапок не потрібен.",
               "Збережи. Після наступної оплати Apple Pay прийде пуш із пропозицією категорії.",
             ].map((step, i) => (
               <li key={i} className="card-raised flex gap-2.5 rounded-card-sm bg-surface p-3">
